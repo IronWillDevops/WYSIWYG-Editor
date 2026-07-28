@@ -11,6 +11,7 @@ export default {
     video: 'Insert video',
     audio: 'Insert audio',
     table: 'Insert table',
+    removeFormat: 'Clear formatting',
     insert: 'Insert',
     update: 'Update',
     cancel: 'Cancel',

@@ -47,10 +47,6 @@ export default class Commands {
             case 'italic':
             case 'underline':
             case 'strikeThrough':
-            case 'superscript':
-            case 'subscript':
-            case 'insertUnorderedList':
-            case 'insertOrderedList':
             case 'indent':
             case 'outdent':
             case 'justifyLeft':
@@ -58,6 +54,40 @@ export default class Commands {
             case 'justifyRight':
             case 'justifyFull':
                 document.execCommand(name, false, value ?? undefined);
+                break;
+
+            case 'superscript':
+            case 'subscript':
+                // execCommand's own toggle detection for superscript/subscript
+                // relies on the presence of a <sup>/<sub> ancestor. styleWithCSS
+                // (enabled above for every other command so bold/italic/color
+                // survive sanitization) makes some browsers wrap the selection in
+                // a new <span style="vertical-align:..."> on every call instead of
+                // reusing/removing the existing <sup>/<sub>, so a second click
+                // nested a wrapper instead of turning the formatting back off.
+                // These two commands don't have a meaningful CSS-based form
+                // anyway (they always use <sup>/<sub>), so run them with
+                // styleWithCSS off to get real native toggle behavior, then
+                // restore the flag for every other command.
+                try {
+                    document.execCommand('styleWithCSS', false, false);
+                } catch {
+                    // ignore, fall through and try the command anyway
+                }
+                document.execCommand(name, false, value ?? undefined);
+                try {
+                    document.execCommand('styleWithCSS', false, true);
+                } catch {
+                    // ignore
+                }
+                break;
+
+            case 'insertUnorderedList':
+                this.toggleList('ul');
+                break;
+
+            case 'insertOrderedList':
+                this.toggleList('ol');
                 break;
 
             case 'foreColor':
@@ -85,7 +115,14 @@ export default class Commands {
                 break;
 
             case 'removeFormat':
+                // Native removeFormat strips most inline formatting elements
+                // (b/i/u/s/sup/sub/span[style]) but browsers are inconsistent
+                // about fully clearing every inline style property, so follow it
+                // up with an explicit sweep to guarantee a clean result (this is
+                // also what powers the "clear formatting / reset text color"
+                // toolbar button).
                 document.execCommand('removeFormat', false);
+                this.clearInlineStyles();
                 break;
 
             default:
@@ -141,6 +178,148 @@ export default class Commands {
 
         const span = this.selection.wrap('span');
         if (span) span.style[cssProperty] = value;
+    }
+
+    /**
+     * Toggles the current selection in/out of a <ul>/<ol> list, or converts
+     * it from one list type to the other. Implemented by hand (instead of
+     * relying on execCommand('insertUnorderedList'/'insertOrderedList'))
+     * because that command is notoriously inconsistent across browsers when
+     * the contenteditable root is a plain <div> with mixed block children
+     * (as this editor's root is): it can silently no-op, or fail to remove
+     * the list on a second click. Manual DOM manipulation gives predictable,
+     * cross-browser behavior and matches how blockFormat is already handled.
+     * @param {'ul'|'ol'} listTag
+     */
+    toggleList(listTag) {
+        const range = this.selection.getRange();
+        if (!range) return;
+
+        const currentLi = this.selection.closest('li');
+        if (currentLi) {
+            const currentList = currentLi.closest('ul, ol');
+            if (currentList && currentList.tagName.toLowerCase() === listTag) {
+                this.unwrapList(currentList);
+            } else if (currentList) {
+                this.convertList(currentList, listTag);
+            }
+            return;
+        }
+
+        const blocks = this.getBlocksInRange(range);
+        if (!blocks.length) return;
+
+        const list = document.createElement(listTag);
+        blocks.forEach((block) => {
+            const li = document.createElement('li');
+            li.innerHTML = block.innerHTML || '<br>';
+            list.appendChild(li);
+        });
+
+        blocks[0].replaceWith(list);
+        blocks.slice(1).forEach((block) => block.remove());
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(list.lastElementChild);
+        newRange.collapse(false);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Finds the top-level block elements (paragraphs, headings, etc.)
+     * touched by a range, so multi-line selections can become a single list.
+     * @param {Range} range
+     * @returns {HTMLElement[]}
+     */
+    getBlocksInRange(range) {
+        const blockTags = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'DIV']);
+        const closestBlock = (node) => {
+            let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+            while (el && el !== this.root) {
+                if (el instanceof HTMLElement && el.parentElement === this.root && blockTags.has(el.tagName)) {
+                    return el;
+                }
+                el = el.parentElement;
+            }
+            return null;
+        };
+
+        const startBlock = closestBlock(range.startContainer);
+        if (!startBlock) return [];
+        const endBlock = closestBlock(range.endContainer) ?? startBlock;
+        if (startBlock === endBlock) return [startBlock];
+
+        const blocks = [];
+        let node = startBlock;
+        while (node) {
+            blocks.push(node);
+            if (node === endBlock) break;
+            node = node.nextElementSibling;
+        }
+        return blocks.length ? blocks : [startBlock];
+    }
+
+    /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
+    convertList(list, listTag) {
+        const replacement = document.createElement(listTag);
+        replacement.className = list.className;
+        replacement.innerHTML = list.innerHTML;
+        list.replaceWith(replacement);
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(replacement);
+        newRange.collapse(false);
+        this.selection.setRange(newRange);
+    }
+
+    /** Removes a list, turning each <li> back into a plain paragraph. @param {HTMLElement} list */
+    unwrapList(list) {
+        const fragment = document.createDocumentFragment();
+        [...list.children].forEach((li) => {
+            if (li.tagName !== 'LI') return;
+            const p = document.createElement('p');
+            p.innerHTML = li.innerHTML || '<br>';
+            fragment.appendChild(p);
+        });
+
+        const last = fragment.lastElementChild;
+        list.replaceWith(fragment);
+
+        if (last) {
+            const newRange = document.createRange();
+            newRange.selectNodeContents(last);
+            newRange.collapse(false);
+            this.selection.setRange(newRange);
+        }
+    }
+
+    /**
+     * Strips leftover inline style attributes (text color, background,
+     * font, etc.) from every element touched by the current selection.
+     * Backs the "clear formatting" / "reset text color" toolbar action.
+     */
+    clearInlineStyles() {
+        const range = this.selection.getRange();
+        if (!range) return;
+
+        let container = range.commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+        if (!(container instanceof HTMLElement)) return;
+
+        const candidates = container.style?.length ? [container, ...container.querySelectorAll('*')] : [...container.querySelectorAll('*')];
+
+        candidates.forEach((el) => {
+            if (!range.intersectsNode(el)) return;
+            el.removeAttribute('style');
+            // Drop now-purposeless wrapper spans/fonts entirely so we don't
+            // leave empty tags cluttering the markup.
+            if (['SPAN', 'FONT'].includes(el.tagName) && el.attributes.length === 0) {
+                const parent = el.parentNode;
+                if (!parent) return;
+                while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                parent.removeChild(el);
+            }
+        });
     }
 
     /** Inserts raw (already sanitized) HTML at the current caret position. */

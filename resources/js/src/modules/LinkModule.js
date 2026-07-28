@@ -7,6 +7,25 @@ import Dialog from '../utils/Dialog.js';
 export default class LinkModule {
     constructor(editor) {
         this.editor = editor;
+        this.handleDblClick = this.handleDblClick.bind(this);
+        // Lets people jump straight into editing a link by double-clicking it,
+        // instead of having to place the caret inside it and hunt for the
+        // toolbar button.
+        editor.root.addEventListener('dblclick', this.handleDblClick);
+    }
+
+    /** @param {MouseEvent} event */
+    handleDblClick(event) {
+        const anchor = event.target.closest?.('a');
+        if (!anchor || !this.editor.root.contains(anchor)) return;
+        event.preventDefault();
+
+        const range = document.createRange();
+        range.selectNodeContents(anchor);
+        this.editor.selection.setRange(range);
+        this.editor.selection.save();
+
+        this.open();
     }
 
     open() {
@@ -99,5 +118,6 @@ export default class LinkModule {
 
     destroy() {
         this.dialog?.close();
+        this.editor.root.removeEventListener('dblclick', this.handleDblClick);
     }
 }

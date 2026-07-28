@@ -11,6 +11,7 @@ export default {
     video: 'Вставить видео',
     audio: 'Вставить аудио',
     table: 'Вставить таблицу',
+    removeFormat: 'Очистить форматирование',
     insert: 'Вставить',
     update: 'Обновить',
     cancel: 'Отмена',

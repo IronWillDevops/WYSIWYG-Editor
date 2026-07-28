@@ -9,16 +9,32 @@ export default class ImageModule {
         this.editor = editor;
         this.uploadUrl = editor.options.uploadUrl;
         this.handleDrop = this.handleDrop.bind(this);
+        this.handleClick = this.handleClick.bind(this);
+        this.handleDblClick = this.handleDblClick.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+
+        // Delegated on the root (rather than attached per-<img>) so this also
+        // covers images that were already present in content loaded via
+        // setHTML()/initial textarea value or pasted in, not just ones
+        // inserted through this module.
         editor.root.addEventListener('dragover', (e) => e.preventDefault());
         editor.root.addEventListener('drop', this.handleDrop);
+        editor.root.addEventListener('click', this.handleClick);
+        editor.root.addEventListener('dblclick', this.handleDblClick);
+        editor.root.addEventListener('mousedown', this.handleMouseDown);
     }
 
     open() {
+        const existing = this.getSelectedFigure();
+        const img = existing?.querySelector('img');
+        const figcaption = existing?.querySelector('figcaption');
+        const align = ['left', 'center', 'right'].find((value) => existing?.classList.contains(`ife-image--${value}`)) ?? 'center';
+
         const body = `
             <div class="ife-tabs">
                 <label class="ife-field">
                     <span>Image URL</span>
-                    <input type="url" name="src" placeholder="https://example.com/image.jpg">
+                    <input type="url" name="src" placeholder="https://example.com/image.jpg" value="${this.escape(img?.getAttribute('src') ?? '')}">
                 </label>
                 <label class="ife-field">
                     <span>Or upload a file</span>
@@ -26,40 +42,62 @@ export default class ImageModule {
                 </label>
                 <label class="ife-field">
                     <span>Alt text</span>
-                    <input type="text" name="alt">
+                    <input type="text" name="alt" value="${this.escape(img?.getAttribute('alt') ?? '')}">
                 </label>
                 <label class="ife-field">
                     <span>Caption</span>
-                    <input type="text" name="caption">
+                    <input type="text" name="caption" value="${this.escape(figcaption?.textContent ?? '')}">
                 </label>
                 <label class="ife-field">
                     <span>Alignment</span>
                     <select name="align">
-                        <option value="none">None</option>
-                        <option value="left">Left</option>
-                        <option value="center" selected>Center</option>
-                        <option value="right">Right</option>
+                        <option value="none" ${align === 'none' ? 'selected' : ''}>None</option>
+                        <option value="left" ${align === 'left' ? 'selected' : ''}>Left</option>
+                        <option value="center" ${align === 'center' ? 'selected' : ''}>Center</option>
+                        <option value="right" ${align === 'right' ? 'selected' : ''}>Right</option>
                     </select>
                 </label>
                 <label class="ife-field--inline">
-                    <input type="checkbox" name="lazy" checked>
+                    <input type="checkbox" name="lazy" ${!existing || img?.loading === 'lazy' ? 'checked' : ''}>
                     <span>Lazy loading</span>
                 </label>
             </div>
         `;
 
         this.dialog = new Dialog(this.editor.wrapper, {
-            title: 'Insert image',
+            title: existing ? 'Edit image' : 'Insert image',
             bodyHtml: body,
-            confirmLabel: 'Insert',
-            onConfirm: (form) => this.handleSubmit(form),
+            confirmLabel: existing ? 'Update' : 'Insert',
+            onConfirm: (form) => this.handleSubmit(form, existing),
         });
 
         this.editor.selection.save();
         this.dialog.open();
+
+        if (existing) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'ife-btn ife-btn--danger';
+            removeBtn.textContent = 'Remove image';
+            removeBtn.addEventListener('click', () => {
+                this.editor.history.push();
+                existing.remove();
+                this.editor.emitChange();
+                this.dialog.close();
+            });
+            this.dialog.form.querySelector('.ife-dialog__footer').prepend(removeBtn);
+        }
     }
 
-    async handleSubmit(form) {
+    /** Returns the currently selected/edited image's <figure>, if any. */
+    getSelectedFigure() {
+        return (
+            this.editor.root.querySelector('figure.ife-image--selected') ??
+            this.editor.selection.closest('figure.ife-image')
+        );
+    }
+
+    async handleSubmit(form, existing) {
         const data = new FormData(form);
         const file = data.get('file');
         let src = String(data.get('src') ?? '');
@@ -71,13 +109,19 @@ export default class ImageModule {
 
         if (!src) return;
 
-        this.insert({
+        const options = {
             src,
             alt: String(data.get('alt') ?? ''),
             caption: String(data.get('caption') ?? ''),
             align: String(data.get('align') ?? 'center'),
             lazy: Boolean(data.get('lazy')),
-        });
+        };
+
+        if (existing) {
+            this.update(existing, options);
+        } else {
+            this.insert(options);
+        }
     }
 
     /** @param {File} file */
@@ -132,8 +176,6 @@ export default class ImageModule {
             figure.appendChild(figcaption);
         }
 
-        this.makeResizable(img);
-
         const range = this.editor.selection.getRange();
         range?.deleteContents();
         range?.insertNode(figure);
@@ -141,31 +183,77 @@ export default class ImageModule {
         this.editor.emitChange();
     }
 
-    /** Adds a simple drag-corner resize handle to an inserted image. */
-    makeResizable(img) {
-        img.addEventListener('click', () => {
-            this.editor.root.querySelectorAll('.ife-image--selected').forEach((el) => el.classList.remove('ife-image--selected'));
-            img.closest('figure')?.classList.add('ife-image--selected');
-        });
+    /**
+     * Updates an already-inserted <figure class="ife-image"> in place instead
+     * of creating a new one, so the "edit image" flow doesn't duplicate it.
+     * @param {HTMLElement} figure
+     * @param {{src:string, alt:string, caption:string, align:string, lazy:boolean}} options
+     */
+    update(figure, { src, alt, caption, align, lazy }) {
+        this.editor.history.push();
 
-        img.addEventListener('mousedown', (event) => {
-            if (!event.altKey) return; // Alt+drag to resize, avoids clashing with normal caret placement.
-            event.preventDefault();
-            const startX = event.clientX;
-            const startWidth = img.getBoundingClientRect().width;
+        figure.className = `ife-image ife-image--${align}`;
 
-            const onMove = (moveEvent) => {
-                const delta = moveEvent.clientX - startX;
-                img.style.width = `${Math.max(40, startWidth + delta)}px`;
-            };
-            const onUp = () => {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('mouseup', onUp);
-                this.editor.emitChange();
-            };
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
-        });
+        const img = figure.querySelector('img');
+        if (img) {
+            img.src = src;
+            img.alt = alt;
+            if (lazy) img.setAttribute('loading', 'lazy');
+            else img.removeAttribute('loading');
+        }
+
+        let figcaption = figure.querySelector('figcaption');
+        if (caption) {
+            if (!figcaption) {
+                figcaption = document.createElement('figcaption');
+                figure.appendChild(figcaption);
+            }
+            figcaption.textContent = caption;
+        } else if (figcaption) {
+            figcaption.remove();
+        }
+
+        figure.classList.remove('ife-image--selected');
+        this.editor.emitChange();
+    }
+
+    /** Marks the clicked image's <figure> as selected (for edit/resize), or clears selection. */
+    handleClick(event) {
+        const img = event.target.closest('figure.ife-image img');
+        this.editor.root.querySelectorAll('.ife-image--selected').forEach((el) => el.classList.remove('ife-image--selected'));
+        if (img) img.closest('figure')?.classList.add('ife-image--selected');
+    }
+
+    /** Double-clicking an image opens the edit dialog directly. */
+    handleDblClick(event) {
+        const img = event.target.closest('figure.ife-image img');
+        if (!img) return;
+        event.preventDefault();
+        this.editor.root.querySelectorAll('.ife-image--selected').forEach((el) => el.classList.remove('ife-image--selected'));
+        img.closest('figure')?.classList.add('ife-image--selected');
+        this.open();
+    }
+
+    /** Alt+drag on an image resizes it (avoids clashing with normal caret placement). */
+    handleMouseDown(event) {
+        const img = event.target.closest('figure.ife-image img');
+        if (!img || !event.altKey) return;
+        event.preventDefault();
+
+        const startX = event.clientX;
+        const startWidth = img.getBoundingClientRect().width;
+
+        const onMove = (moveEvent) => {
+            const delta = moveEvent.clientX - startX;
+            img.style.width = `${Math.max(40, startWidth + delta)}px`;
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            this.editor.emitChange();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
     }
 
     /** @param {DragEvent} event */
@@ -181,8 +269,15 @@ export default class ImageModule {
         this.insert({ src, alt: '', caption: '', align: 'center', lazy: true });
     }
 
+    escape(value) {
+        return String(value ?? '').replace(/"/g, '&quot;');
+    }
+
     destroy() {
         this.dialog?.close();
         this.editor.root.removeEventListener('drop', this.handleDrop);
+        this.editor.root.removeEventListener('click', this.handleClick);
+        this.editor.root.removeEventListener('dblclick', this.handleDblClick);
+        this.editor.root.removeEventListener('mousedown', this.handleMouseDown);
     }
 }

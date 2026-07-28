@@ -149,6 +149,80 @@
     padding: 6px 10px;
 }
 
+.ife-content ul,
+.ife-content ol {
+    margin: 8px 0;
+    padding-left: 28px;
+}
+
+.ife-content ul {
+    list-style: disc outside;
+}
+
+.ife-content ul ul {
+    list-style: circle outside;
+}
+
+.ife-content ul ul ul {
+    list-style: square outside;
+}
+
+.ife-content ol {
+    list-style: decimal outside;
+}
+
+.ife-content li {
+    margin: 2px 0;
+}
+
+.ife-content blockquote {
+    margin: 12px 0;
+    padding: 4px 16px;
+    border-left: 4px solid var(--ife-accent);
+    color: #57606a;
+    font-style: italic;
+}
+
+.ife-wrapper[data-resolved-theme="dark"] .ife-content blockquote {
+    color: #9198a1;
+}
+
+.ife-content code {
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    background: rgba(110, 119, 129, 0.15);
+    color: #cf222e;
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.9em;
+}
+
+.ife-wrapper[data-resolved-theme="dark"] .ife-content code {
+    color: #ff7b72;
+    background: rgba(110, 119, 129, 0.25);
+}
+
+.ife-content pre {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-radius: var(--ife-radius);
+    background: rgba(110, 119, 129, 0.12);
+    overflow-x: auto;
+    font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.ife-wrapper[data-resolved-theme="dark"] .ife-content pre {
+    background: rgba(110, 119, 129, 0.18);
+}
+
+.ife-content pre code {
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+}
+
 .ife-image {
     margin: 12px 0;
     text-align: center;
@@ -165,6 +239,7 @@
 .ife-image img {
     max-width: 100%;
     border-radius: 4px;
+    cursor: pointer;
 }
 
 .ife-image--selected img {
@@ -180,6 +255,45 @@
 .ife-checklist {
     list-style: none;
     padding-left: 4px;
+}
+
+/* Contextual table toolbar (shown when the caret is inside a table) */
+.ife-table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--ife-toolbar-bg);
+    border-bottom: 1px solid var(--ife-border);
+}
+
+.ife-table-toolbar__btn {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+.ife-table-toolbar__btn--danger {
+    color: var(--ife-danger);
+    border-color: var(--ife-danger);
+}
+
+.ife-table-toolbar__color {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--ife-text);
+    cursor: pointer;
+}
+
+.ife-table-toolbar__color input[type="color"] {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--ife-border);
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .ife-search-highlight {

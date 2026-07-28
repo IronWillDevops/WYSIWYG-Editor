@@ -5,7 +5,7 @@ const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
     ['blockFormat', 'fontFamily', 'fontSize'],
     ['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'],
-    ['forecolor', 'backcolor'],
+    ['forecolor', 'backcolor', 'removeFormat'],
     ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'],
     ['bulletList', 'orderedList', 'checklist', 'indent', 'outdent'],
     ['link', 'unlink', 'image', 'video', 'audio', 'table', 'hr'],

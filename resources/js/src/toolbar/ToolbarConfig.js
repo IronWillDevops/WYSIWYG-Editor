@@ -69,6 +69,12 @@ const ToolbarConfig = {
 
     forecolor: { icon: Icons.formatColorText, label: 'Text color', type: 'color', command: 'foreColor' },
     backcolor: { icon: Icons.formatColorFill, label: 'Background color', type: 'color', command: 'backColor' },
+    removeFormat: {
+        icon: Icons.clearFormat,
+        label: 'Clear formatting',
+        type: 'command',
+        command: 'removeFormat',
+    },
 
     alignLeft: { icon: Icons.alignLeft, label: 'Align left', type: 'command', command: 'justifyLeft' },
     alignCenter: { icon: Icons.alignCenter, label: 'Align center', type: 'command', command: 'justifyCenter' },

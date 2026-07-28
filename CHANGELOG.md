@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Superscript/subscript no longer nest a new wrapper on every click instead of toggling off.
+- Numbered and bulleted lists are now created/removed with a dedicated DOM-based implementation instead of the unreliable `execCommand('insertUnorderedList'/'insertOrderedList')`, which could silently no-op or fail to toggle off depending on the browser.
+
+### Added
+
+- "Clear formatting" toolbar button, which also resets any leftover inline text/background color.
+- Editing of already-inserted images: clicking (or double-clicking) an image now offers an "Edit image" dialog pre-filled with its current URL/alt/caption/alignment, plus a "Remove image" action, instead of only being able to insert new ones.
+- Double-click-to-edit for existing links.
+- A contextual table toolbar that appears whenever the caret is inside a table, exposing add/delete row, add/delete column, merge/split cell, cell background color, table alignment and delete table — the underlying methods already existed but had no way to be triggered from the UI.
+- Default visual styling for `<ul>`/`<ol>`/`<li>`, `<blockquote>`, inline `<code>` and `<pre>` inside the editor content area (previously unstyled, relying entirely on the browser's bare defaults).
+
 ### Planned
 
 - Image cropping UI (currently only resize via Alt+drag)

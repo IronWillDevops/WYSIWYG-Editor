@@ -8,8 +8,82 @@ import Dialog from '../utils/Dialog.js';
 export default class TableModule {
     constructor(editor) {
         this.editor = editor;
+        this.buildContextToolbar();
         this.editor.root.addEventListener('click', () => this.syncContextToolbar());
         this.editor.root.addEventListener('keyup', () => this.syncContextToolbar());
+        this.editor.on('selectionchange', () => this.syncContextToolbar());
+    }
+
+    /**
+     * Builds the floating mini-toolbar that appears whenever the caret is
+     * inside a table, exposing the row/column/cell operations below through
+     * the UI (previously these existed as methods with no way to trigger
+     * them from the editor itself).
+     */
+    buildContextToolbar() {
+        this.contextToolbar = document.createElement('div');
+        this.contextToolbar.className = 'ife-table-toolbar';
+        this.contextToolbar.style.display = 'none';
+        this.contextToolbar.setAttribute('role', 'toolbar');
+        this.contextToolbar.setAttribute('aria-label', 'Table editing');
+
+        const actions = [
+            ['Row above', () => this.addRow(true)],
+            ['Row below', () => this.addRow(false)],
+            ['Delete row', () => this.deleteRow(), true],
+            ['Col left', () => this.addColumn(true)],
+            ['Col right', () => this.addColumn(false)],
+            ['Delete col', () => this.deleteColumn(), true],
+            ['Merge right', () => this.mergeRight()],
+            ['Split cell', () => this.splitCell()],
+            ['Delete table', () => this.deleteTable(), true],
+        ];
+
+        actions.forEach(([label, handler, danger]) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${danger ? ' ife-table-toolbar__btn--danger' : ''}`;
+            button.textContent = label;
+            button.title = label;
+            button.addEventListener('mousedown', (event) => event.preventDefault());
+            button.addEventListener('click', () => {
+                this.editor.selection.restore();
+                handler();
+                this.syncContextToolbar();
+            });
+            this.contextToolbar.appendChild(button);
+        });
+
+        const colorLabel = document.createElement('label');
+        colorLabel.className = 'ife-table-toolbar__color';
+        colorLabel.title = 'Cell background color';
+        colorLabel.textContent = 'Cell';
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.setAttribute('aria-label', 'Cell background color');
+        colorInput.addEventListener('mousedown', (event) => event.stopPropagation());
+        colorInput.addEventListener('input', () => {
+            this.editor.selection.restore();
+            this.setCellBackground(colorInput.value);
+        });
+        colorLabel.appendChild(colorInput);
+        this.contextToolbar.appendChild(colorLabel);
+
+        const alignSelect = document.createElement('select');
+        alignSelect.className = 'ife-toolbar__select';
+        alignSelect.setAttribute('aria-label', 'Table alignment');
+        [['left', 'Align left'], ['center', 'Align center'], ['right', 'Align right']].forEach(([value, label]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            alignSelect.appendChild(option);
+        });
+        alignSelect.addEventListener('mousedown', (event) => event.stopPropagation());
+        alignSelect.addEventListener('change', () => {
+            this.editor.selection.restore();
+            this.setTableAlignment(alignSelect.value);
+        });
+        this.contextToolbar.appendChild(alignSelect);
     }
 
     openInsertDialog() {
@@ -189,8 +263,20 @@ export default class TableModule {
     /** Shows/hides the contextual table toolbar based on caret position. */
     syncContextToolbar() {
         const inTable = Boolean(this.getCurrentTable());
+
+        // Mounted lazily on first use (rather than in the constructor) so it
+        // lands after the main Toolbar in the DOM even though modules are
+        // constructed before the Toolbar is — this keeps it visually docked
+        // right above the content area instead of above the main toolbar.
+        if (inTable && !this.contextToolbar.isConnected) {
+            this.editor.wrapper.insertBefore(this.contextToolbar, this.editor.root);
+        }
+
+        this.contextToolbar.style.display = inTable ? 'flex' : 'none';
         this.editor.events.emit('table:context', inTable);
     }
 
-    destroy() {}
+    destroy() {
+        this.contextToolbar?.remove();
+    }
 }
