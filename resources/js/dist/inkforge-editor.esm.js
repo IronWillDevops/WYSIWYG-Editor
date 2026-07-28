@@ -1021,17 +1021,25 @@ class _ {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([a, l]) => {
-      const d = this.buttons.get(a);
-      d instanceof HTMLElement && d.classList.toggle("is-active", this.editor.commands.queryState(l));
+    }).forEach(([n, o]) => {
+      const s = this.buttons.get(n);
+      s instanceof HTMLElement && s.classList.toggle("is-active", this.editor.commands.queryState(o));
     });
-    const t = ["alignLeft", "alignCenter", "alignRight", "alignJustify"], i = { alignLeft: "justifyLeft", alignCenter: "justifyCenter", alignRight: "justifyRight", alignJustify: "justifyFull" }, n = { justifyLeft: "left", justifyCenter: "center", justifyRight: "right", justifyFull: "justify" }, o = this.editor.selection.getBlockElement(), s = o && o.style.textAlign || "";
-    t.forEach((a) => {
-      const l = this.buttons.get(a);
-      if (!(l instanceof HTMLElement)) return;
-      const d = i[a];
-      let u = this.editor.commands.queryState(d);
-      !u && s && (u = s === n[d]), l.classList.toggle("is-active", u);
+    const t = this.editor.selection.getBlockElement();
+    let i = "";
+    if (t) {
+      let n = t;
+      for (; n && n !== this.editor.root; ) {
+        if (n.style.textAlign) {
+          i = n.style.textAlign;
+          break;
+        }
+        n = n.parentElement;
+      }
+    }
+    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((n) => {
+      const o = this.buttons.get(n);
+      o instanceof HTMLElement && o.classList.toggle("is-active", i === n.replace("align", "").toLowerCase());
     });
   }
   setEnabled(e, t) {
@@ -1720,7 +1728,7 @@ class K {
   destroy() {
   }
 }
-class J {
+class G {
   constructor(e) {
     this.editor = e;
   }
@@ -1872,7 +1880,7 @@ ${t()}
   destroy() {
   }
 }
-const G = {
+const J = {
   link: B,
   image: q,
   table: U,
@@ -1881,9 +1889,9 @@ const G = {
   find: P,
   note: X,
   media: K,
-  markdown: J
+  markdown: G
 };
-Object.entries(G).forEach(([r, e]) => {
+Object.entries(J).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
 const p = /* @__PURE__ */ new Map(), Z = {

@@ -147,22 +147,24 @@ export default class Toolbar {
             }
         });
 
-        const alignIds = ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'];
-        const alignCommand = { alignLeft: 'justifyLeft', alignCenter: 'justifyCenter', alignRight: 'justifyRight', alignJustify: 'justifyFull' };
-        const alignStyle = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
-
         const block = this.editor.selection.getBlockElement();
-        const blockAlign = block ? (block.style.textAlign || '') : '';
-
-        alignIds.forEach((id) => {
-            const button = this.buttons.get(id);
-            if (!(button instanceof HTMLElement)) return;
-            const cmd = alignCommand[id];
-            let isActive = this.editor.commands.queryState(cmd);
-            if (!isActive && blockAlign) {
-                isActive = blockAlign === alignStyle[cmd];
+        let activeAlign = '';
+        if (block) {
+            let el = block;
+            while (el && el !== this.editor.root) {
+                if (el.style.textAlign) {
+                    activeAlign = el.style.textAlign;
+                    break;
+                }
+                el = el.parentElement;
             }
-            button.classList.toggle('is-active', isActive);
+        }
+
+        ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'].forEach((id) => {
+            const button = this.buttons.get(id);
+            if (button instanceof HTMLElement) {
+                button.classList.toggle('is-active', activeAlign === id.replace('align', '').toLowerCase());
+            }
         });
     }
 
