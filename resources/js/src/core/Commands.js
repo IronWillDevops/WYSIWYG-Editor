@@ -24,6 +24,18 @@ export default class Commands {
     prepare() {
         this.root.focus();
         this.selection.restore();
+        // Without this, execCommand falls back to its legacy markup (<b>, <i>,
+        // <strike>, <font color>) instead of CSS-based <span style="...">.
+        // Those legacy tags aren't in the Sanitizer's allow-list, so every
+        // bold/italic/strikethrough/text-color edit was silently stripped out
+        // as soon as the content got serialized (getHTML()/textarea sync/save),
+        // even though it still looked fine live in the contenteditable area.
+        try {
+            document.execCommand('styleWithCSS', false, true);
+        } catch {
+            // Some browsers may reject this; formatting still works, just
+            // with legacy tags in that (rare) case.
+        }
     }
 
     exec(name, value = null) {

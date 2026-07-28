@@ -13,6 +13,8 @@ const DEFAULT_ALLOWED_ATTRS = {
     video: new Set(['src', 'controls', 'width', 'height', 'poster']),
     audio: new Set(['src', 'controls']),
     source: new Set(['src', 'type']),
+    td: new Set(['colspan', 'rowspan']),
+    th: new Set(['colspan', 'rowspan', 'scope']),
 };
 
 const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:', '']);
