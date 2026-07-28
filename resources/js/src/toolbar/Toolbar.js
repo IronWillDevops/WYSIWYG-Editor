@@ -35,6 +35,7 @@ export default class Toolbar {
 
         this.editor.on('selectionchange', () => this.syncActiveStates());
         this.editor.on('focus', () => this.syncActiveStates());
+        this.syncActiveStates();
     }
 
     render() {
