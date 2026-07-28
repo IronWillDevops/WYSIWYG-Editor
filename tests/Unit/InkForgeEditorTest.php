@@ -32,3 +32,16 @@ it('exposes a semantic version string', function () {
 
     expect($editor->version())->toMatch('/^\d+\.\d+\.\d+$/');
 });
+
+it('returns the full config array via config()', function () {
+    $config = ['theme' => 'dark', 'upload' => ['max_size_kb' => 2048]];
+    $editor = new InkForgeEditor($config);
+
+    expect($editor->config())->toBe($config);
+});
+
+it('returns an empty array from config() when constructed without arguments', function () {
+    $editor = new InkForgeEditor();
+
+    expect($editor->config())->toBe([]);
+});

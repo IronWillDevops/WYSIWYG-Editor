@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import Sanitizer from '../src/core/Sanitizer.js';
+import Sanitizer from './Sanitizer.js';
 
 describe('Sanitizer', () => {
     const sanitizer = new Sanitizer();

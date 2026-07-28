@@ -41,3 +41,15 @@ it('rejects requests without a file', function () {
 
     $response->assertStatus(422);
 });
+
+it('returns an error when storage fails', function () {
+    $disk = Storage::fake('public');
+    $disk->assertExists('.'); // ensure disk is booted
+    // Force storeAs to return false by making the path unwritable
+    config(['inkforge-editor.upload.path' => '/dev/null/nope']);
+
+    $file = UploadedFile::fake()->image('photo.jpg', 800, 600)->size(500);
+    $response = $this->post(route('inkforge-editor.upload.image'), ['file' => $file]);
+
+    $response->assertStatus(422)->assertJson(['success' => false]);
+});

@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import MarkdownModule from '../src/modules/MarkdownModule.js';
 
 describe('MarkdownModule', () => {
-    const module = new MarkdownModule({ getHTML: () => '', setHTML: () => {} });
+    let content = '';
+    const module = new MarkdownModule({
+        getHTML: () => content,
+        setHTML: (html) => { content = html; },
+    });
 
     it('converts headings to markdown', () => {
         expect(module.htmlToMarkdown('<h1>Title</h1>').trim()).toBe('# Title');
@@ -36,5 +40,55 @@ describe('MarkdownModule', () => {
 
     it('round-trips bold/italic inline syntax', () => {
         expect(module.markdownToHtml('**bold** and *italic*')).toBe('<p><strong>bold</strong> and <em>italic</em></p>');
+    });
+
+    it('converts blockquote to markdown', () => {
+        const result = module.htmlToMarkdown('<blockquote>quote text</blockquote>').trim();
+        expect(result).toBe('> quote text');
+    });
+
+    it('converts markdown blockquote to HTML', () => {
+        expect(module.markdownToHtml('> quote text')).toBe('<blockquote>quote text</blockquote>');
+    });
+
+    it('converts code blocks to markdown', () => {
+        const result = module.htmlToMarkdown('<pre><code>code block</code></pre>').trim();
+        expect(result).toBe('```\ncode block\n```');
+    });
+
+    it('converts inline code to markdown', () => {
+        const result = module.htmlToMarkdown('<p>use <code>var</code></p>').trim();
+        expect(result).toBe('use `var`');
+    });
+
+    it('converts horizontal rule to markdown', () => {
+        expect(module.htmlToMarkdown('<hr>').trim()).toBe('---');
+    });
+
+    it('converts markdown horizontal rule to HTML', () => {
+        expect(module.markdownToHtml('---')).toBe('<hr>');
+    });
+
+    it('import() sets editor content via setHTML', () => {
+        content = '';
+        module.import('# Hello');
+        expect(content).toBe('<h1>Hello</h1>');
+    });
+
+    it('export() returns trimmed markdown from editor content', () => {
+        content = '<h1>Title</h1>';
+        const md = module.export();
+        expect(md).toBe('# Title');
+    });
+
+    it('converts nested inline formatting inside paragraphs', () => {
+        const html = '<p><strong>bold</strong> and <em>italic</em></p>';
+        expect(module.htmlToMarkdown(html).trim()).toBe('**bold** and *italic*');
+    });
+
+    it('converts headings of all levels', () => {
+        expect(module.htmlToMarkdown('<h2>H2</h2>').trim()).toBe('## H2');
+        expect(module.htmlToMarkdown('<h3>H3</h3>').trim()).toBe('### H3');
+        expect(module.htmlToMarkdown('<h6>H6</h6>').trim()).toBe('###### H6');
     });
 });

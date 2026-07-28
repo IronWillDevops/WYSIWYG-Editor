@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - "Clear formatting" toolbar button, which also resets any leftover inline text/background color.
+- Comprehensive test coverage: `Selection`, `Commands`, `Localization`, `Dialog`, `CodeViewModule` test suites; extended `MarkdownModule` and `Sanitizer` tests with blockquotes, code blocks, HR, custom config, and URL scheme validation.
 - Editing of already-inserted images: clicking (or double-clicking) an image now offers an "Edit image" dialog pre-filled with its current URL/alt/caption/alignment, plus a "Remove image" action, instead of only being able to insert new ones.
 - Double-click-to-edit for existing links.
 - A contextual table toolbar that appears whenever the caret is inside a table, exposing add/delete row, add/delete column, merge/split cell, cell background color, table alignment and delete table — the underlying methods already existed but had no way to be triggered from the UI.
