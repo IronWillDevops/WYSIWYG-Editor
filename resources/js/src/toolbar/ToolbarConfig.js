@@ -16,8 +16,8 @@ import Icons from '../icons/Icons.js';
 
 /** @type {Record<string, ButtonDef>} */
 const ToolbarConfig = {
-    undo: { icon: Icons.undo, label: 'Undo (Ctrl+Z)', type: 'action', action: (e) => e.undo() },
-    redo: { icon: Icons.redo, label: 'Redo (Ctrl+Y)', type: 'action', action: (e) => e.redo() },
+    undo: { icon: Icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', type: 'action', action: (e) => e.undo() },
+    redo: { icon: Icons.redo, label: 'Redo', shortcut: 'Ctrl+Y', type: 'action', action: (e) => e.redo() },
 
     blockFormat: {
         label: 'Paragraph style',
@@ -60,9 +60,9 @@ const ToolbarConfig = {
         onChange: (editor, value) => editor.commands.exec('fontSize', value),
     },
 
-    bold: { icon: Icons.bold, label: 'Bold (Ctrl+B)', type: 'command', command: 'bold' },
-    italic: { icon: Icons.italic, label: 'Italic (Ctrl+I)', type: 'command', command: 'italic' },
-    underline: { icon: Icons.underline, label: 'Underline (Ctrl+U)', type: 'command', command: 'underline' },
+    bold: { icon: Icons.bold, label: 'Bold', shortcut: 'Ctrl+B', type: 'command', command: 'bold' },
+    italic: { icon: Icons.italic, label: 'Italic', shortcut: 'Ctrl+I', type: 'command', command: 'italic' },
+    underline: { icon: Icons.underline, label: 'Underline', shortcut: 'Ctrl+U', type: 'command', command: 'underline' },
     strike: { icon: Icons.strikeThrough, label: 'Strikethrough', type: 'command', command: 'strikeThrough' },
     superscript: { icon: Icons.superscript, label: 'Superscript', type: 'command', command: 'superscript' },
     subscript: { icon: Icons.subscript, label: 'Subscript', type: 'command', command: 'subscript' },

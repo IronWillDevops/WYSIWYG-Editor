@@ -741,8 +741,8 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
   charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
 }, $ = {
-  undo: { icon: h.undo, label: "Undo (Ctrl+Z)", type: "action", action: (r) => r.undo() },
-  redo: { icon: h.redo, label: "Redo (Ctrl+Y)", type: "action", action: (r) => r.redo() },
+  undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
+  redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
   blockFormat: {
     label: "Paragraph style",
     type: "select",
@@ -786,9 +786,9 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     ],
     onChange: (r, e) => r.commands.exec("fontSize", e)
   },
-  bold: { icon: h.bold, label: "Bold (Ctrl+B)", type: "command", command: "bold" },
-  italic: { icon: h.italic, label: "Italic (Ctrl+I)", type: "command", command: "italic" },
-  underline: { icon: h.underline, label: "Underline (Ctrl+U)", type: "command", command: "underline" },
+  bold: { icon: h.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: h.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: h.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
   strike: { icon: h.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
   superscript: { icon: h.superscript, label: "Superscript", type: "command", command: "superscript" },
   subscript: { icon: h.subscript, label: "Subscript", type: "command", command: "subscript" },
@@ -989,7 +989,13 @@ class I {
     return t.type === "select" ? this.buildSelect(e, t) : t.type === "color" ? this.buildColorPicker(e, t) : this.buildButton(e, t);
   }
   buildButton(e, t) {
-    const i = this.editor.options.locale ?? "en", n = C.t(i, e) !== e ? C.t(i, e) : t.label, o = document.createElement("button");
+    const i = this.editor.options.locale ?? "en";
+    let n = C.t(i, e) !== e ? C.t(i, e) : t.label;
+    if (t.shortcut) {
+      const s = t.shortcut.replace(/Ctrl/g, "⌘");
+      n += ` (${t.shortcut} / ${s})`;
+    }
+    const o = document.createElement("button");
     return o.type = "button", o.className = "ife-toolbar__btn", o.dataset.command = e, o.title = n, o.setAttribute("aria-label", n), o.innerHTML = t.icon ?? "", o.addEventListener("mousedown", (s) => s.preventDefault()), o.addEventListener("click", () => {
       var s;
       this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor), t.toggle && o.classList.toggle("is-active"), this.syncActiveStates();

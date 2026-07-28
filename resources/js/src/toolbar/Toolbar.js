@@ -61,7 +61,12 @@ export default class Toolbar {
 
     buildButton(id, def) {
         const locale = this.editor.options.locale ?? 'en';
-        const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
+        let label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
+
+        if (def.shortcut) {
+            const macShortcut = def.shortcut.replace(/Ctrl/g, '⌘');
+            label += ` (${def.shortcut} / ${macShortcut})`;
+        }
 
         const button = document.createElement('button');
         button.type = 'button';
