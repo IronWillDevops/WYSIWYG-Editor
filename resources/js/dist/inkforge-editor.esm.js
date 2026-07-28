@@ -1085,7 +1085,7 @@ class g {
   open() {
     this.container.appendChild(this.overlay);
     const e = this.form.querySelector("input, textarea, select");
-    e == null || e.focus();
+    e == null || e.focus({ preventScroll: !0 });
   }
   close() {
     document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();

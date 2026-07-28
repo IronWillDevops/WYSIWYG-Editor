@@ -54,7 +54,7 @@ export default class Dialog {
     open() {
         this.container.appendChild(this.overlay);
         const firstInput = this.form.querySelector('input, textarea, select');
-        firstInput?.focus();
+        firstInput?.focus({ preventScroll: true });
     }
 
     close() {
