@@ -92,7 +92,7 @@ const ToolbarConfig = {
     indent: { icon: Icons.indent, label: 'Increase indent', type: 'command', command: 'indent' },
     outdent: { icon: Icons.outdent, label: 'Decrease indent', type: 'command', command: 'outdent' },
 
-    link: { icon: Icons.link, label: 'Insert/edit link', type: 'action', action: (e) => e.module('link').open() },
+    link: { icon: Icons.link, label: 'Insert/edit link (Ctrl+K)', type: 'action', action: (e) => e.module('link').open() },
     unlink: {
         icon: Icons.unlink,
         label: 'Remove link',
@@ -132,7 +132,7 @@ const ToolbarConfig = {
         action: (e) => e.commands.insertHTML('&amp;copy;'),
     },
 
-    find: { icon: Icons.find, label: 'Find & Replace', type: 'action', action: (e) => e.module('find').open() },
+    find: { icon: Icons.find, label: 'Find & Replace (Ctrl+F)', type: 'action', action: (e) => e.module('find').open() },
     sourceCode: {
         icon: Icons.sourceCode,
         label: 'Source code',

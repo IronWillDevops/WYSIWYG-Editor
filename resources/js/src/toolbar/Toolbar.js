@@ -145,10 +145,6 @@ export default class Toolbar {
             subscript: 'subscript',
             bulletList: 'insertUnorderedList',
             orderedList: 'insertOrderedList',
-            alignLeft: 'justifyLeft',
-            alignCenter: 'justifyCenter',
-            alignRight: 'justifyRight',
-            alignJustify: 'justifyFull',
         };
 
         Object.entries(stateMap).forEach(([id, command]) => {
@@ -163,6 +159,47 @@ export default class Toolbar {
             if (!(btn instanceof HTMLElement)) return;
             const cssProp = id === 'forecolor' ? 'color' : 'backgroundColor';
             btn.classList.toggle('is-active', this.hasStyle(cssProp));
+        });
+
+        this.syncAlignment();
+        this.syncContextual();
+    }
+
+    syncAlignment() {
+        const block = this.editor.selection.getBlockElement();
+        let align = block ? window.getComputedStyle(block).textAlign : 'left';
+        if (align === 'start') align = 'left';
+        if (align === 'end') align = 'right';
+        const alignMap = { alignLeft: 'left', alignCenter: 'center', alignRight: 'right', alignJustify: 'justify' };
+        Object.entries(alignMap).forEach(([id, value]) => {
+            const btn = this.buttons.get(id);
+            if (btn instanceof HTMLElement) {
+                btn.classList.toggle('is-active', align === value);
+            }
+        });
+    }
+
+    syncContextual() {
+        const sel = this.editor.selection;
+
+        const hasLink = !!sel.closest('a');
+        const linkBtn = this.buttons.get('link');
+        const unlinkBtn = this.buttons.get('unlink');
+        if (linkBtn instanceof HTMLElement) linkBtn.classList.toggle('is-active', hasLink);
+        if (unlinkBtn instanceof HTMLElement) unlinkBtn.classList.toggle('is-active', hasLink);
+
+        const contextMap = {
+            image: 'figure.ife-image',
+            table: 'table',
+            codeInline: 'code',
+            blockquote: 'blockquote',
+            note: '.note',
+        };
+        Object.entries(contextMap).forEach(([id, selector]) => {
+            const btn = this.buttons.get(id);
+            if (btn instanceof HTMLElement) {
+                btn.classList.toggle('is-active', !!sel.closest(selector));
+            }
         });
     }
 

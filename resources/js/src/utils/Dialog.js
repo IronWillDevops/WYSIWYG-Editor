@@ -52,9 +52,13 @@ export default class Dialog {
     };
 
     open() {
+        const savedScrollY = window.scrollY;
         this.container.appendChild(this.overlay);
         const firstInput = this.form.querySelector('input, textarea, select');
-        firstInput?.focus();
+        if (firstInput) {
+            firstInput.focus({ preventScroll: true });
+        }
+        window.scrollTo(0, savedScrollY);
     }
 
     close() {
