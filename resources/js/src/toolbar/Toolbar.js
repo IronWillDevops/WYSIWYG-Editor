@@ -146,6 +146,24 @@ export default class Toolbar {
                 button.classList.toggle('is-active', this.editor.commands.queryState(command));
             }
         });
+
+        const alignIds = ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'];
+        const alignCommand = { alignLeft: 'justifyLeft', alignCenter: 'justifyCenter', alignRight: 'justifyRight', alignJustify: 'justifyFull' };
+        const alignStyle = { justifyLeft: 'left', justifyCenter: 'center', justifyRight: 'right', justifyFull: 'justify' };
+
+        const block = this.editor.selection.getBlockElement();
+        const blockAlign = block ? (block.style.textAlign || '') : '';
+
+        alignIds.forEach((id) => {
+            const button = this.buttons.get(id);
+            if (!(button instanceof HTMLElement)) return;
+            const cmd = alignCommand[id];
+            let isActive = this.editor.commands.queryState(cmd);
+            if (!isActive && blockAlign) {
+                isActive = blockAlign === alignStyle[cmd];
+            }
+            button.classList.toggle('is-active', isActive);
+        });
     }
 
     setEnabled(id, enabled) {

@@ -1,5 +1,5 @@
-var L = Object.defineProperty;
-var E = (r, e, t) => e in r ? L(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var k = Object.defineProperty;
+var E = (r, e, t) => e in r ? k(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
 var v = (r, e, t) => E(r, typeof e != "symbol" ? e + "" : e, t);
 class T {
   constructor() {
@@ -1021,9 +1021,17 @@ class _ {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([t, i]) => {
-      const n = this.buttons.get(t);
-      n instanceof HTMLElement && n.classList.toggle("is-active", this.editor.commands.queryState(i));
+    }).forEach(([a, l]) => {
+      const d = this.buttons.get(a);
+      d instanceof HTMLElement && d.classList.toggle("is-active", this.editor.commands.queryState(l));
+    });
+    const t = ["alignLeft", "alignCenter", "alignRight", "alignJustify"], i = { alignLeft: "justifyLeft", alignCenter: "justifyCenter", alignRight: "justifyRight", alignJustify: "justifyFull" }, n = { justifyLeft: "left", justifyCenter: "center", justifyRight: "right", justifyFull: "justify" }, o = this.editor.selection.getBlockElement(), s = o && o.style.textAlign || "";
+    t.forEach((a) => {
+      const l = this.buttons.get(a);
+      if (!(l instanceof HTMLElement)) return;
+      const d = i[a];
+      let u = this.editor.commands.queryState(d);
+      !u && s && (u = s === n[d]), l.classList.toggle("is-active", u);
     });
   }
   setEnabled(e, t) {
@@ -1644,7 +1652,7 @@ class X {
     (e = this.dialog) == null || e.close();
   }
 }
-const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, k = /vimeo\.com\/(\d+)/;
+const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, L = /vimeo\.com\/(\d+)/;
 class K {
   constructor(e) {
     this.editor = e;
@@ -1682,8 +1690,8 @@ class K {
     else if (w.test(n)) {
       const s = n.match(w)[1];
       o = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (k.test(n)) {
-      const s = n.match(k)[1];
+    } else if (L.test(n)) {
+      const s = n.match(L)[1];
       o = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       o = `<video controls width="${t}" height="${i}"><source src="${n}"></video>`;
@@ -1712,7 +1720,7 @@ class K {
   destroy() {
   }
 }
-class G {
+class J {
   constructor(e) {
     this.editor = e;
   }
@@ -1864,7 +1872,7 @@ ${t()}
   destroy() {
   }
 }
-const J = {
+const G = {
   link: B,
   image: q,
   table: U,
@@ -1873,9 +1881,9 @@ const J = {
   find: P,
   note: X,
   media: K,
-  markdown: G
+  markdown: J
 };
-Object.entries(J).forEach(([r, e]) => {
+Object.entries(G).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
 const p = /* @__PURE__ */ new Map(), Z = {
