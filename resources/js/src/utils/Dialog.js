@@ -63,15 +63,27 @@ export default class Dialog {
         this.scrollPos = { x: window.scrollX, y: window.scrollY };
         this.containerScrollTop = this.container.scrollTop;
         document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`;
 
-        this.container.appendChild(this.overlay);
+        document.body.appendChild(this.overlay);
+
+        const wrapperStyle = getComputedStyle(this.container);
+        const ifeVars = [
+            '--ife-bg', '--ife-text', '--ife-border', '--ife-toolbar-bg',
+            '--ife-btn-hover', '--ife-btn-active', '--ife-accent',
+            '--ife-danger', '--ife-radius', '--ife-font',
+        ];
+        ifeVars.forEach((v) => {
+            this.overlay.style.setProperty(v, wrapperStyle.getPropertyValue(v));
+        });
+
         const firstInput = this.form.querySelector('input, textarea, select');
         firstInput?.focus({ preventScroll: true });
-        window.scrollTo(this.scrollPos.x, this.scrollPos.y);
     }
 
     close() {
         document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
         if (this.scrollPos) {
             window.scrollTo(this.scrollPos.x, this.scrollPos.y);
         }

@@ -12,7 +12,7 @@ describe('Dialog', () => {
         document.body.appendChild(container);
     });
 
-    it('opens and appends overlay to container', () => {
+    it('opens and appends overlay to document.body', () => {
         dialog = new Dialog(container, {
             title: 'Test',
             bodyHtml: '<p>body</p>',
@@ -20,8 +20,8 @@ describe('Dialog', () => {
         });
         dialog.open();
 
-        expect(container.querySelector('.ife-dialog-overlay')).not.toBeNull();
-        expect(container.querySelector('.ife-dialog')).not.toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+        expect(document.body.querySelector('.ife-dialog')).not.toBeNull();
     });
 
     it('closes and removes overlay from DOM', () => {
@@ -33,7 +33,7 @@ describe('Dialog', () => {
         dialog.open();
         dialog.close();
 
-        expect(container.querySelector('.ife-dialog-overlay')).toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
 
     it('calls onConfirm with form data on submit', () => {
@@ -45,7 +45,7 @@ describe('Dialog', () => {
         });
         dialog.open();
 
-        const form = container.querySelector('form');
+        const form = document.body.querySelector('form');
         form.dispatchEvent(new Event('submit', { cancelable: true }));
 
         expect(onConfirm).toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe('Dialog', () => {
 
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
 
-        expect(container.querySelector('.ife-dialog-overlay')).toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
 
     it('closes when clicking the overlay backdrop', () => {
@@ -72,10 +72,10 @@ describe('Dialog', () => {
         });
         dialog.open();
 
-        const overlay = container.querySelector('.ife-dialog-overlay');
+        const overlay = document.body.querySelector('.ife-dialog-overlay');
         overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-        expect(container.querySelector('.ife-dialog-overlay')).toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
 
     it('closes when clicking the close button', () => {
@@ -86,10 +86,10 @@ describe('Dialog', () => {
         });
         dialog.open();
 
-        const closeBtn = container.querySelector('.ife-dialog__close');
+        const closeBtn = document.body.querySelector('.ife-dialog__close');
         closeBtn.click();
 
-        expect(container.querySelector('.ife-dialog-overlay')).toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
 
     it('closes when clicking the cancel button', () => {
@@ -100,9 +100,9 @@ describe('Dialog', () => {
         });
         dialog.open();
 
-        const cancelBtn = container.querySelector('[data-action="cancel"]');
+        const cancelBtn = document.body.querySelector('[data-action="cancel"]');
         cancelBtn.click();
 
-        expect(container.querySelector('.ife-dialog-overlay')).toBeNull();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
 });

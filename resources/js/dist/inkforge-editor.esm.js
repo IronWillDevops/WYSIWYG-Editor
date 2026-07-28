@@ -1,6 +1,6 @@
-var k = Object.defineProperty;
-var E = (r, e, t) => e in r ? k(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var v = (r, e, t) => E(r, typeof e != "symbol" ? e + "" : e, t);
+var L = Object.defineProperty;
+var k = (r, e, t) => e in r ? L(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var v = (r, e, t) => k(r, typeof e != "symbol" ? e + "" : e, t);
 class T {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -737,7 +737,9 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: c('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
   fullscreen: c('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
   indent: c('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>')
+  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
 }, $ = {
   undo: { icon: h.undo, label: "Undo (Ctrl+Z)", type: "action", action: (r) => r.undo() },
   redo: { icon: h.redo, label: "Redo (Ctrl+Y)", type: "action", action: (r) => r.redo() },
@@ -885,7 +887,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Source code",
   fullscreen: "Fullscreen",
   uploadFailed: "Failed to upload the file. Please try again."
-}, F = {
+}, _ = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -907,7 +909,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз."
-}, I = {
+}, F = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -931,8 +933,8 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
 }, f = /* @__PURE__ */ new Map([
   ["en", D],
-  ["uk", F],
-  ["ru", I]
+  ["uk", _],
+  ["ru", F]
 ]), C = {
   /**
    * @param {string} code
@@ -964,7 +966,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   ["emoji", "specialChars"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class _ {
+class I {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
@@ -1076,19 +1078,36 @@ class g {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${n}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
+      a.addEventListener("mousedown", (l) => l.preventDefault()), a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => l.stopPropagation());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
       a.target === this.overlay && this.close();
     }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), this.onConfirm(this.form), this.close();
+      a.preventDefault(), a.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
-    this.container.appendChild(this.overlay);
-    const e = this.form.querySelector("input, textarea, select");
-    e == null || e.focus({ preventScroll: !0 });
+    this.scrollPos = { x: window.scrollX, y: window.scrollY }, this.containerScrollTop = this.container.scrollTop, document.body.style.overflow = "hidden", document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`, document.body.appendChild(this.overlay);
+    const e = getComputedStyle(this.container);
+    [
+      "--ife-bg",
+      "--ife-text",
+      "--ife-border",
+      "--ife-toolbar-bg",
+      "--ife-btn-hover",
+      "--ife-btn-active",
+      "--ife-accent",
+      "--ife-danger",
+      "--ife-radius",
+      "--ife-font"
+    ].forEach((n) => {
+      this.overlay.style.setProperty(n, e.getPropertyValue(n));
+    });
+    const i = this.form.querySelector("input, textarea, select");
+    i == null || i.focus({ preventScroll: !0 });
   }
   close() {
-    document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
+    document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
   }
 }
 class B {
@@ -1136,8 +1155,8 @@ class B {
       onConfirm: (n) => this.apply(n, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
       const n = document.createElement("button");
-      n.type = "button", n.className = "ife-btn ife-btn--danger", n.textContent = "Remove link", n.addEventListener("click", () => {
-        this.remove(e), this.dialog.close();
+      n.type = "button", n.className = "ife-btn ife-btn--danger", n.textContent = "Remove link", n.addEventListener("mousedown", (o) => o.preventDefault()), n.addEventListener("click", (o) => {
+        o.stopPropagation(), this.remove(e), this.dialog.close();
       }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(n);
     }
   }
@@ -1209,8 +1228,8 @@ class q {
       onConfirm: (s) => this.handleSubmit(s, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
       const s = document.createElement("button");
-      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("click", () => {
-        this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
+      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("mousedown", (a) => a.preventDefault()), s.addEventListener("click", (a) => {
+        a.stopPropagation(), this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
       }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(s);
     }
   }
@@ -1520,7 +1539,7 @@ class O {
     (e = this.source) == null || e.remove();
   }
 }
-class j {
+class P {
   constructor(e) {
     this.editor = e, this.active = !1, this.handleChange = this.handleChange.bind(this), document.addEventListener("fullscreenchange", this.handleChange);
   }
@@ -1549,7 +1568,7 @@ class j {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
-class P {
+class j {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
@@ -1573,8 +1592,8 @@ class P {
       onConfirm: (i) => this.replaceAll(i)
     });
     const t = document.createElement("button");
-    t.type = "button", t.className = "ife-btn ife-btn--ghost", t.textContent = "Highlight all", t.addEventListener("click", () => {
-      this.highlightAll(new FormData(this.dialog.form));
+    t.type = "button", t.className = "ife-btn ife-btn--ghost", t.textContent = "Highlight all", t.addEventListener("mousedown", (i) => i.preventDefault()), t.addEventListener("click", (i) => {
+      i.stopPropagation(), this.highlightAll(new FormData(this.dialog.form));
     }), this.dialog.open(), this.dialog.form.querySelector(".ife-dialog__footer").prepend(t);
   }
   buildRegex(e) {
@@ -1660,7 +1679,7 @@ class X {
     (e = this.dialog) == null || e.close();
   }
 }
-const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, L = /vimeo\.com\/(\d+)/;
+const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, E = /vimeo\.com\/(\d+)/;
 class K {
   constructor(e) {
     this.editor = e;
@@ -1698,8 +1717,8 @@ class K {
     else if (w.test(n)) {
       const s = n.match(w)[1];
       o = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (L.test(n)) {
-      const s = n.match(L)[1];
+    } else if (E.test(n)) {
+      const s = n.match(E)[1];
       o = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       o = `<video controls width="${t}" height="${i}"><source src="${n}"></video>`;
@@ -1880,21 +1899,40 @@ ${t()}
   destroy() {
   }
 }
-const J = {
+class J {
+  constructor(e) {
+    this.editor = e, this.update = this.update.bind(this), this.buildDom(), this.bindEvents(), this.update();
+  }
+  buildDom() {
+    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.wordsEl = document.createElement("span"), this.wordsEl.className = "ife-statusbar__item", this.wordsEl.innerHTML = `${h.wordCount} <span class="ife-statusbar__value">0</span>`, this.charsEl = document.createElement("span"), this.charsEl.className = "ife-statusbar__item", this.charsEl.innerHTML = `${h.charCount} <span class="ife-statusbar__value">0</span>`, this.left.appendChild(this.wordsEl), this.left.appendChild(this.charsEl), this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = "Made by ITkha", this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
+  }
+  bindEvents() {
+    this.editor.root.addEventListener("input", this.update), this.editor.on("change", this.update), this.editor.on("destroy", () => this.destroy());
+  }
+  update() {
+    const e = this.editor.getText(), t = e.length, i = e.trim() ? e.trim().split(/\s+/).length : 0;
+    this.wordsEl.querySelector(".ife-statusbar__value").textContent = i, this.charsEl.querySelector(".ife-statusbar__value").textContent = t;
+  }
+  destroy() {
+    this.editor.root.removeEventListener("input", this.update), this.el.remove();
+  }
+}
+const Y = {
   link: B,
   image: q,
   table: U,
   codeView: O,
-  fullscreen: j,
-  find: P,
+  fullscreen: P,
+  find: j,
   note: X,
   media: K,
-  markdown: G
+  markdown: G,
+  statusBar: J
 };
-Object.entries(J).forEach(([r, e]) => {
+Object.entries(Y).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), Z = {
+const p = /* @__PURE__ */ new Map(), ee = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1908,7 +1946,7 @@ const p = /* @__PURE__ */ new Map(), Z = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (p.has(t))
       return p.get(t);
-    const i = new b(t, e), n = new _(i, e.toolbar);
+    const i = new b(t, e), n = new I(i, e.toolbar);
     return i.on("destroy", () => n.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
   },
   /**
@@ -1926,6 +1964,6 @@ const p = /* @__PURE__ */ new Map(), Z = {
   registerPlugin: b.registerPlugin
 };
 export {
-  Z as default
+  ee as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map
