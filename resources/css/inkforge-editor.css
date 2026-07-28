@@ -444,3 +444,24 @@
     color: var(--ife-danger);
     border-color: var(--ife-danger);
 }
+
+/* Status bar */
+.ife-statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 12px;
+    background: var(--ife-toolbar-bg);
+    border-top: 1px solid var(--ife-border);
+    font-size: 12px;
+    color: #6e7781;
+    user-select: none;
+}
+
+.ife-wrapper[data-resolved-theme="dark"] .ife-statusbar {
+    color: #9198a1;
+}
+
+.ife-wrapper.ife-fullscreen .ife-statusbar {
+    flex-shrink: 0;
+}
