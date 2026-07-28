@@ -1,0 +1,23 @@
+{
+    "name": "inkforge/laravel-editor-demo",
+    "description": "Minimal Laravel demo application for InkForge Editor.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/framework": "^13.0",
+        "inkforge/laravel-editor": "*"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../",
+            "options": { "symlink": true }
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": { "App\\": "app/" }
+    }
+}
