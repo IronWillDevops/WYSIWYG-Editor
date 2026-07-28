@@ -1603,12 +1603,16 @@ class j {
     }), this.dialog.open(), this.dialog.form.querySelector(".ife-dialog__footer").prepend(t);
   }
   buildRegex(e) {
-    const t = String(e.get("query") ?? ""), i = !!e.get("caseSensitive"), n = !!e.get("useRegex"), o = `g${i ? "" : "i"}`, s = n ? t : t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const t = String(e.get("query") ?? "").trim();
+    if (!t) return null;
+    const i = !!e.get("caseSensitive"), n = !!e.get("useRegex"), o = `g${i ? "" : "i"}`, s = n ? t : t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(s, o);
   }
   highlightAll(e) {
     this.clearHighlights();
-    const t = this.buildRegex(e), i = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), n = [];
+    const t = this.buildRegex(e);
+    if (!t) return;
+    const i = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), n = [];
     let o = i.nextNode();
     for (; o; )
       n.push(o), o = i.nextNode();
@@ -1632,7 +1636,9 @@ class j {
     }), this.editor.root.normalize();
   }
   replaceAll(e) {
-    const t = new FormData(e), i = this.buildRegex(t), n = String(t.get("replacement") ?? "");
+    const t = new FormData(e), i = this.buildRegex(t);
+    if (!i) return;
+    const n = String(t.get("replacement") ?? "");
     this.editor.history.push(), this.clearHighlights();
     const o = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), s = [];
     let a = o.nextNode();

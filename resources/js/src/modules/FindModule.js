@@ -47,7 +47,8 @@ export default class FindModule {
     }
 
     buildRegex(form) {
-        const query = String(form.get('query') ?? '');
+        const query = String(form.get('query') ?? '').trim();
+        if (!query) return null;
         const caseSensitive = Boolean(form.get('caseSensitive'));
         const useRegex = Boolean(form.get('useRegex'));
         const flags = `g${caseSensitive ? '' : 'i'}`;
@@ -58,6 +59,8 @@ export default class FindModule {
     highlightAll(form) {
         this.clearHighlights();
         const regex = this.buildRegex(form);
+        if (!regex) return;
+
         const walker = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null);
         const textNodes = [];
         let node = walker.nextNode();
@@ -98,6 +101,7 @@ export default class FindModule {
     replaceAll(form) {
         const data = new FormData(form);
         const regex = this.buildRegex(data);
+        if (!regex) return;
         const replacement = String(data.get('replacement') ?? '');
 
         this.editor.history.push();
