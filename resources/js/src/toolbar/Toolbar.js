@@ -63,13 +63,14 @@ export default class Toolbar {
     buildButton(id, def) {
         const locale = this.editor.options.locale ?? 'en';
         const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
+        const title = def.shortcut ? `${label} (${def.shortcut})` : label;
 
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'ife-toolbar__btn';
         button.dataset.command = id;
-        button.title = label;
-        button.setAttribute('aria-label', label);
+        button.title = title;
+        button.setAttribute('aria-label', title);
         button.innerHTML = def.icon ?? '';
 
         button.addEventListener('mousedown', (event) => event.preventDefault()); // keep editor selection

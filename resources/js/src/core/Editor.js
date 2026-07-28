@@ -149,6 +149,8 @@ export default class Editor {
             b: () => this.commands.exec('bold'),
             i: () => this.commands.exec('italic'),
             u: () => this.commands.exec('underline'),
+            k: () => this.module('link')?.open(),
+            f: () => this.module('find')?.open(),
             z: () => (event.shiftKey ? this.history.redo() : this.history.undo()),
             y: () => this.history.redo(),
             s: () => this.events.emit('save', this.getHTML()),
