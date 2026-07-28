@@ -35,6 +35,7 @@ export default class Toolbar {
 
         this.editor.on('selectionchange', () => this.syncActiveStates());
         this.editor.on('focus', () => this.syncActiveStates());
+        this.syncActiveStates();
     }
 
     render() {
@@ -62,13 +63,14 @@ export default class Toolbar {
     buildButton(id, def) {
         const locale = this.editor.options.locale ?? 'en';
         const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
+        const title = def.shortcut ? `${label} (${def.shortcut})` : label;
 
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'ife-toolbar__btn';
         button.dataset.command = id;
-        button.title = label;
-        button.setAttribute('aria-label', label);
+        button.title = title;
+        button.setAttribute('aria-label', title);
         button.innerHTML = def.icon ?? '';
 
         button.addEventListener('mousedown', (event) => event.preventDefault()); // keep editor selection
@@ -109,7 +111,7 @@ export default class Toolbar {
     }
 
     buildColorPicker(id, def) {
-        const wrapper = document.createElement('label');
+        const wrapper = document.createElement('div');
         wrapper.className = 'ife-toolbar__color';
         wrapper.title = def.label;
         wrapper.innerHTML = def.icon;
@@ -120,6 +122,13 @@ export default class Toolbar {
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
+        });
+        input.addEventListener('click', (e) => {
+            if (wrapper.classList.contains('is-active')) {
+                e.preventDefault();
+                this.editor.selection.restore();
+                this.editor.commands.exec(def.command, '');
+            }
         });
 
         wrapper.appendChild(input);
@@ -146,6 +155,79 @@ export default class Toolbar {
                 button.classList.toggle('is-active', this.editor.commands.queryState(command));
             }
         });
+
+        ['forecolor', 'backcolor'].forEach((id) => {
+            const btn = this.buttons.get(id);
+            if (!(btn instanceof HTMLElement)) return;
+            const cssProp = id === 'forecolor' ? 'color' : 'backgroundColor';
+            btn.classList.toggle('is-active', this.hasStyle(cssProp));
+        });
+
+        this.syncAlignment();
+        this.syncContextual();
+    }
+
+    syncAlignment() {
+        const block = this.editor.selection.getBlockElement();
+        let align = block ? window.getComputedStyle(block).textAlign : 'left';
+        if (align === 'start') align = 'left';
+        if (align === 'end') align = 'right';
+        const alignMap = { alignLeft: 'left', alignCenter: 'center', alignRight: 'right', alignJustify: 'justify' };
+        Object.entries(alignMap).forEach(([id, value]) => {
+            const btn = this.buttons.get(id);
+            if (btn instanceof HTMLElement) {
+                btn.classList.toggle('is-active', align === value);
+            }
+        });
+    }
+
+    syncContextual() {
+        const sel = this.editor.selection;
+
+        const hasLink = !!sel.closest('a');
+        const linkBtn = this.buttons.get('link');
+        const unlinkBtn = this.buttons.get('unlink');
+        if (linkBtn instanceof HTMLElement) linkBtn.classList.toggle('is-active', hasLink);
+        if (unlinkBtn instanceof HTMLElement) unlinkBtn.classList.toggle('is-active', hasLink);
+
+        const contextMap = {
+            image: 'figure.ife-image',
+            table: 'table',
+            codeInline: 'code',
+            blockquote: 'blockquote',
+            note: '.note',
+        };
+        Object.entries(contextMap).forEach(([id, selector]) => {
+            const btn = this.buttons.get(id);
+            if (btn instanceof HTMLElement) {
+                btn.classList.toggle('is-active', !!sel.closest(selector));
+            }
+        });
+    }
+
+    /**
+     * Checks whether the current selection has a given inline CSS property set.
+     * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
+     * @returns {boolean}
+     */
+    hasStyle(cssProp) {
+        const range = this.editor.selection.getRange();
+        if (!range) return false;
+        let container = range.commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+        if (!container) return false;
+
+        if (container instanceof HTMLElement && container.style?.[cssProp]) return true;
+
+        const children = container.querySelectorAll('*');
+        for (const el of children) {
+            try {
+                if (range.intersectsNode(el) && el.style?.[cssProp]) return true;
+            } catch {
+                continue;
+            }
+        }
+        return false;
     }
 
     setEnabled(id, enabled) {

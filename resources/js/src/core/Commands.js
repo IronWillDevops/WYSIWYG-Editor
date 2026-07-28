@@ -91,11 +91,19 @@ export default class Commands {
                 break;
 
             case 'foreColor':
-                document.execCommand('foreColor', false, value);
+                if (value) {
+                    document.execCommand('foreColor', false, value);
+                } else {
+                    this.clearColor('color');
+                }
                 break;
 
             case 'backColor':
-                document.execCommand('hiliteColor', false, value);
+                if (value) {
+                    document.execCommand('hiliteColor', false, value);
+                } else {
+                    this.clearColor('backgroundColor');
+                }
                 break;
 
             case 'blockFormat':
@@ -291,6 +299,38 @@ export default class Commands {
             newRange.collapse(false);
             this.selection.setRange(newRange);
         }
+    }
+
+    /**
+     * Removes a specific CSS property from every element touched by
+     * the current selection. Used by the color button "clear" action.
+     * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
+     */
+    clearColor(cssProp) {
+        const range = this.selection.getRange();
+        if (!range) return;
+
+        let container = range.commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+        if (!(container instanceof HTMLElement)) return;
+
+        const candidates = container.style?.length
+            ? [container, ...container.querySelectorAll('*')]
+            : [...container.querySelectorAll('*')];
+
+        candidates.forEach((el) => {
+            try { if (!range.intersectsNode(el)) return; } catch { return; }
+            if (el.style?.[cssProp]) {
+                el.style[cssProp] = '';
+                if (el.style.length === 0) el.removeAttribute('style');
+            }
+            if (['SPAN', 'FONT'].includes(el.tagName) && el.attributes.length === 0) {
+                const parent = el.parentNode;
+                if (!parent) return;
+                while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                parent.removeChild(el);
+            }
+        });
     }
 
     /**

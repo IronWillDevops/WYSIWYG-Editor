@@ -1,5 +1,5 @@
-var L = Object.defineProperty;
-var E = (r, e, t) => e in r ? L(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var k = Object.defineProperty;
+var E = (r, e, t) => e in r ? k(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
 var v = (r, e, t) => E(r, typeof e != "symbol" ? e + "" : e, t);
 class T {
   constructor() {
@@ -952,7 +952,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   available() {
     return [...f.keys()];
   }
-}, V = [
+}, _ = [
   ["undo", "redo"],
   ["blockFormat", "fontFamily", "fontSize"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -964,13 +964,13 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   ["emoji", "specialChars"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class _ {
+class V {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? V, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? _, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
@@ -1644,7 +1644,7 @@ class X {
     (e = this.dialog) == null || e.close();
   }
 }
-const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, k = /vimeo\.com\/(\d+)/;
+const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, L = /vimeo\.com\/(\d+)/;
 class K {
   constructor(e) {
     this.editor = e;
@@ -1682,8 +1682,8 @@ class K {
     else if (w.test(n)) {
       const s = n.match(w)[1];
       o = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (k.test(n)) {
-      const s = n.match(k)[1];
+    } else if (L.test(n)) {
+      const s = n.match(L)[1];
       o = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       o = `<video controls width="${t}" height="${i}"><source src="${n}"></video>`;
@@ -1864,7 +1864,25 @@ ${t()}
   destroy() {
   }
 }
-const J = {
+class J {
+  constructor(e) {
+    this.editor = e, this.update = this.update.bind(this), this.buildDom(), this.bindEvents(), this.update();
+  }
+  buildDom() {
+    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = "Made by ITkha", this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
+  }
+  bindEvents() {
+    this.editor.root.addEventListener("input", this.update), this.editor.on("destroy", () => this.destroy());
+  }
+  update() {
+    const e = this.editor.getText(), t = e.length, i = e.trim() ? e.trim().split(/\s+/).length : 0;
+    this.left.textContent = `Words: ${i}, Characters: ${t}`;
+  }
+  destroy() {
+    this.editor.root.removeEventListener("input", this.update), this.el.remove();
+  }
+}
+const Y = {
   link: B,
   image: q,
   table: U,
@@ -1873,12 +1891,13 @@ const J = {
   find: P,
   note: X,
   media: K,
-  markdown: G
+  markdown: G,
+  statusBar: J
 };
-Object.entries(J).forEach(([r, e]) => {
+Object.entries(Y).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), Z = {
+const p = /* @__PURE__ */ new Map(), ee = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1892,7 +1911,7 @@ const p = /* @__PURE__ */ new Map(), Z = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (p.has(t))
       return p.get(t);
-    const i = new b(t, e), n = new _(i, e.toolbar);
+    const i = new b(t, e), n = new V(i, e.toolbar);
     return i.on("destroy", () => n.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
   },
   /**
@@ -1910,6 +1929,6 @@ const p = /* @__PURE__ */ new Map(), Z = {
   registerPlugin: b.registerPlugin
 };
 export {
-  Z as default
+  ee as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map
