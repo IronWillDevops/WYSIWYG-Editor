@@ -117,6 +117,11 @@
     background: var(--ife-btn-hover);
 }
 
+.ife-toolbar__color.is-active {
+    background: var(--ife-btn-active);
+    color: var(--ife-accent);
+}
+
 .ife-toolbar__color input[type="color"] {
     position: absolute;
     inset: 0;

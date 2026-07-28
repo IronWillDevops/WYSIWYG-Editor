@@ -109,7 +109,7 @@ export default class Toolbar {
     }
 
     buildColorPicker(id, def) {
-        const wrapper = document.createElement('label');
+        const wrapper = document.createElement('div');
         wrapper.className = 'ife-toolbar__color';
         wrapper.title = def.label;
         wrapper.innerHTML = def.icon;
@@ -120,6 +120,13 @@ export default class Toolbar {
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
+        });
+        input.addEventListener('click', (e) => {
+            if (wrapper.classList.contains('is-active')) {
+                e.preventDefault();
+                this.editor.selection.restore();
+                this.editor.commands.exec(def.command, '');
+            }
         });
 
         wrapper.appendChild(input);
@@ -138,6 +145,10 @@ export default class Toolbar {
             subscript: 'subscript',
             bulletList: 'insertUnorderedList',
             orderedList: 'insertOrderedList',
+            alignLeft: 'justifyLeft',
+            alignCenter: 'justifyCenter',
+            alignRight: 'justifyRight',
+            alignJustify: 'justifyFull',
         };
 
         Object.entries(stateMap).forEach(([id, command]) => {
@@ -146,6 +157,38 @@ export default class Toolbar {
                 button.classList.toggle('is-active', this.editor.commands.queryState(command));
             }
         });
+
+        ['forecolor', 'backcolor'].forEach((id) => {
+            const btn = this.buttons.get(id);
+            if (!(btn instanceof HTMLElement)) return;
+            const cssProp = id === 'forecolor' ? 'color' : 'backgroundColor';
+            btn.classList.toggle('is-active', this.hasStyle(cssProp));
+        });
+    }
+
+    /**
+     * Checks whether the current selection has a given inline CSS property set.
+     * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
+     * @returns {boolean}
+     */
+    hasStyle(cssProp) {
+        const range = this.editor.selection.getRange();
+        if (!range) return false;
+        let container = range.commonAncestorContainer;
+        if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
+        if (!container) return false;
+
+        if (container instanceof HTMLElement && container.style?.[cssProp]) return true;
+
+        const children = container.querySelectorAll('*');
+        for (const el of children) {
+            try {
+                if (range.intersectsNode(el) && el.style?.[cssProp]) return true;
+            } catch {
+                continue;
+            }
+        }
+        return false;
     }
 
     setEnabled(id, enabled) {
