@@ -11,10 +11,12 @@ export default class Dialog {
      * @param {string} [config.confirmLabel]
      * @param {string} [config.cancelLabel]
      * @param {(form: HTMLFormElement) => void} config.onConfirm
+     * @param {() => void} [config.onClose]
      */
-    constructor(container, { title, bodyHtml, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm }) {
+    constructor(container, { title, bodyHtml, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm, onClose }) {
         this.container = container;
         this.onConfirm = onConfirm;
+        this.onClose = onClose;
 
         this.overlay = document.createElement('div');
         this.overlay.className = 'ife-dialog-overlay';
@@ -64,5 +66,6 @@ export default class Dialog {
     close() {
         document.removeEventListener('keydown', this.handleEscape);
         this.overlay.remove();
+        this.onClose?.();
     }
 }
