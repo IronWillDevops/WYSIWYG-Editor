@@ -72,7 +72,9 @@ export default class LinkModule {
             removeBtn.type = 'button';
             removeBtn.className = 'ife-btn ife-btn--danger';
             removeBtn.textContent = 'Remove link';
-            removeBtn.addEventListener('click', () => {
+            removeBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.remove(existing);
                 this.dialog.close();
             });

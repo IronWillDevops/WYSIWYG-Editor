@@ -33,6 +33,13 @@ export default class Dialog {
         `;
 
         this.form = this.overlay.querySelector('form');
+
+        this.overlay.querySelectorAll('button, input, select, textarea').forEach((el) => {
+            el.addEventListener('mousedown', (e) => e.preventDefault());
+            el.addEventListener('click', (e) => e.stopPropagation());
+            el.addEventListener('keydown', (e) => e.stopPropagation());
+        });
+
         this.overlay.querySelector('.ife-dialog__close').addEventListener('click', () => this.close());
         this.overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => this.close());
         this.overlay.addEventListener('click', (e) => {
@@ -40,6 +47,7 @@ export default class Dialog {
         });
         this.form.addEventListener('submit', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.onConfirm(this.form);
             this.close();
         });
@@ -52,12 +60,22 @@ export default class Dialog {
     };
 
     open() {
+        this.scrollPos = { x: window.scrollX, y: window.scrollY };
+        this.containerScrollTop = this.container.scrollTop;
+        document.body.style.overflow = 'hidden';
+
         this.container.appendChild(this.overlay);
         const firstInput = this.form.querySelector('input, textarea, select');
         firstInput?.focus({ preventScroll: true });
+        window.scrollTo(this.scrollPos.x, this.scrollPos.y);
     }
 
     close() {
+        document.body.style.overflow = '';
+        if (this.scrollPos) {
+            window.scrollTo(this.scrollPos.x, this.scrollPos.y);
+        }
+        this.container.scrollTop = this.containerScrollTop ?? 0;
         document.removeEventListener('keydown', this.handleEscape);
         this.overlay.remove();
     }

@@ -79,7 +79,9 @@ export default class ImageModule {
             removeBtn.type = 'button';
             removeBtn.className = 'ife-btn ife-btn--danger';
             removeBtn.textContent = 'Remove image';
-            removeBtn.addEventListener('click', () => {
+            removeBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.editor.history.push();
                 existing.remove();
                 this.editor.emitChange();

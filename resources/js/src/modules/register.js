@@ -8,6 +8,7 @@ import FindModule from './FindModule.js';
 import NoteModule from './NoteModule.js';
 import MediaModule from './MediaModule.js';
 import MarkdownModule from './MarkdownModule.js';
+import StatusBar from './StatusBar.js';
 
 /**
  * Built-in modules are registered through the same public plugin API that
@@ -24,6 +25,7 @@ const BUILTIN_MODULES = {
     note: NoteModule,
     media: MediaModule,
     markdown: MarkdownModule,
+    statusBar: StatusBar,
 };
 
 Object.entries(BUILTIN_MODULES).forEach(([name, ModuleClass]) => {

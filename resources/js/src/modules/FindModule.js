@@ -36,7 +36,9 @@ export default class FindModule {
         findNextBtn.type = 'button';
         findNextBtn.className = 'ife-btn ife-btn--ghost';
         findNextBtn.textContent = 'Highlight all';
-        findNextBtn.addEventListener('click', () => {
+        findNextBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        findNextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.highlightAll(new FormData(this.dialog.form));
         });
 
