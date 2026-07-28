@@ -1,0 +1,56 @@
+diff --git a/resources/js/src/core/Commands.js b/resources/js/src/core/Commands.js
+index c3e8aa0..d29782a 100644
+--- a/resources/js/src/core/Commands.js
++++ b/resources/js/src/core/Commands.js
+@@ -24,6 +24,18 @@ export default class Commands {
+     prepare() {
+         this.root.focus();
+         this.selection.restore();
++        // Without this, execCommand falls back to its legacy markup (<b>, <i>,
++        // <strike>, <font color>) instead of CSS-based <span style="...">.
++        // Those legacy tags aren't in the Sanitizer's allow-list, so every
++        // bold/italic/strikethrough/text-color edit was silently stripped out
++        // as soon as the content got serialized (getHTML()/textarea sync/save),
++        // even though it still looked fine live in the contenteditable area.
++        try {
++            document.execCommand('styleWithCSS', false, true);
++        } catch {
++            // Some browsers may reject this; formatting still works, just
++            // with legacy tags in that (rare) case.
++        }
+     }
+ 
+     exec(name, value = null) {
+diff --git a/resources/js/src/core/Sanitizer.js b/resources/js/src/core/Sanitizer.js
+index bf4c6c7..130337e 100644
+--- a/resources/js/src/core/Sanitizer.js
++++ b/resources/js/src/core/Sanitizer.js
+@@ -13,6 +13,8 @@ const DEFAULT_ALLOWED_ATTRS = {
+     video: new Set(['src', 'controls', 'width', 'height', 'poster']),
+     audio: new Set(['src', 'controls']),
+     source: new Set(['src', 'type']),
++    td: new Set(['colspan', 'rowspan']),
++    th: new Set(['colspan', 'rowspan', 'scope']),
+ };
+ 
+ const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:', '']);
+diff --git a/resources/js/tests/Sanitizer.test.js b/resources/js/tests/Sanitizer.test.js
+index 99581eb..3289e89 100644
+--- a/resources/js/tests/Sanitizer.test.js
++++ b/resources/js/tests/Sanitizer.test.js
+@@ -42,4 +42,15 @@ describe('Sanitizer', () => {
+         const result = sanitizer.sanitize('<div style="width:expression(alert(1))">x</div>');
+         expect(result).not.toContain('expression');
+     });
++
++    it('keeps CSS-based inline formatting produced by styleWithCSS execCommand output', () => {
++        const result = sanitizer.sanitize('<span style="font-weight: bold;">bold text</span>');
++        expect(result).toContain('font-weight');
++        expect(result).toContain('bold text');
++    });
++
++    it('preserves colspan/rowspan on table cells (merged cells)', () => {
++        const result = sanitizer.sanitize('<table><tr><td colspan="2" rowspan="1">x</td></tr></table>');
++        expect(result).toContain('colspan="2"');
++    });
+ });
