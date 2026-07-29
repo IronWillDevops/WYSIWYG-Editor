@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 final class UploadController extends Controller
 {
-    public function image(Request request): JsonResponse
+    public function image(Request $request): JsonResponse
     {
         $maxSizeKb = (int) config('inkforge-editor.upload.max_size_kb', 5120);
         $allowedMimes = implode(',', config('inkforge-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']));
