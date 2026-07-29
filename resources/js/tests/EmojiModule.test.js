@@ -103,10 +103,10 @@ describe('EmojiModule', () => {
         document.body.removeChild(btn);
     });
 
-    it('closes on scroll outside the picker', () => {
+    it('closes on window scroll', () => {
         module.open();
         expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
-        document.body.dispatchEvent(new Event('scroll', { bubbles: true }));
+        window.dispatchEvent(new Event('scroll'));
         expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 

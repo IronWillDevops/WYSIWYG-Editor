@@ -1,7 +1,7 @@
-var V = Object.defineProperty;
-var O = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
-var x = (a, e, t) => O(a, typeof e != "symbol" ? e + "" : e, t);
-class I {
+var O = Object.defineProperty;
+var I = (l, e, t) => e in l ? O(l, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : l[e] = t;
+var x = (l, e, t) => I(l, typeof e != "symbol" ? e + "" : e, t);
+class q {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class I {
     this.listeners.clear();
   }
 }
-class q {
+class j {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class q {
     this.root.focus(), this.restore();
   }
 }
-class j {
+class P {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class j {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class P {
+class U {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -338,8 +338,8 @@ class P {
     if (!o.length) return;
     const n = document.createElement(e);
     o.forEach((r) => {
-      const l = document.createElement("li");
-      l.innerHTML = r.innerHTML || "<br>", n.appendChild(l);
+      const a = document.createElement("li");
+      a.innerHTML = r.innerHTML || "<br>", n.appendChild(a);
     }), o[0].replaceWith(n), o.slice(1).forEach((r) => r.remove());
     const s = document.createRange();
     s.selectNodeContents(n.lastElementChild), s.collapse(!1), this.selection.setRange(s);
@@ -351,8 +351,8 @@ class P {
    * @returns {HTMLElement[]}
    */
   getBlocksInRange(e) {
-    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), i = (l) => {
-      let d = l.nodeType === Node.TEXT_NODE ? l.parentElement : l;
+    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), i = (a) => {
+      let d = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
       for (; d && d !== this.root; ) {
         if (d instanceof HTMLElement && d.parentElement === this.root && t.has(d.tagName))
           return d;
@@ -409,10 +409,10 @@ class P {
         return;
       }
       if ((r = s.style) != null && r[e] && (s.style[e] = "", s.style.length === 0 && s.removeAttribute("style")), ["SPAN", "FONT"].includes(s.tagName) && s.attributes.length === 0) {
-        const l = s.parentNode;
-        if (!l) return;
-        for (; s.firstChild; ) l.insertBefore(s.firstChild, s);
-        l.removeChild(s);
+        const a = s.parentNode;
+        if (!a) return;
+        for (; s.firstChild; ) a.insertBefore(s.firstChild, s);
+        a.removeChild(s);
       }
     });
   }
@@ -450,7 +450,7 @@ class P {
     this.editor.emitChange();
   }
 }
-const U = /* @__PURE__ */ new Set([
+const W = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -489,7 +489,7 @@ const U = /* @__PURE__ */ new Set([
   "source",
   "iframe",
   "hr"
-]), W = {
+]), X = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -499,8 +499,8 @@ const U = /* @__PURE__ */ new Set([
   source: /* @__PURE__ */ new Set(["src", "type"]),
   td: /* @__PURE__ */ new Set(["colspan", "rowspan"]),
   th: /* @__PURE__ */ new Set(["colspan", "rowspan", "scope"])
-}, X = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class K {
+}, K = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class G {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -508,7 +508,7 @@ class K {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : U, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : W, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : X, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : K;
   }
   /**
    * @param {string} dirtyHtml
@@ -591,21 +591,21 @@ class K {
     }
   }
 }
-const G = {
+const J = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
 }, z = /* @__PURE__ */ new Map();
-let k = class {
+let E = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...G, ...t }, this.events = new I(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new q(this.root), this.commands = new P(this), this.history = new j({
+    this.textarea = e, this.options = { ...J, ...t }, this.events = new q(), this.sanitizer = new G(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new j(this.root), this.commands = new U(this), this.history = new P({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -758,7 +758,7 @@ let k = class {
     z.set(e, t);
   }
 };
-const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${a}</svg>`, c = {
+const h = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${l}</svg>`, c = {
   undo: h('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
   redo: h('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
   bold: h('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
@@ -796,9 +796,9 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   indent: h('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   outdent: h('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   wordCount: h('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>')
-}, J = {
-  undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (a) => a.undo() },
-  redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (a) => a.redo() },
+}, N = {
+  undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (l) => l.undo() },
+  redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (l) => l.redo() },
   blockFormat: {
     label: "Paragraph style",
     type: "select",
@@ -813,7 +813,7 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["blockquote", "Blockquote"],
       ["pre", "Preformatted"]
     ],
-    onChange: (a, e) => a.commands.exec("blockFormat", e)
+    onChange: (l, e) => l.commands.exec("blockFormat", e)
   },
   fontFamily: {
     label: "Font family",
@@ -826,7 +826,7 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ['"Times New Roman", serif', "Times New Roman"],
       ["Verdana, sans-serif", "Verdana"]
     ],
-    onChange: (a, e) => a.commands.exec("fontName", e)
+    onChange: (l, e) => l.commands.exec("fontName", e)
   },
   fontSize: {
     label: "Font size",
@@ -840,7 +840,7 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["32px", "32"],
       ["48px", "48"]
     ],
-    onChange: (a, e) => a.commands.exec("fontSize", e)
+    onChange: (l, e) => l.commands.exec("fontSize", e)
   },
   bold: { icon: c.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
   italic: { icon: c.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
@@ -866,60 +866,60 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     icon: c.checklist,
     label: "Checklist",
     type: "action",
-    action: (a) => a.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
+    action: (l) => l.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
   indent: { icon: c.indent, label: "Increase indent", type: "command", command: "indent" },
   outdent: { icon: c.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: c.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (a) => a.module("link").open() },
+  link: { icon: c.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (l) => l.module("link").open() },
   unlink: {
     icon: c.unlink,
     label: "Remove link",
     type: "action",
-    action: (a) => {
-      const e = a.selection.closest("a");
-      e && a.module("link").remove(e);
+    action: (l) => {
+      const e = l.selection.closest("a");
+      e && l.module("link").remove(e);
     }
   },
-  image: { icon: c.image, label: "Insert image", type: "action", action: (a) => a.module("image").open() },
-  video: { icon: c.videocam, label: "Insert video", type: "action", action: (a) => a.module("media").openVideo() },
-  audio: { icon: c.audiotrack, label: "Insert audio", type: "action", action: (a) => a.module("media").openAudio() },
-  table: { icon: c.table, label: "Insert table", type: "action", action: (a) => a.module("table").openInsertDialog() },
-  hr: { icon: c.hr, label: "Horizontal rule", type: "action", action: (a) => a.module("media").insertHorizontalRule() },
-  blockquote: { icon: c.blockquote, label: "Blockquote", type: "action", action: (a) => a.commands.exec("blockFormat", "blockquote") },
+  image: { icon: c.image, label: "Insert image", type: "action", action: (l) => l.module("image").open() },
+  video: { icon: c.videocam, label: "Insert video", type: "action", action: (l) => l.module("media").openVideo() },
+  audio: { icon: c.audiotrack, label: "Insert audio", type: "action", action: (l) => l.module("media").openAudio() },
+  table: { icon: c.table, label: "Insert table", type: "action", action: (l) => l.module("table").openInsertDialog() },
+  hr: { icon: c.hr, label: "Horizontal rule", type: "action", action: (l) => l.module("media").insertHorizontalRule() },
+  blockquote: { icon: c.blockquote, label: "Blockquote", type: "action", action: (l) => l.commands.exec("blockFormat", "blockquote") },
   codeInline: {
     icon: c.code,
     label: "Inline code",
     type: "action",
-    action: (a) => a.selection.wrap("code") && a.emitChange()
+    action: (l) => l.selection.wrap("code") && l.emitChange()
   },
-  codeBlock: { icon: c.codeBlock, label: "Code block", type: "action", action: (a) => a.commands.exec("blockFormat", "pre") },
-  note: { icon: c.note, label: "Insert note", type: "action", action: (a) => a.module("note").open() },
+  codeBlock: { icon: c.codeBlock, label: "Code block", type: "action", action: (l) => l.commands.exec("blockFormat", "pre") },
+  note: { icon: c.note, label: "Insert note", type: "action", action: (l) => l.module("note").open() },
   emoji: {
     icon: c.emoji,
     label: "Emoji",
     type: "action",
-    action: (a, e) => a.module("emoji").open(e)
+    action: (l, e) => l.module("emoji").open(e)
   },
   specialChars: {
     icon: c.specialChars,
     label: "Special characters",
     type: "action",
-    action: (a) => a.commands.insertHTML("&amp;copy;")
+    action: (l) => l.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: c.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (a) => a.module("find").open() },
+  find: { icon: c.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (l) => l.module("find").open() },
   sourceCode: {
     icon: c.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
-    action: (a) => a.module("codeView").toggle()
+    action: (l) => l.module("codeView").toggle()
   },
   fullscreen: {
     icon: c.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
-    action: (a) => a.module("fullscreen").toggle()
+    action: (l) => l.module("fullscreen").toggle()
   }
 }, Y = {
   undo: "Undo",
@@ -996,16 +996,16 @@ const h = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
    * @param {string} code
    * @param {Record<string, string>} strings
    */
-  register(a, e) {
-    y.set(a, e);
+  register(l, e) {
+    y.set(l, e);
   },
   /**
    * @param {string} locale
    * @param {string} key
    * @returns {string}
    */
-  t(a, e) {
-    return (y.get(a) ?? y.get("en"))[e] ?? y.get("en")[e] ?? e;
+  t(l, e) {
+    return (y.get(l) ?? y.get("en"))[e] ?? y.get("en")[e] ?? e;
   },
   available() {
     return [...y.keys()];
@@ -1034,7 +1034,7 @@ class te {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((i) => {
-        const o = J[i];
+        const o = N[i];
         if (!o) return;
         const n = this.buildControl(i, o);
         n && t.appendChild(n);
@@ -1120,6 +1120,46 @@ class te {
       }
       o.classList.toggle("is-active", n);
     }
+    this._syncSelectValue("fontFamily", this._getComputedFontFamily()), this._syncSelectValue("fontSize", this._getComputedFontSize());
+  }
+  _getStyleNode() {
+    const e = this.editor.selection.getNativeSelection();
+    if (!e || !e.rangeCount) return null;
+    const t = e.getRangeAt(0);
+    if (!this.editor.root.contains(t.commonAncestorContainer)) return null;
+    let i = t.commonAncestorContainer;
+    return i.nodeType === Node.TEXT_NODE && (i = i.parentElement), i;
+  }
+  _getComputedFontFamily() {
+    const e = this._getStyleNode();
+    if (!e) return "";
+    const t = getComputedStyle(e).fontFamily;
+    return t ? t.replace(/["']/g, "").split(",")[0].trim() : "";
+  }
+  _getComputedFontSize() {
+    const e = this._getStyleNode();
+    return e ? getComputedStyle(e).fontSize : "";
+  }
+  _syncSelectValue(e, t) {
+    const i = this.buttons.get(e);
+    if (!(i instanceof HTMLSelectElement)) return;
+    const o = N[e];
+    if (!(!o || !o.options)) {
+      for (const [n] of o.options)
+        if (n) {
+          if (e === "fontFamily") {
+            const s = n.replace(/["']/g, "").split(",")[0].trim();
+            if (t.toLowerCase() === s.toLowerCase()) {
+              i.value = n;
+              return;
+            }
+          } else if (t === n) {
+            i.value = n;
+            return;
+          }
+        }
+      i.value !== "" && (i.value = "");
+    }
   }
   setEnabled(e, t) {
     const i = this.buttons.get(e);
@@ -1156,9 +1196,9 @@ class b {
                 </footer>
             </form>
         `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((r) => {
-      r.addEventListener("click", (l) => l.stopPropagation()), r.addEventListener("keydown", (l) => l.stopPropagation());
+      r.addEventListener("click", (a) => a.stopPropagation()), r.addEventListener("keydown", (a) => a.stopPropagation());
     }), this.overlay.querySelectorAll("button").forEach((r) => {
-      r.addEventListener("mousedown", (l) => l.preventDefault());
+      r.addEventListener("mousedown", (a) => a.preventDefault());
     }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (r) => {
       r.target === this.overlay && this.close();
     }), this.form.addEventListener("submit", (r) => {
@@ -1365,8 +1405,8 @@ class oe {
       const d = document.createElement("figcaption");
       d.textContent = i, s.appendChild(d);
     }
-    const l = this.editor.selection.getRange();
-    l == null || l.deleteContents(), l == null || l.insertNode(s), this.editor.emitChange();
+    const a = this.editor.selection.getRange();
+    a == null || a.deleteContents(), a == null || a.insertNode(s), this.editor.emitChange();
   }
   /**
    * Updates an already-inserted <figure class="ife-image"> in place instead
@@ -1378,8 +1418,8 @@ class oe {
     this.editor.history.push(), e.className = `ife-image ife-image--${n}`;
     const r = e.querySelector("img");
     r && (this.editor.sanitizer.isSafeUrl(t) && (r.src = t), r.alt = i, s ? r.setAttribute("loading", "lazy") : r.removeAttribute("loading"));
-    let l = e.querySelector("figcaption");
-    o ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = o) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
+    let a = e.querySelector("figcaption");
+    o ? (a || (a = document.createElement("figcaption"), e.appendChild(a)), a.textContent = o) : a && a.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
   }
   /** Marks the clicked image's <figure> as selected (for edit/resize), or clears selection. */
   handleClick(e) {
@@ -1399,8 +1439,8 @@ class oe {
     if (!t || !e.altKey) return;
     e.preventDefault();
     const i = e.clientX, o = t.getBoundingClientRect().width, n = (r) => {
-      const l = r.clientX - i;
-      t.style.width = `${Math.max(40, o + l)}px`;
+      const a = r.clientX - i;
+      t.style.width = `${Math.max(40, o + a)}px`;
     }, s = () => {
       document.removeEventListener("mousemove", n), document.removeEventListener("mouseup", s), this.editor.emitChange();
     };
@@ -1445,10 +1485,10 @@ class ne {
       ["Split cell", () => this.splitCell()],
       ["Delete table", () => this.deleteTable(), !0]
     ].forEach(([n, s, r]) => {
-      const l = document.createElement("button");
-      l.type = "button", l.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${r ? " ife-table-toolbar__btn--danger" : ""}`, l.textContent = n, l.title = n, l.addEventListener("mousedown", (d) => d.preventDefault()), l.addEventListener("click", () => {
+      const a = document.createElement("button");
+      a.type = "button", a.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${r ? " ife-table-toolbar__btn--danger" : ""}`, a.textContent = n, a.title = n, a.addEventListener("mousedown", (d) => d.preventDefault()), a.addEventListener("click", () => {
         this.editor.selection.restore(), s(), this.syncContextToolbar();
-      }), this.contextToolbar.appendChild(l);
+      }), this.contextToolbar.appendChild(a);
     });
     const t = document.createElement("label");
     t.className = "ife-table-toolbar__color", t.title = "Cell background color", t.textContent = "Cell";
@@ -1500,7 +1540,7 @@ class ne {
       }
     }
     const n = o.createTBody(), s = i ? e - 1 : e;
-    for (let l = 0; l < Math.max(s, 1); l += 1) {
+    for (let a = 0; a < Math.max(s, 1); a += 1) {
       const d = n.insertRow();
       for (let m = 0; m < t; m += 1) {
         const u = d.insertCell();
@@ -1539,8 +1579,8 @@ class ne {
     n < 0 || (this.editor.history.push(), t.querySelectorAll("tr").forEach((s) => {
       const r = s.children[n];
       if (!r) return;
-      const l = document.createElement(r.tagName.toLowerCase() === "th" ? "th" : "td");
-      l.innerHTML = "<br>", s.insertBefore(l, e ? r : r.nextSibling);
+      const a = document.createElement(r.tagName.toLowerCase() === "th" ? "th" : "td");
+      a.innerHTML = "<br>", s.insertBefore(a, e ? r : r.nextSibling);
     }), this.editor.emitChange());
   }
   deleteColumn() {
@@ -1591,21 +1631,21 @@ class ne {
   }
   /** Constrains content area and table height to fit within the viewport. */
   adjustTableHeight() {
-    var E, L, T;
-    if (!((E = this.editor.root) != null && E.isConnected)) return;
-    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, l = e.querySelector(".ife-statusbar"), d = l ? l.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
+    var k, L, T;
+    if (!((k = this.editor.root) != null && k.isConnected)) return;
+    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, a = e.querySelector(".ife-statusbar"), d = a ? a.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
     this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(p))}px`;
     const C = this.editor.root.querySelectorAll("table.ife-table");
     if (!C.length) return;
-    const A = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, $ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
+    const $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, F = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
     C.forEach((w) => {
-      let H = 0, v = w.previousElementSibling;
+      let S = 0, v = w.previousElementSibling;
       for (; v; ) {
         const M = getComputedStyle(v);
-        H += v.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), v = v.previousElementSibling;
+        S += v.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), v = v.previousElementSibling;
       }
-      const S = getComputedStyle(w), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, B = p - A - H - D - F - $;
-      w.style.maxHeight = `${Math.max(200, Math.floor(B))}px`;
+      const H = getComputedStyle(w), D = parseFloat(H.marginTop) || 0, B = parseFloat(H.marginBottom) || 0, V = p - $ - S - D - B - F;
+      w.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
     });
   }
   destroy() {
@@ -1637,8 +1677,8 @@ class se {
     return i.map((n) => {
       const s = /^<\//.test(n);
       s && (o = Math.max(o - 1, 0));
-      const r = `${"  ".repeat(o)}${n}`, l = /\/>$/.test(n) || /<(br|hr|img|input|source)[ >]/i.test(n);
-      return /^<[a-z]/i.test(n) && !s && !l && (o += 1), r;
+      const r = `${"  ".repeat(o)}${n}`, a = /\/>$/.test(n) || /<(br|hr|img|input|source)[ >]/i.test(n);
+      return /^<[a-z]/i.test(n) && !s && !a && (o += 1), r;
     }).join(`
 `);
   }
@@ -1676,7 +1716,7 @@ class re {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
-class ae {
+class le {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
@@ -1721,17 +1761,17 @@ class ae {
     for (; s; )
       n.push(s), s = o.nextNode();
     n.forEach((r) => {
-      const l = r.textContent ?? "";
-      if (!i.test(l)) return;
+      const a = r.textContent ?? "";
+      if (!i.test(a)) return;
       i.lastIndex = 0;
       const d = document.createDocumentFragment();
-      let m = 0, u = i.exec(l);
+      let m = 0, u = i.exec(a);
       for (; u; ) {
-        d.appendChild(document.createTextNode(l.slice(m, u.index)));
+        d.appendChild(document.createTextNode(a.slice(m, u.index)));
         const g = document.createElement("mark");
-        g.className = "ife-search-highlight", g.textContent = u[0], d.appendChild(g), m = u.index + u[0].length, u = i.exec(l);
+        g.className = "ife-search-highlight", g.textContent = u[0], d.appendChild(g), m = u.index + u[0].length, u = i.exec(a);
       }
-      d.appendChild(document.createTextNode(l.slice(m))), r.replaceWith(d);
+      d.appendChild(document.createTextNode(a.slice(m))), r.replaceWith(d);
     });
   }
   clearHighlights() {
@@ -1748,8 +1788,8 @@ class ae {
     let r = n.nextNode();
     for (; r; )
       s.push(r), r = n.nextNode();
-    s.forEach((l) => {
-      l.textContent = (l.textContent ?? "").replace(i, o);
+    s.forEach((a) => {
+      a.textContent = (a.textContent ?? "").replace(i, o);
     }), this.editor.emitChange();
   }
   destroy() {
@@ -1757,7 +1797,7 @@ class ae {
     this.clearHighlights(), (e = this.dialog) == null || e.close();
   }
 }
-const le = ["info", "warning", "danger", "success", "quote", "tip"];
+const ae = ["info", "warning", "danger", "success", "quote", "tip"];
 class ce {
   constructor(e) {
     this.editor = e;
@@ -1766,7 +1806,7 @@ class ce {
     const t = `
             <label class="ife-field">
                 <span>Type</span>
-                <select name="type">${le.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
+                <select name="type">${ae.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
             </label>
             <label class="ife-field">
                 <span>Text</span>
@@ -1795,7 +1835,7 @@ class ce {
     (e = this.dialog) == null || e.close();
   }
 }
-const N = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, _ = /vimeo\.com\/(\d+)/;
+const _ = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, A = /vimeo\.com\/(\d+)/;
 class he {
   constructor(e) {
     this.editor = e;
@@ -1830,11 +1870,11 @@ class he {
     let n;
     if (o.startsWith("<iframe"))
       n = o;
-    else if (N.test(o)) {
-      const s = o.match(N)[1];
-      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (_.test(o)) {
+    else if (_.test(o)) {
       const s = o.match(_)[1];
+      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else if (A.test(o)) {
+      const s = o.match(A)[1];
       n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
@@ -1978,15 +2018,15 @@ ${t()}
 `), i = [];
     let o = null;
     return t.forEach((n) => {
-      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), m = s.match(/^>\s?(.*)$/);
+      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), a = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), m = s.match(/^>\s?(.*)$/);
       if (r) {
         this.closeList(i, o), o = null;
         const u = r[1].length;
         i.push(`<h${u}>${this.inlineMarkdown(r[2])}</h${u}>`);
         return;
       }
-      if (l) {
-        o !== "ul" && (this.closeList(i, o), i.push("<ul>"), o = "ul"), i.push(`<li>${this.inlineMarkdown(l[1])}</li>`);
+      if (a) {
+        o !== "ul" && (this.closeList(i, o), i.push("<ul>"), o = "ul"), i.push(`<li>${this.inlineMarkdown(a[1])}</li>`);
         return;
       }
       if (d) {
@@ -2321,13 +2361,13 @@ class me {
         "◀️"
       ] }
     ], s = document.createElement("div");
-    s.className = "ife-emoji-picker__body", n.forEach((l) => {
+    s.className = "ife-emoji-picker__body", n.forEach((a) => {
       const d = document.createElement("div");
       d.className = "ife-emoji-picker__group";
       const m = document.createElement("div");
-      m.className = "ife-emoji-picker__group-label", m.textContent = l.name, d.appendChild(m);
+      m.className = "ife-emoji-picker__group-label", m.textContent = a.name, d.appendChild(m);
       const u = document.createElement("div");
-      u.className = "ife-emoji-picker__grid", l.emojis.forEach((g) => {
+      u.className = "ife-emoji-picker__grid", a.emojis.forEach((g) => {
         const p = document.createElement("button");
         p.type = "button", p.className = "ife-emoji-picker__btn", p.textContent = g, p.setAttribute("aria-label", g), p.addEventListener("mousedown", (C) => C.preventDefault()), p.addEventListener("click", () => {
           this.editor.selection.restore(), this.editor.commands.insertHTML(g), this.close();
@@ -2335,14 +2375,14 @@ class me {
       }), d.appendChild(u), s.appendChild(d);
     }), this.picker.appendChild(s), document.body.appendChild(this.picker);
     const r = this.editor.wrapper;
-    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnScroll = (l) => {
-      this.picker && this.picker.contains(l.target) || this.close();
-    }, this._boundOnClickOutside = (l) => {
-      this.picker && (this.picker.contains(l.target) || this._triggerEl && this._triggerEl.contains(l.target) || this.close());
-    }, window.addEventListener("resize", this._boundOnResize), document.addEventListener("scroll", this._boundOnScroll, { capture: !0 }), document.addEventListener("click", this._boundOnClickOutside), setTimeout(() => {
+    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnScroll = () => {
+      this.picker && this.close();
+    }, this._boundOnClickOutside = (a) => {
+      this.picker && (this.picker.contains(a.target) || this._triggerEl && this._triggerEl.contains(a.target) || this.close());
+    }, window.addEventListener("resize", this._boundOnResize), window.addEventListener("scroll", this._boundOnScroll), document.addEventListener("click", this._boundOnClickOutside), setTimeout(() => {
       if (!this.picker) return;
-      const l = this.picker.querySelector(".ife-emoji-picker__btn");
-      l && l.focus();
+      const a = this.picker.querySelector(".ife-emoji-picker__btn");
+      a && a.focus();
     }, 50);
   }
   positionPicker() {
@@ -2357,7 +2397,7 @@ class me {
     this.picker && (this.picker.remove(), this.picker = null), this._triggerEl = null, this._removeListeners();
   }
   _removeListeners() {
-    this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null), this._boundOnScroll && (document.removeEventListener("scroll", this._boundOnScroll, { capture: !0 }), this._boundOnScroll = null), this._boundOnClickOutside && (document.removeEventListener("click", this._boundOnClickOutside), this._boundOnClickOutside = null);
+    this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null), this._boundOnScroll && (window.removeEventListener("scroll", this._boundOnScroll), this._boundOnScroll = null), this._boundOnClickOutside && (document.removeEventListener("click", this._boundOnClickOutside), this._boundOnClickOutside = null);
   }
   destroy() {
     this.close();
@@ -2369,15 +2409,15 @@ const pe = {
   table: ne,
   codeView: se,
   fullscreen: re,
-  find: ae,
+  find: le,
   note: ce,
   media: he,
   markdown: de,
   statusBar: ue,
   emoji: me
 };
-Object.entries(pe).forEach(([a, e]) => {
-  k.registerPlugin(a, (t) => new e(t));
+Object.entries(pe).forEach(([l, e]) => {
+  E.registerPlugin(l, (t) => new e(t));
 });
 const f = /* @__PURE__ */ new Map(), be = {
   /**
@@ -2385,30 +2425,30 @@ const f = /* @__PURE__ */ new Map(), be = {
    * @param {import('./core/Editor.js').EditorOptions} [options]
    * @returns {EditorCore}
    */
-  init(a, e = {}) {
-    const t = typeof a == "string" ? document.querySelector(a) : a;
+  init(l, e = {}) {
+    const t = typeof l == "string" ? document.querySelector(l) : l;
     if (!t)
-      throw new Error(`InkForge Editor: target "${a}" not found`);
+      throw new Error(`InkForge Editor: target "${l}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (f.has(t))
       return f.get(t);
-    const i = new k(t, e), o = new te(i, e.toolbar);
+    const i = new E(t, e), o = new te(i, e.toolbar);
     return i.on("destroy", () => o.destroy()), f.set(t, i), i.on("destroy", () => f.delete(t)), i;
   },
   /**
    * @param {string|HTMLTextAreaElement} target
    * @returns {EditorCore|undefined}
    */
-  get(a) {
-    const e = typeof a == "string" ? document.querySelector(a) : a;
+  get(l) {
+    const e = typeof l == "string" ? document.querySelector(l) : l;
     return e ? f.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    f.forEach((a) => a.destroy()), f.clear();
+    f.forEach((l) => l.destroy()), f.clear();
   },
-  registerPlugin: k.registerPlugin
+  registerPlugin: E.registerPlugin
 };
 export {
   be as default

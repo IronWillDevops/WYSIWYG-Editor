@@ -187,6 +187,58 @@ export default class Toolbar {
             }
             blockquoteBtn.classList.toggle('is-active', isBlockquote);
         }
+
+        this._syncSelectValue('fontFamily', this._getComputedFontFamily());
+        this._syncSelectValue('fontSize', this._getComputedFontSize());
+    }
+
+    _getStyleNode() {
+        const sel = this.editor.selection.getNativeSelection();
+        if (!sel || !sel.rangeCount) return null;
+        const range = sel.getRangeAt(0);
+        if (!this.editor.root.contains(range.commonAncestorContainer)) return null;
+        let node = range.commonAncestorContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        return node;
+    }
+
+    _getComputedFontFamily() {
+        const node = this._getStyleNode();
+        if (!node) return '';
+        const ff = getComputedStyle(node).fontFamily;
+        return ff ? ff.replace(/["']/g, '').split(',')[0].trim() : '';
+    }
+
+    _getComputedFontSize() {
+        const node = this._getStyleNode();
+        if (!node) return '';
+        return getComputedStyle(node).fontSize;
+    }
+
+    _syncSelectValue(id, computedValue) {
+        const select = this.buttons.get(id);
+        if (!(select instanceof HTMLSelectElement)) return;
+
+        const def = ToolbarConfig[id];
+        if (!def || !def.options) return;
+
+        for (const [optionValue] of def.options) {
+            if (!optionValue) continue;
+            if (id === 'fontFamily') {
+                const optionName = optionValue.replace(/["']/g, '').split(',')[0].trim();
+                if (computedValue.toLowerCase() === optionName.toLowerCase()) {
+                    select.value = optionValue;
+                    return;
+                }
+            } else {
+                if (computedValue === optionValue) {
+                    select.value = optionValue;
+                    return;
+                }
+            }
+        }
+
+        if (select.value !== '') select.value = '';
     }
 
     setEnabled(id, enabled) {

@@ -127,8 +127,8 @@ export default class EmojiModule {
         this.positionPicker();
 
         this._boundOnResize = () => this.positionPicker();
-        this._boundOnScroll = (e) => {
-            if (this.picker && this.picker.contains(e.target)) return;
+        this._boundOnScroll = () => {
+            if (!this.picker) return;
             this.close();
         };
         this._boundOnClickOutside = (e) => {
@@ -138,7 +138,7 @@ export default class EmojiModule {
             this.close();
         };
         window.addEventListener('resize', this._boundOnResize);
-        document.addEventListener('scroll', this._boundOnScroll, { capture: true });
+        window.addEventListener('scroll', this._boundOnScroll);
         document.addEventListener('click', this._boundOnClickOutside);
 
         setTimeout(() => {
@@ -192,7 +192,7 @@ export default class EmojiModule {
             this._boundOnResize = null;
         }
         if (this._boundOnScroll) {
-            document.removeEventListener('scroll', this._boundOnScroll, { capture: true });
+            window.removeEventListener('scroll', this._boundOnScroll);
             this._boundOnScroll = null;
         }
         if (this._boundOnClickOutside) {

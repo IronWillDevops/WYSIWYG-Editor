@@ -14,6 +14,8 @@ function createMockEditor() {
             save: vi.fn(),
             restore: vi.fn(),
             getBlockElement: vi.fn(() => null),
+            getNativeSelection: vi.fn(() => null),
+            getRange: vi.fn(() => null),
         },
         commands: { queryState: vi.fn(() => false), exec: vi.fn() },
         on: vi.fn(),
@@ -156,5 +158,92 @@ describe('Toolbar', () => {
         const btn = toolbar.buttons.get('blockquote');
         toolbar.syncActiveStates();
         expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('syncs fontFamily select when cursor is inside an element with that font', () => {
+        const span = document.createElement('span');
+        span.style.fontFamily = 'Georgia, serif';
+        span.textContent = 'test';
+        editor.root.appendChild(span);
+
+        const textNode = span.firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 0);
+        range.collapse(true);
+
+        editor.selection.getNativeSelection = vi.fn(() => ({
+            rangeCount: 1,
+            getRangeAt: () => range,
+        }));
+
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('fontFamily');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('Georgia, serif');
+    });
+
+    it('resets fontFamily select to default when no specific font is applied', () => {
+        const p = document.createElement('p');
+        p.textContent = 'test';
+        editor.root.appendChild(p);
+
+        const textNode = p.firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 0);
+        range.collapse(true);
+
+        editor.selection.getNativeSelection = vi.fn(() => ({
+            rangeCount: 1,
+            getRangeAt: () => range,
+        }));
+
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('fontFamily');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('');
+    });
+
+    it('syncs fontSize select when cursor is inside an element with font-size 18px', () => {
+        const span = document.createElement('span');
+        span.style.fontSize = '18px';
+        span.textContent = 'test';
+        editor.root.appendChild(span);
+
+        const textNode = span.firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 0);
+        range.collapse(true);
+
+        editor.selection.getNativeSelection = vi.fn(() => ({
+            rangeCount: 1,
+            getRangeAt: () => range,
+        }));
+
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('fontSize');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('18px');
+    });
+
+    it('resets fontSize select to default when size does not match any option', () => {
+        const span = document.createElement('span');
+        span.style.fontSize = '11px';
+        span.textContent = 'test';
+        editor.root.appendChild(span);
+
+        const textNode = span.firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 0);
+        range.collapse(true);
+
+        editor.selection.getNativeSelection = vi.fn(() => ({
+            rangeCount: 1,
+            getRangeAt: () => range,
+        }));
+
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('fontSize');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('');
     });
 });
