@@ -291,11 +291,14 @@ export default class TableModule {
         this.editor.events.emit('table:context', inTable);
     }
 
-    /** Constrains table height to fit within the viewport, accounting for all editor chrome. */
+    /** Constrains table and content area height to fit within the viewport. */
     adjustTableHeight() {
         if (!this.editor.root?.isConnected) return;
         const tables = this.editor.root.querySelectorAll('table.ife-table');
-        if (!tables.length) return;
+        if (!tables.length) {
+            this.editor.root.style.maxHeight = '';
+            return;
+        }
 
         const wrapper = this.editor.wrapper;
         const viewportHeight = window.innerHeight;
@@ -314,33 +317,48 @@ export default class TableModule {
         const wrapperBorderTop = parseFloat(wrapperStyle.borderTopWidth) || 0;
         const wrapperBorderBottom = parseFloat(wrapperStyle.borderBottomWidth) || 0;
 
-        const contentStyle = getComputedStyle(this.editor.root);
-        const contentPaddingTop = parseFloat(contentStyle.paddingTop) || 16;
-        const contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 16;
+        const contentPaddingTop = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16;
+        const contentPaddingBottom = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
 
-        const tableStyle = getComputedStyle(tables[0]);
-        const tableMarginTop = parseFloat(tableStyle.marginTop) || 0;
-        const tableMarginBottom = parseFloat(tableStyle.marginBottom) || 0;
-
-        const availableHeight = viewportHeight
+        const maxContentHeight = viewportHeight
             - wrapperRect.top
             - wrapperBorderTop
             - toolbarHeight
             - contextToolbarHeight
-            - contentPaddingTop
-            - tableMarginTop
-            - tableMarginBottom
-            - contentPaddingBottom
             - statusbarHeight
             - wrapperBorderBottom;
 
+        this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(maxContentHeight))}px`;
+
         tables.forEach((table) => {
-            table.style.maxHeight = `${Math.max(200, Math.floor(availableHeight))}px`;
+            let precedingHeight = 0;
+            let prev = table.previousElementSibling;
+            while (prev) {
+                const prevStyle = getComputedStyle(prev);
+                precedingHeight += prev.offsetHeight
+                    + (parseFloat(prevStyle.marginTop) || 0)
+                    + (parseFloat(prevStyle.marginBottom) || 0);
+                prev = prev.previousElementSibling;
+            }
+
+            const tableStyle = getComputedStyle(table);
+            const tableMarginTop = parseFloat(tableStyle.marginTop) || 0;
+            const tableMarginBottom = parseFloat(tableStyle.marginBottom) || 0;
+
+            const availableForTable = maxContentHeight
+                - contentPaddingTop
+                - precedingHeight
+                - tableMarginTop
+                - tableMarginBottom
+                - contentPaddingBottom;
+
+            table.style.maxHeight = `${Math.max(200, Math.floor(availableForTable))}px`;
         });
     }
 
     destroy() {
         window.removeEventListener('resize', this.adjustTableHeight);
+        this.editor.root.style.maxHeight = '';
         this.contextToolbar?.remove();
     }
 }
