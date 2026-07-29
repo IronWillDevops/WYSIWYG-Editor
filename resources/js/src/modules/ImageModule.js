@@ -129,7 +129,6 @@ export default class ImageModule {
     /** @param {File} file */
     async upload(file) {
         if (!this.uploadUrl) {
-            // eslint-disable-next-line no-console
             console.warn('InkForge Editor: no uploadUrl configured, falling back to a local object URL.');
             return URL.createObjectURL(file);
         }
