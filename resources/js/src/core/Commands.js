@@ -138,6 +138,7 @@ export default class Commands {
         }
 
         this.editor.emitChange();
+        this.editor.events.emit('selectionchange', this.editor);
     }
 
     queryState(name) {

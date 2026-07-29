@@ -265,7 +265,7 @@ class U {
       default:
         throw new Error(`Unknown command: ${e}`);
     }
-    this.editor.emitChange();
+    this.editor.emitChange(), this.editor.events.emit("selectionchange", this.editor);
   }
   queryState(e) {
     try {
@@ -1063,7 +1063,7 @@ class te {
       const s = document.createElement("option");
       s.value = o, s.textContent = n, i.appendChild(s);
     }), i.addEventListener("mousedown", (o) => o.stopPropagation()), i.addEventListener("change", () => {
-      this.editor.selection.restore(), t.onChange(this.editor, i.value);
+      this.editor.selection.restore(), t.onChange(this.editor, i.value), this.syncActiveStates();
     }), this.buttons.set(e, i), i;
   }
   buildColorPicker(e, t) {

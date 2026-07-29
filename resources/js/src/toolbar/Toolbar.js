@@ -107,6 +107,7 @@ export default class Toolbar {
         select.addEventListener('change', () => {
             this.editor.selection.restore();
             def.onChange(this.editor, select.value);
+            this.syncActiveStates();
         });
 
         this.buttons.set(id, select);
