@@ -1,7 +1,7 @@
-var N = Object.defineProperty;
-var A = (r, e, t) => e in r ? N(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var w = (r, e, t) => A(r, typeof e != "symbol" ? e + "" : e, t);
-class $ {
+var D = Object.defineProperty;
+var _ = (r, e, t) => e in r ? D(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var E = (r, e, t) => _(r, typeof e != "symbol" ? e + "" : e, t);
+class F {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class $ {
     this.listeners.clear();
   }
 }
-class D {
+class V {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class D {
     this.root.focus(), this.restore();
   }
 }
-class _ {
+class B {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class _ {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class F {
+class I {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -416,7 +416,7 @@ class F {
     this.editor.emitChange();
   }
 }
-const V = /* @__PURE__ */ new Set([
+const q = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -454,7 +454,7 @@ const V = /* @__PURE__ */ new Set([
   "source",
   "iframe",
   "hr"
-]), B = {
+]), U = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -464,8 +464,8 @@ const V = /* @__PURE__ */ new Set([
   source: /* @__PURE__ */ new Set(["src", "type"]),
   td: /* @__PURE__ */ new Set(["colspan", "rowspan"]),
   th: /* @__PURE__ */ new Set(["colspan", "rowspan", "scope"])
-}, I = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class q {
+}, O = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class P {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -473,7 +473,7 @@ class q {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : V, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : B, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : I;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : q, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : U, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : O;
   }
   /**
    * @param {string} dirtyHtml
@@ -556,13 +556,13 @@ class q {
     }
   }
 }
-const U = {
+const j = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, E = /* @__PURE__ */ new Map();
+}, L = /* @__PURE__ */ new Map();
 let b = class {
   /**
    * @param {HTMLTextAreaElement} textarea
@@ -570,7 +570,7 @@ let b = class {
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...U, ...t }, this.events = new $(), this.sanitizer = new q(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new D(this.root), this.commands = new F(this), this.history = new _({
+    this.textarea = e, this.options = { ...j, ...t }, this.events = new F(), this.sanitizer = new P(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new V(this.root), this.commands = new I(this), this.history = new B({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -642,7 +642,7 @@ let b = class {
    */
   loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []);
-    E.forEach((t, i) => {
+    L.forEach((t, i) => {
       e.has(i) || this.plugins.set(i, t(this));
     });
   }
@@ -707,7 +707,7 @@ let b = class {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    E.set(e, t);
+    L.set(e, t);
   }
 };
 const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, h = {
@@ -749,7 +749,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
   charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
-}, O = {
+}, W = {
   undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
   redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
   blockFormat: {
@@ -874,7 +874,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     toggle: !0,
     action: (r) => r.module("fullscreen").toggle()
   }
-}, P = {
+}, X = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -896,7 +896,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Source code",
   fullscreen: "Fullscreen",
   uploadFailed: "Failed to upload the file. Please try again."
-}, j = {
+}, K = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -918,7 +918,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз."
-}, W = {
+}, G = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -941,10 +941,10 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   fullscreen: "Полноэкранный режим",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
 }, f = /* @__PURE__ */ new Map([
-  ["en", P],
-  ["uk", j],
-  ["ru", W]
-]), L = {
+  ["en", X],
+  ["uk", K],
+  ["ru", G]
+]), k = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
@@ -963,7 +963,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   available() {
     return [...f.keys()];
   }
-}, X = [
+}, J = [
   ["undo", "redo"],
   ["blockFormat", "fontFamily", "fontSize"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -975,19 +975,19 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   ["emoji", "specialChars"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class K {
+class Y {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? X, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? J, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((i) => {
-        const o = O[i];
+        const o = W[i];
         if (!o) return;
         const n = this.buildControl(i, o);
         n && t.appendChild(n);
@@ -999,7 +999,7 @@ class K {
   }
   buildButton(e, t) {
     const i = this.editor.options.locale ?? "en";
-    let o = L.t(i, e) !== e ? L.t(i, e) : t.label;
+    let o = k.t(i, e) !== e ? k.t(i, e) : t.label;
     if (t.shortcut) {
       const s = t.shortcut.replace(/Ctrl/g, "⌘");
       o += ` (${t.shortcut} / ${s})`;
@@ -1078,7 +1078,7 @@ class g {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    */
   constructor(e, { title: t, bodyHtml: i, confirmLabel: o = "OK", cancelLabel: n = "Cancel", onConfirm: s }) {
-    w(this, "handleEscape", (e) => {
+    E(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1127,7 +1127,7 @@ class g {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
   }
 }
-class G {
+class Q {
   constructor(e) {
     this.editor = e, this.handleDblClick = this.handleDblClick.bind(this), e.root.addEventListener("dblclick", this.handleDblClick);
   }
@@ -1202,7 +1202,7 @@ class G {
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("dblclick", this.handleDblClick);
   }
 }
-class J {
+class Z {
   constructor(e) {
     this.editor = e, this.uploadUrl = e.options.uploadUrl, this.handleDrop = this.handleDrop.bind(this), this.handleClick = this.handleClick.bind(this), this.handleDblClick = this.handleDblClick.bind(this), this.handleMouseDown = this.handleMouseDown.bind(this), e.root.addEventListener("dragover", (t) => t.preventDefault()), e.root.addEventListener("drop", this.handleDrop), e.root.addEventListener("click", this.handleClick), e.root.addEventListener("dblclick", this.handleDblClick), e.root.addEventListener("mousedown", this.handleMouseDown);
   }
@@ -1361,9 +1361,9 @@ class J {
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("drop", this.handleDrop), this.editor.root.removeEventListener("click", this.handleClick), this.editor.root.removeEventListener("dblclick", this.handleDblClick), this.editor.root.removeEventListener("mousedown", this.handleMouseDown);
   }
 }
-class Y {
+class ee {
   constructor(e) {
-    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", this.adjustTableHeight), this.editor.on("change", this.adjustTableHeight);
+    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight);
   }
   /**
    * Builds the floating mini-toolbar that appears whenever the caret is
@@ -1523,12 +1523,12 @@ class Y {
   }
   /** Constrains table height to fit within the viewport, accounting for all editor chrome. */
   adjustTableHeight() {
-    var y, C;
+    var C, w;
     const e = this.editor.root.querySelectorAll("table.ife-table");
     if (!e.length) return;
-    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((y = this.contextToolbar) == null ? void 0 : y.style.display) !== "none" && ((C = this.contextToolbar) == null ? void 0 : C.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), H = parseFloat(m.borderTopWidth) || 0, S = parseFloat(m.borderBottomWidth) || 0, v = getComputedStyle(this.editor.root), M = parseFloat(v.paddingTop) || 16, x = parseFloat(v.paddingBottom) || 16, z = i - o.top - H - s - l - M - x - u - S;
-    e.forEach((R) => {
-      R.style.maxHeight = `${Math.max(100, Math.floor(z))}px`;
+    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((C = this.contextToolbar) == null ? void 0 : C.style.display) !== "none" && ((w = this.contextToolbar) == null ? void 0 : w.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), S = parseFloat(m.borderTopWidth) || 0, M = parseFloat(m.borderBottomWidth) || 0, v = getComputedStyle(this.editor.root), x = parseFloat(v.paddingTop) || 16, z = parseFloat(v.paddingBottom) || 16, y = getComputedStyle(e[0]), R = parseFloat(y.marginTop) || 0, N = parseFloat(y.marginBottom) || 0, A = i - o.top - S - s - l - x - R - N - z - u - M;
+    e.forEach(($) => {
+      $.style.maxHeight = `${Math.max(200, Math.floor(A))}px`;
     });
   }
   destroy() {
@@ -1536,7 +1536,7 @@ class Y {
     window.removeEventListener("resize", this.adjustTableHeight), (e = this.contextToolbar) == null || e.remove();
   }
 }
-class Q {
+class te {
   constructor(e) {
     this.editor = e, this.active = !1;
   }
@@ -1570,7 +1570,7 @@ class Q {
     (e = this.source) == null || e.remove();
   }
 }
-class Z {
+class ie {
   constructor(e) {
     this.editor = e, this.active = !1, this.handleChange = this.handleChange.bind(this), document.addEventListener("fullscreenchange", this.handleChange);
   }
@@ -1599,7 +1599,7 @@ class Z {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
-class ee {
+class oe {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
@@ -1678,8 +1678,8 @@ class ee {
     this.clearHighlights(), (e = this.dialog) == null || e.close();
   }
 }
-const te = ["info", "warning", "danger", "success", "quote", "tip"];
-class ie {
+const ne = ["info", "warning", "danger", "success", "quote", "tip"];
+class se {
   constructor(e) {
     this.editor = e;
   }
@@ -1687,7 +1687,7 @@ class ie {
     const t = `
             <label class="ife-field">
                 <span>Type</span>
-                <select name="type">${te.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
+                <select name="type">${ne.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
             </label>
             <label class="ife-field">
                 <span>Text</span>
@@ -1716,8 +1716,8 @@ class ie {
     (e = this.dialog) == null || e.close();
   }
 }
-const k = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, T = /vimeo\.com\/(\d+)/;
-class oe {
+const T = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, H = /vimeo\.com\/(\d+)/;
+class re {
   constructor(e) {
     this.editor = e;
   }
@@ -1751,11 +1751,11 @@ class oe {
     let n;
     if (o.startsWith("<iframe"))
       n = o;
-    else if (k.test(o)) {
-      const s = o.match(k)[1];
-      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (T.test(o)) {
+    else if (T.test(o)) {
       const s = o.match(T)[1];
+      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else if (H.test(o)) {
+      const s = o.match(H)[1];
       n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
@@ -1784,7 +1784,7 @@ class oe {
   destroy() {
   }
 }
-class ne {
+class ae {
   constructor(e) {
     this.editor = e;
   }
@@ -1936,7 +1936,7 @@ ${t()}
   destroy() {
   }
 }
-class se {
+class le {
   constructor(e) {
     this.editor = e, this.update = this.update.bind(this), this.buildDom(), this.bindEvents(), this.update();
   }
@@ -1954,22 +1954,22 @@ class se {
     this.editor.root.removeEventListener("input", this.update), this.el.remove();
   }
 }
-const re = {
-  link: G,
-  image: J,
-  table: Y,
-  codeView: Q,
-  fullscreen: Z,
-  find: ee,
-  note: ie,
-  media: oe,
-  markdown: ne,
-  statusBar: se
+const ce = {
+  link: Q,
+  image: Z,
+  table: ee,
+  codeView: te,
+  fullscreen: ie,
+  find: oe,
+  note: se,
+  media: re,
+  markdown: ae,
+  statusBar: le
 };
-Object.entries(re).forEach(([r, e]) => {
+Object.entries(ce).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), ce = {
+const p = /* @__PURE__ */ new Map(), ue = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1983,7 +1983,7 @@ const p = /* @__PURE__ */ new Map(), ce = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (p.has(t))
       return p.get(t);
-    const i = new b(t, e), o = new K(i, e.toolbar);
+    const i = new b(t, e), o = new Y(i, e.toolbar);
     return i.on("destroy", () => o.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
   },
   /**
@@ -2001,6 +2001,6 @@ const p = /* @__PURE__ */ new Map(), ce = {
   registerPlugin: b.registerPlugin
 };
 export {
-  ce as default
+  ue as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map

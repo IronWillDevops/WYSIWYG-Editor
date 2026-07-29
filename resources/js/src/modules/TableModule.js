@@ -15,7 +15,7 @@ export default class TableModule {
 
         this.adjustTableHeight = this.adjustTableHeight.bind(this);
         window.addEventListener('resize', this.adjustTableHeight);
-        this.editor.on('init', this.adjustTableHeight);
+        this.editor.on('init', () => setTimeout(this.adjustTableHeight, 0));
         this.editor.on('change', this.adjustTableHeight);
     }
 
@@ -314,18 +314,24 @@ export default class TableModule {
         const contentPaddingTop = parseFloat(contentStyle.paddingTop) || 16;
         const contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 16;
 
+        const tableStyle = getComputedStyle(tables[0]);
+        const tableMarginTop = parseFloat(tableStyle.marginTop) || 0;
+        const tableMarginBottom = parseFloat(tableStyle.marginBottom) || 0;
+
         const availableHeight = viewportHeight
             - wrapperRect.top
             - wrapperBorderTop
             - toolbarHeight
             - contextToolbarHeight
             - contentPaddingTop
+            - tableMarginTop
+            - tableMarginBottom
             - contentPaddingBottom
             - statusbarHeight
             - wrapperBorderBottom;
 
         tables.forEach((table) => {
-            table.style.maxHeight = `${Math.max(100, Math.floor(availableHeight))}px`;
+            table.style.maxHeight = `${Math.max(200, Math.floor(availableHeight))}px`;
         });
     }
 
