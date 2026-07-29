@@ -88,7 +88,12 @@ export default class LinkModule {
 
         const anchor = existing ?? document.createElement('a');
         anchor.textContent = String(data.get('text'));
-        anchor.setAttribute('href', String(data.get('href')));
+
+        // Fallback to '#' for unsafe URLs (javascript:, etc.) so the link
+        // is still created but harmless, rather than silently dropping the
+        // attribute which would default to the current page URL.
+        const href = String(data.get('href'));
+        anchor.setAttribute('href', this.editor.sanitizer.isSafeUrl(href) ? href : '#');
         anchor.setAttribute('title', String(data.get('title') ?? ''));
         anchor.setAttribute('target', data.get('newTab') ? '_blank' : '_self');
         if (rel) anchor.setAttribute('rel', rel);

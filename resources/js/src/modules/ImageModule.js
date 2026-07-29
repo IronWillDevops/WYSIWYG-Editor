@@ -167,7 +167,11 @@ export default class ImageModule {
         figure.className = `ife-image ife-image--${align}`;
 
         const img = document.createElement('img');
-        img.src = src;
+        // Only set src when the URL passes safety checks; leave it empty
+        // otherwise so a malicious javascript:-link is never loaded.
+        if (this.editor.sanitizer.isSafeUrl(src)) {
+            img.src = src;
+        }
         img.alt = alt;
         if (lazy) img.loading = 'lazy';
         figure.appendChild(img);
@@ -198,7 +202,9 @@ export default class ImageModule {
 
         const img = figure.querySelector('img');
         if (img) {
-            img.src = src;
+            if (this.editor.sanitizer.isSafeUrl(src)) {
+                img.src = src;
+            }
             img.alt = alt;
             if (lazy) img.setAttribute('loading', 'lazy');
             else img.removeAttribute('loading');
