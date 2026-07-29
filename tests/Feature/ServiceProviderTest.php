@@ -23,5 +23,5 @@ it('renders the <x-editor> Blade component without errors', function () {
     $html = Blade::render('<x-editor name="content" :value="\'<p>hi</p>\'" />');
 
     expect($html)->toContain('name="content"')
-        ->and($html)->toContain('<p>hi</p>');
+        ->and($html)->toContain('&lt;p&gt;hi&lt;/p&gt;');
 });

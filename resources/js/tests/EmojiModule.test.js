@@ -32,7 +32,7 @@ describe('EmojiModule', () => {
 
     it('opens picker with emoji grid', () => {
         module.open();
-        const picker = editor.wrapper.querySelector('.ife-emoji-picker');
+        const picker = document.body.querySelector('.ife-emoji-picker');
         expect(picker).not.toBeNull();
         expect(picker.querySelector('.ife-emoji-picker__header')).not.toBeNull();
         expect(picker.querySelector('.ife-emoji-picker__body')).not.toBeNull();
@@ -42,15 +42,15 @@ describe('EmojiModule', () => {
 
     it('closes picker when close button is clicked', () => {
         module.open();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).not.toBeNull();
-        const closeBtn = editor.wrapper.querySelector('.ife-emoji-picker__close');
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+        const closeBtn = document.body.querySelector('.ife-emoji-picker__close');
         closeBtn.click();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).toBeNull();
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
     it('inserts emoji on button click', () => {
         module.open();
-        const firstBtn = editor.wrapper.querySelector('.ife-emoji-picker__btn');
+        const firstBtn = document.body.querySelector('.ife-emoji-picker__btn');
         const emoji = firstBtn.textContent;
         firstBtn.click();
         expect(editor.selection.restore).toHaveBeenCalled();
@@ -59,21 +59,21 @@ describe('EmojiModule', () => {
 
     it('toggles picker on second open call', () => {
         module.open();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).not.toBeNull();
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
         module.open();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).toBeNull();
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
     it('close method removes picker from DOM', () => {
         module.open();
         module.close();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).toBeNull();
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
     it('destroy removes picker', () => {
         module.open();
         module.destroy();
-        expect(editor.wrapper.querySelector('.ife-emoji-picker')).toBeNull();
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
     it('saves selection on open', () => {
@@ -81,16 +81,21 @@ describe('EmojiModule', () => {
         expect(editor.selection.save).toHaveBeenCalled();
     });
 
-    it('positions picker inside toolbar group when emoji button exists', () => {
-        const group = document.createElement('div');
-        group.className = 'ife-toolbar__group';
+    it('positions picker relative to trigger button with fixed positioning', () => {
         const btn = document.createElement('button');
         btn.className = 'ife-toolbar__btn';
-        btn.dataset.command = 'emoji';
-        group.appendChild(btn);
-        editor.wrapper.appendChild(group);
+        btn.getBoundingClientRect = vi.fn(() => ({
+            top: 100, bottom: 132, left: 200, right: 232, width: 32, height: 32,
+        }));
+        document.body.appendChild(btn);
 
-        module.open();
-        expect(group.querySelector('.ife-emoji-picker')).not.toBeNull();
+        module.open(btn);
+        const picker = document.body.querySelector('.ife-emoji-picker');
+        expect(picker).not.toBeNull();
+        const topVal = parseFloat(picker.style.top);
+        const leftVal = parseFloat(picker.style.left);
+        expect(topVal).toBeGreaterThan(100);
+        expect(leftVal).toBeGreaterThanOrEqual(200);
+        document.body.removeChild(btn);
     });
 });

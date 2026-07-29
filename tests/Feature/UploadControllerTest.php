@@ -43,10 +43,9 @@ it('rejects requests without a file', function () {
 });
 
 it('returns an error when storage fails', function () {
-    $disk = Storage::fake('public');
-    $disk->assertExists('.'); // ensure disk is booted
-    // Force storeAs to return false by making the path unwritable
-    config(['inkforge-editor.upload.path' => '/dev/null/nope']);
+    $disk = Mockery::mock();
+    $disk->shouldReceive('putFileAs')->andReturn(false);
+    Storage::shouldReceive('disk')->with('public')->andReturn($disk);
 
     $file = UploadedFile::fake()->image('photo.jpg', 800, 600)->size(500);
     $response = $this->post(route('inkforge-editor.upload.image'), ['file' => $file]);

@@ -150,12 +150,25 @@ export default class Commands {
 
     /**
      * Replaces the current block element's tag (p, h1-h6, blockquote, pre).
+     * If the block is already the target tag, toggles back to <p>.
      * @param {string} tagName
      */
     setBlockFormat(tagName) {
         const block = this.selection.getBlockElement();
         if (!block || block === this.root) {
             document.execCommand('formatBlock', false, `<${tagName}>`);
+            return;
+        }
+
+        if (block.tagName === tagName.toUpperCase()) {
+            const replacement = document.createElement('p');
+            replacement.innerHTML = block.innerHTML;
+            block.replaceWith(replacement);
+
+            const range = document.createRange();
+            range.selectNodeContents(replacement);
+            range.collapse(false);
+            this.selection.setRange(range);
             return;
         }
 
