@@ -72,7 +72,9 @@ export default class LinkModule {
             removeBtn.type = 'button';
             removeBtn.className = 'ife-btn ife-btn--danger';
             removeBtn.textContent = 'Remove link';
-            removeBtn.addEventListener('click', () => {
+            removeBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.remove(existing);
                 this.dialog.close();
             });
@@ -86,7 +88,12 @@ export default class LinkModule {
 
         const anchor = existing ?? document.createElement('a');
         anchor.textContent = String(data.get('text'));
-        anchor.setAttribute('href', String(data.get('href')));
+
+        // Fallback to '#' for unsafe URLs (javascript:, etc.) so the link
+        // is still created but harmless, rather than silently dropping the
+        // attribute which would default to the current page URL.
+        const href = String(data.get('href'));
+        anchor.setAttribute('href', this.editor.sanitizer.isSafeUrl(href) ? href : '#');
         anchor.setAttribute('title', String(data.get('title') ?? ''));
         anchor.setAttribute('target', data.get('newTab') ? '_blank' : '_self');
         if (rel) anchor.setAttribute('rel', rel);
@@ -113,7 +120,11 @@ export default class LinkModule {
     }
 
     escape(value) {
-        return String(value ?? '').replace(/"/g, '&quot;');
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     destroy() {

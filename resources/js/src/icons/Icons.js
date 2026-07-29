@@ -49,6 +49,8 @@ const Icons = {
     fontSize: svg('<path d="M9 4l-6 16h2.2l1.5-4h6.6l1.5 4H17L11 4H9zm-1.6 10L10 6.6 12.6 14H7.4zM17 12v6h1.5v-3.2h2.8V13H18.5v-1z"/>'),
     save: svg('<path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm-5 16a3 3 0 110-6 3 3 0 010 6zM15 9H6V5h9v4z"/>'),
     close: svg('<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>'),
+    wordCount: svg('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+    charCount: svg('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>'),
 };
 
 export default Icons;

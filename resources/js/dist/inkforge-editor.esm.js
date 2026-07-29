@@ -1,7 +1,7 @@
-var k = Object.defineProperty;
-var E = (r, e, t) => e in r ? k(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var v = (r, e, t) => E(r, typeof e != "symbol" ? e + "" : e, t);
-class T {
+var B = Object.defineProperty;
+var I = (a, e, t) => e in a ? B(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var x = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
+class j {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -26,8 +26,8 @@ class T {
    * @param {(...args: any[]) => void} handler
    */
   once(e, t) {
-    const i = (...n) => {
-      this.off(e, i), t(...n);
+    const i = (...o) => {
+      this.off(e, i), t(...o);
     };
     this.on(e, i);
   }
@@ -37,13 +37,13 @@ class T {
    */
   emit(e, ...t) {
     const i = this.listeners.get(e);
-    i && [...i].forEach((n) => n(...t));
+    i && [...i].forEach((o) => o(...t));
   }
   destroy() {
     this.listeners.clear();
   }
 }
-class H {
+class q {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -130,17 +130,17 @@ class H {
     try {
       t.surroundContents(i);
     } catch {
-      const o = t.extractContents();
-      i.appendChild(o), t.insertNode(i);
+      const n = t.extractContents();
+      i.appendChild(n), t.insertNode(i);
     }
-    const n = document.createRange();
-    return n.selectNodeContents(i), this.setRange(n), i;
+    const o = document.createRange();
+    return o.selectNodeContents(i), this.setRange(o), i;
   }
   focus() {
     this.root.focus(), this.restore();
   }
 }
-class M {
+class P {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -149,8 +149,8 @@ class M {
    * @param {number} [options.debounceMs]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: i = 1e3, debounceMs: n = 300, onChange: o }) {
-    this.getContent = e, this.setContent = t, this.maxSteps = i, this.debounceMs = n, this.onChange = o ?? (() => {
+  constructor({ getContent: e, setContent: t, maxSteps: i = 1e3, debounceMs: o = 300, onChange: n }) {
+    this.getContent = e, this.setContent = t, this.maxSteps = i, this.debounceMs = o, this.onChange = n ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push(this.getContent());
   }
   /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -188,7 +188,7 @@ class M {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class S {
+class U {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -286,8 +286,8 @@ class S {
     }
     const i = document.createElement(e);
     i.innerHTML = t.innerHTML, t.replaceWith(i);
-    const n = document.createRange();
-    n.selectNodeContents(i), n.collapse(!1), this.selection.setRange(n);
+    const o = document.createRange();
+    o.selectNodeContents(i), o.collapse(!1), this.selection.setRange(o);
   }
   /**
    * Applies an inline CSS property to the current selection by wrapping it in a <span>.
@@ -297,14 +297,14 @@ class S {
    */
   setInlineStyle(e, t, i = !1) {
     if (i) {
-      const o = this.selection.getBlockElement();
-      if (o) {
-        o.style[e] = t;
+      const n = this.selection.getBlockElement();
+      if (n) {
+        n.style[e] = t;
         return;
       }
     }
-    const n = this.selection.wrap("span");
-    n && (n.style[e] = t);
+    const o = this.selection.wrap("span");
+    o && (o.style[e] = t);
   }
   /**
    * Toggles the current selection in/out of a <ul>/<ol> list, or converts
@@ -322,19 +322,19 @@ class S {
     if (!t) return;
     const i = this.selection.closest("li");
     if (i) {
-      const a = i.closest("ul, ol");
-      a && a.tagName.toLowerCase() === e ? this.unwrapList(a) : a && this.convertList(a, e);
+      const r = i.closest("ul, ol");
+      r && r.tagName.toLowerCase() === e ? this.unwrapList(r) : r && this.convertList(r, e);
       return;
     }
-    const n = this.getBlocksInRange(t);
-    if (!n.length) return;
-    const o = document.createElement(e);
-    n.forEach((a) => {
+    const o = this.getBlocksInRange(t);
+    if (!o.length) return;
+    const n = document.createElement(e);
+    o.forEach((r) => {
       const l = document.createElement("li");
-      l.innerHTML = a.innerHTML || "<br>", o.appendChild(l);
-    }), n[0].replaceWith(o), n.slice(1).forEach((a) => a.remove());
+      l.innerHTML = r.innerHTML || "<br>", n.appendChild(l);
+    }), o[0].replaceWith(n), o.slice(1).forEach((r) => r.remove());
     const s = document.createRange();
-    s.selectNodeContents(o.lastElementChild), s.collapse(!1), this.selection.setRange(s);
+    s.selectNodeContents(n.lastElementChild), s.collapse(!1), this.selection.setRange(s);
   }
   /**
    * Finds the top-level block elements (paragraphs, headings, etc.)
@@ -351,35 +351,35 @@ class S {
         d = d.parentElement;
       }
       return null;
-    }, n = i(e.startContainer);
-    if (!n) return [];
-    const o = i(e.endContainer) ?? n;
-    if (n === o) return [n];
+    }, o = i(e.startContainer);
+    if (!o) return [];
+    const n = i(e.endContainer) ?? o;
+    if (o === n) return [o];
     const s = [];
-    let a = n;
-    for (; a && (s.push(a), a !== o); )
-      a = a.nextElementSibling;
-    return s.length ? s : [n];
+    let r = o;
+    for (; r && (s.push(r), r !== n); )
+      r = r.nextElementSibling;
+    return s.length ? s : [o];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
   convertList(e, t) {
     const i = document.createElement(t);
     i.className = e.className, i.innerHTML = e.innerHTML, e.replaceWith(i);
-    const n = document.createRange();
-    n.selectNodeContents(i), n.collapse(!1), this.selection.setRange(n);
+    const o = document.createRange();
+    o.selectNodeContents(i), o.collapse(!1), this.selection.setRange(o);
   }
   /** Removes a list, turning each <li> back into a plain paragraph. @param {HTMLElement} list */
   unwrapList(e) {
     const t = document.createDocumentFragment();
-    [...e.children].forEach((n) => {
-      if (n.tagName !== "LI") return;
-      const o = document.createElement("p");
-      o.innerHTML = n.innerHTML || "<br>", t.appendChild(o);
+    [...e.children].forEach((o) => {
+      if (o.tagName !== "LI") return;
+      const n = document.createElement("p");
+      n.innerHTML = o.innerHTML || "<br>", t.appendChild(n);
     });
     const i = t.lastElementChild;
     if (e.replaceWith(t), i) {
-      const n = document.createRange();
-      n.selectNodeContents(i), n.collapse(!1), this.selection.setRange(n);
+      const o = document.createRange();
+      o.selectNodeContents(i), o.collapse(!1), this.selection.setRange(o);
     }
   }
   /**
@@ -388,17 +388,17 @@ class S {
    * Backs the "clear formatting" / "reset text color" toolbar action.
    */
   clearInlineStyles() {
-    var n;
+    var o;
     const e = this.selection.getRange();
     if (!e) return;
     let t = e.commonAncestorContainer;
     if (t.nodeType === Node.TEXT_NODE && (t = t.parentElement), !(t instanceof HTMLElement)) return;
-    ((n = t.style) != null && n.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((o) => {
-      if (e.intersectsNode(o) && (o.removeAttribute("style"), ["SPAN", "FONT"].includes(o.tagName) && o.attributes.length === 0)) {
-        const s = o.parentNode;
+    ((o = t.style) != null && o.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((n) => {
+      if (!(!this.root.contains(n) || !e.intersectsNode(n)) && (n.removeAttribute("style"), ["SPAN", "FONT"].includes(n.tagName) && n.attributes.length === 0)) {
+        const s = n.parentNode;
         if (!s) return;
-        for (; o.firstChild; ) s.insertBefore(o.firstChild, o);
-        s.removeChild(o);
+        for (; n.firstChild; ) s.insertBefore(n.firstChild, n);
+        s.removeChild(n);
       }
     });
   }
@@ -408,15 +408,15 @@ class S {
     const t = this.selection.getRange();
     if (!t) return;
     t.deleteContents();
-    const i = t.createContextualFragment(e), n = i.lastChild;
-    if (t.insertNode(i), n) {
-      const o = document.createRange();
-      o.setStartAfter(n), o.collapse(!0), this.selection.setRange(o);
+    const i = t.createContextualFragment(e), o = i.lastChild;
+    if (t.insertNode(i), o) {
+      const n = document.createRange();
+      n.setStartAfter(o), n.collapse(!0), this.selection.setRange(n);
     }
     this.editor.emitChange();
   }
 }
-const x = /* @__PURE__ */ new Set([
+const O = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -437,6 +437,7 @@ const x = /* @__PURE__ */ new Set([
   "blockquote",
   "pre",
   "code",
+  "mark",
   "ul",
   "ol",
   "li",
@@ -454,7 +455,7 @@ const x = /* @__PURE__ */ new Set([
   "source",
   "iframe",
   "hr"
-]), z = {
+]), W = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -464,8 +465,8 @@ const x = /* @__PURE__ */ new Set([
   source: /* @__PURE__ */ new Set(["src", "type"]),
   td: /* @__PURE__ */ new Set(["colspan", "rowspan"]),
   th: /* @__PURE__ */ new Set(["colspan", "rowspan", "scope"])
-}, R = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class N {
+}, X = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class K {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -473,7 +474,7 @@ class N {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : x, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : z, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : R;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : O, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
   }
   /**
    * @param {string} dirtyHtml
@@ -485,42 +486,42 @@ class N {
   }
   /** @param {Node} root */
   cleanNode(e) {
-    const t = document.createTreeWalker(e, NodeFilter.SHOW_ELEMENT, null), i = [];
-    let n = t.nextNode();
-    for (; n; ) {
-      const o = (
+    const t = [...e.childNodes];
+    for (let i = 0; i < t.length; i++) {
+      const o = t[i];
+      if (o.nodeType !== Node.ELEMENT_NODE) continue;
+      const n = (
         /** @type {HTMLElement} */
-        n
-      ), s = o.tagName.toLowerCase();
+        o
+      ), s = n.tagName.toLowerCase();
       if (s === "script" || s === "style" || s === "noscript") {
-        i.push(o), n = t.nextNode();
+        n.remove();
         continue;
       }
-      if (!this.allowedTags.has(s)) {
-        this.unwrap(o), n = t.nextNode();
+      if (this.cleanNode(n), !this.allowedTags.has(s)) {
+        this.unwrap(n);
         continue;
       }
-      this.cleanAttributes(o, s), n = t.nextNode();
+      this.cleanAttributes(n, s);
     }
-    i.forEach((o) => o.remove());
   }
   /**
    * @param {HTMLElement} el
    * @param {string} tag
    */
   cleanAttributes(e, t) {
-    const i = this.allowedAttrs["*"] ?? /* @__PURE__ */ new Set(), n = this.allowedAttrs[t] ?? /* @__PURE__ */ new Set();
-    [...e.attributes].forEach((o) => {
-      const s = o.name.toLowerCase();
+    const i = this.allowedAttrs["*"] ?? /* @__PURE__ */ new Set(), o = this.allowedAttrs[t] ?? /* @__PURE__ */ new Set();
+    [...e.attributes].forEach((n) => {
+      const s = n.name.toLowerCase();
       if (s.startsWith("on")) {
-        e.removeAttribute(o.name);
+        e.removeAttribute(n.name);
         return;
       }
-      if (!i.has(s) && !n.has(s)) {
-        e.removeAttribute(o.name);
+      if (!i.has(s) && !o.has(s)) {
+        e.removeAttribute(n.name);
         return;
       }
-      (s === "href" || s === "src") && !this.isSafeUrl(o.value) && e.removeAttribute(o.name), s === "style" && e.setAttribute("style", this.cleanStyle(o.value));
+      (s === "href" || s === "src") && !this.isSafeUrl(n.value) && e.removeAttribute(n.name), s === "style" && e.setAttribute("style", this.cleanStyle(n.value));
     });
   }
   /** @param {string} value */
@@ -534,7 +535,16 @@ class N {
       return !1;
     }
   }
-  /** Strips dangerous CSS such as expression()/url(javascript:). */
+  /**
+   * Strips dangerous CSS such as expression()/url(javascript:) using a
+   * simple regex filter over each declaration. This is sufficient for the
+   * common XSS patterns found in pasted content. A full CSS parser would
+   * be needed to catch obfuscated variants (e.g. nested expressions,
+   * string-encoded javascript: inside url()), but the editor targets
+   * typical copy-paste scenarios where a dedicated attacker would use
+   * far simpler vectors like <script> or event handlers, which the
+   * whitelist-based tag/attr sanitizer already blocks entirely.
+   */
   cleanStyle(e) {
     return e.split(";").filter((t) => !/expression\s*\(|javascript:/i.test(t)).join(";");
   }
@@ -547,29 +557,29 @@ class N {
     }
   }
 }
-const A = {
+const G = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, y = /* @__PURE__ */ new Map();
-let b = class {
+}, z = /* @__PURE__ */ new Map();
+let w = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
-    var i, n;
-    this.textarea = e, this.options = { ...A, ...t }, this.events = new T(), this.sanitizer = new N(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new H(this.root), this.commands = new S(this), this.history = new M({
+    var i, o;
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new j(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new q(this.root), this.commands = new U(this), this.history = new P({
       getContent: () => this.root.innerHTML,
-      setContent: (o) => {
-        this.root.innerHTML = o;
+      setContent: (n) => {
+        this.root.innerHTML = n;
       },
       maxSteps: ((i = this.options.history) == null ? void 0 : i.max_steps) ?? 1e3,
-      debounceMs: ((n = this.options.history) == null ? void 0 : n.debounce_ms) ?? 300,
-      onChange: (o) => this.events.emit(o)
-    }), this.bindEvents(), this.applyTheme(this.options.theme), this.loadPlugins(), this.setupAutosave(), this.events.emit("init", this);
+      debounceMs: ((o = this.options.history) == null ? void 0 : o.debounce_ms) ?? 300,
+      onChange: (n) => this.events.emit(n)
+    }), this.handleShortcut = this.handleShortcut.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this.loadPlugins(), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
@@ -580,7 +590,7 @@ let b = class {
       this.history.record(), this.emitChange();
     }), this.root.addEventListener("keyup", () => this.syncSelectionState()), this.root.addEventListener("mouseup", () => this.syncSelectionState()), this.root.addEventListener("focus", () => this.events.emit("focus", this)), this.root.addEventListener("blur", () => {
       this.selection.save(), this.syncTextarea(), this.events.emit("blur", this);
-    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), document.addEventListener("keydown", this.handleShortcut.bind(this)), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
+    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), document.addEventListener("keydown", this.handleShortcut), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
   }
   syncSelectionState() {
     this.selection.save(), this.events.emit("selectionchange", this);
@@ -593,10 +603,10 @@ let b = class {
   }
   /** @param {ClipboardEvent} event */
   handlePaste(e) {
-    var o, s;
-    e.preventDefault();
-    const t = (o = e.clipboardData) == null ? void 0 : o.getData("text/html"), i = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "", n = t ? this.sanitizer.sanitize(t) : this.escapeHtml(i);
-    this.commands.insertHTML(n), this.events.emit("paste", { html: t, text: i });
+    var n, s;
+    if (e.preventDefault(), this.destroyed) return;
+    const t = (n = e.clipboardData) == null ? void 0 : n.getData("text/html"), i = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "", o = t ? this.sanitizer.sanitize(t) : this.escapeHtml(i);
+    this.commands.insertHTML(o), this.events.emit("paste", { html: t, text: i });
   }
   /** @param {string} text */
   escapeHtml(e) {
@@ -605,8 +615,8 @@ let b = class {
   }
   /** @param {KeyboardEvent} event */
   handleShortcut(e) {
-    if (!this.root.contains(document.activeElement) || !(e.ctrlKey || e.metaKey)) return;
-    const n = {
+    if (this.destroyed || !this.root.contains(document.activeElement) || !(e.ctrlKey || e.metaKey)) return;
+    const o = {
       b: () => this.commands.exec("bold"),
       i: () => this.commands.exec("italic"),
       u: () => this.commands.exec("underline"),
@@ -614,7 +624,7 @@ let b = class {
       y: () => this.history.redo(),
       s: () => this.events.emit("save", this.getHTML())
     }[e.key.toLowerCase()];
-    n && (e.preventDefault(), n());
+    o && (e.preventDefault(), o());
   }
   setupAutosave() {
     const e = this.options.autosave;
@@ -633,7 +643,7 @@ let b = class {
    */
   loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []);
-    y.forEach((t, i) => {
+    z.forEach((t, i) => {
       e.has(i) || this.plugins.set(i, t(this));
     });
   }
@@ -672,7 +682,12 @@ let b = class {
     this.history.redo(), this.emitChange();
   }
   clear() {
-    this.setHTML(""), this.history.clear();
+    var e;
+    if (this.setHTML(""), this.history.clear(), (e = this.options.autosave) != null && e.enabled)
+      try {
+        window.localStorage.removeItem(this.options.autosave.storage_key);
+      } catch {
+      }
   }
   focus() {
     this.selection.focus();
@@ -681,10 +696,10 @@ let b = class {
     return this.root.textContent ?? "";
   }
   destroy() {
-    this.plugins.forEach((e) => {
+    this.destroyed || (this.destroyed = !0, this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy();
+    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
   }
   /**
    * @param {string} event
@@ -698,10 +713,10 @@ let b = class {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    y.set(e, t);
+    z.set(e, t);
   }
 };
-const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, h = {
+const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${a}</svg>`, h = {
   undo: c('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
   redo: c('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
   bold: c('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
@@ -737,10 +752,12 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: c('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
   fullscreen: c('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
   indent: c('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>')
-}, $ = {
-  undo: { icon: h.undo, label: "Undo (Ctrl+Z)", type: "action", action: (r) => r.undo() },
-  redo: { icon: h.redo, label: "Redo (Ctrl+Y)", type: "action", action: (r) => r.redo() },
+  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
+}, J = {
+  undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (a) => a.undo() },
+  redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (a) => a.redo() },
   blockFormat: {
     label: "Paragraph style",
     type: "select",
@@ -755,7 +772,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["blockquote", "Blockquote"],
       ["pre", "Preformatted"]
     ],
-    onChange: (r, e) => r.commands.exec("blockFormat", e)
+    onChange: (a, e) => a.commands.exec("blockFormat", e)
   },
   fontFamily: {
     label: "Font family",
@@ -768,7 +785,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ['"Times New Roman", serif', "Times New Roman"],
       ["Verdana, sans-serif", "Verdana"]
     ],
-    onChange: (r, e) => r.commands.exec("fontName", e)
+    onChange: (a, e) => a.commands.exec("fontName", e)
   },
   fontSize: {
     label: "Font size",
@@ -782,11 +799,11 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["32px", "32"],
       ["48px", "48"]
     ],
-    onChange: (r, e) => r.commands.exec("fontSize", e)
+    onChange: (a, e) => a.commands.exec("fontSize", e)
   },
-  bold: { icon: h.bold, label: "Bold (Ctrl+B)", type: "command", command: "bold" },
-  italic: { icon: h.italic, label: "Italic (Ctrl+I)", type: "command", command: "italic" },
-  underline: { icon: h.underline, label: "Underline (Ctrl+U)", type: "command", command: "underline" },
+  bold: { icon: h.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: h.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: h.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
   strike: { icon: h.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
   superscript: { icon: h.superscript, label: "Superscript", type: "command", command: "superscript" },
   subscript: { icon: h.subscript, label: "Subscript", type: "command", command: "subscript" },
@@ -808,62 +825,62 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     icon: h.checklist,
     label: "Checklist",
     type: "action",
-    action: (r) => r.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
+    action: (a) => a.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
   indent: { icon: h.indent, label: "Increase indent", type: "command", command: "indent" },
   outdent: { icon: h.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: h.link, label: "Insert/edit link", type: "action", action: (r) => r.module("link").open() },
+  link: { icon: h.link, label: "Insert/edit link", type: "action", action: (a) => a.module("link").open() },
   unlink: {
     icon: h.unlink,
     label: "Remove link",
     type: "action",
-    action: (r) => {
-      const e = r.selection.closest("a");
-      e && r.module("link").remove(e);
+    action: (a) => {
+      const e = a.selection.closest("a");
+      e && a.module("link").remove(e);
     }
   },
-  image: { icon: h.image, label: "Insert image", type: "action", action: (r) => r.module("image").open() },
-  video: { icon: h.videocam, label: "Insert video", type: "action", action: (r) => r.module("media").openVideo() },
-  audio: { icon: h.audiotrack, label: "Insert audio", type: "action", action: (r) => r.module("media").openAudio() },
-  table: { icon: h.table, label: "Insert table", type: "action", action: (r) => r.module("table").openInsertDialog() },
-  hr: { icon: h.hr, label: "Horizontal rule", type: "action", action: (r) => r.module("media").insertHorizontalRule() },
-  blockquote: { icon: h.blockquote, label: "Blockquote", type: "action", action: (r) => r.commands.exec("blockFormat", "blockquote") },
+  image: { icon: h.image, label: "Insert image", type: "action", action: (a) => a.module("image").open() },
+  video: { icon: h.videocam, label: "Insert video", type: "action", action: (a) => a.module("media").openVideo() },
+  audio: { icon: h.audiotrack, label: "Insert audio", type: "action", action: (a) => a.module("media").openAudio() },
+  table: { icon: h.table, label: "Insert table", type: "action", action: (a) => a.module("table").openInsertDialog() },
+  hr: { icon: h.hr, label: "Horizontal rule", type: "action", action: (a) => a.module("media").insertHorizontalRule() },
+  blockquote: { icon: h.blockquote, label: "Blockquote", type: "action", action: (a) => a.commands.exec("blockFormat", "blockquote") },
   codeInline: {
     icon: h.code,
     label: "Inline code",
     type: "action",
-    action: (r) => r.selection.wrap("code") && r.emitChange()
+    action: (a) => a.selection.wrap("code") && a.emitChange()
   },
-  codeBlock: { icon: h.codeBlock, label: "Code block", type: "action", action: (r) => r.commands.exec("blockFormat", "pre") },
-  note: { icon: h.note, label: "Insert note", type: "action", action: (r) => r.module("note").open() },
+  codeBlock: { icon: h.codeBlock, label: "Code block", type: "action", action: (a) => a.commands.exec("blockFormat", "pre") },
+  note: { icon: h.note, label: "Insert note", type: "action", action: (a) => a.module("note").open() },
   emoji: {
     icon: h.emoji,
     label: "Emoji",
     type: "action",
-    action: (r) => r.commands.insertHTML("😀")
+    action: (a) => a.module("emoji").open()
   },
   specialChars: {
     icon: h.specialChars,
     label: "Special characters",
     type: "action",
-    action: (r) => r.commands.insertHTML("&amp;copy;")
+    action: (a) => a.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: h.find, label: "Find & Replace", type: "action", action: (r) => r.module("find").open() },
+  find: { icon: h.find, label: "Find & Replace", type: "action", action: (a) => a.module("find").open() },
   sourceCode: {
     icon: h.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("codeView").toggle()
+    action: (a) => a.module("codeView").toggle()
   },
   fullscreen: {
     icon: h.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("fullscreen").toggle()
+    action: (a) => a.module("fullscreen").toggle()
   }
-}, D = {
+}, Y = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -885,7 +902,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Source code",
   fullscreen: "Fullscreen",
   uploadFailed: "Failed to upload the file. Please try again."
-}, F = {
+}, Q = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -907,7 +924,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз."
-}, I = {
+}, Z = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -929,30 +946,30 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Исходный код",
   fullscreen: "Полноэкранный режим",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
-}, f = /* @__PURE__ */ new Map([
-  ["en", D],
-  ["uk", F],
-  ["ru", I]
-]), C = {
+}, v = /* @__PURE__ */ new Map([
+  ["en", Y],
+  ["uk", Q],
+  ["ru", Z]
+]), R = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
    */
-  register(r, e) {
-    f.set(r, e);
+  register(a, e) {
+    v.set(a, e);
   },
   /**
    * @param {string} locale
    * @param {string} key
    * @returns {string}
    */
-  t(r, e) {
-    return (f.get(r) ?? f.get("en"))[e] ?? f.get("en")[e] ?? e;
+  t(a, e) {
+    return (v.get(a) ?? v.get("en"))[e] ?? v.get("en")[e] ?? e;
   },
   available() {
-    return [...f.keys()];
+    return [...v.keys()];
   }
-}, _ = [
+}, ee = [
   ["undo", "redo"],
   ["blockFormat", "fontFamily", "fontSize"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -964,22 +981,22 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   ["emoji", "specialChars"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class V {
+class te {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? _, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? ee, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((i) => {
-        const n = $[i];
-        if (!n) return;
-        const o = this.buildControl(i, n);
-        o && t.appendChild(o);
+        const o = J[i];
+        if (!o) return;
+        const n = this.buildControl(i, o);
+        n && t.appendChild(n);
       }), t.children.length && this.el.appendChild(t);
     });
   }
@@ -987,28 +1004,34 @@ class V {
     return t.type === "select" ? this.buildSelect(e, t) : t.type === "color" ? this.buildColorPicker(e, t) : this.buildButton(e, t);
   }
   buildButton(e, t) {
-    const i = this.editor.options.locale ?? "en", n = C.t(i, e) !== e ? C.t(i, e) : t.label, o = document.createElement("button");
-    return o.type = "button", o.className = "ife-toolbar__btn", o.dataset.command = e, o.title = n, o.setAttribute("aria-label", n), o.innerHTML = t.icon ?? "", o.addEventListener("mousedown", (s) => s.preventDefault()), o.addEventListener("click", () => {
+    const i = this.editor.options.locale ?? "en";
+    let o = R.t(i, e) !== e ? R.t(i, e) : t.label;
+    if (t.shortcut) {
+      const s = t.shortcut.replace(/Ctrl/g, "⌘");
+      o += ` (${t.shortcut} / ${s})`;
+    }
+    const n = document.createElement("button");
+    return n.type = "button", n.className = "ife-toolbar__btn", n.dataset.command = e, n.title = o, n.setAttribute("aria-label", o), n.innerHTML = t.icon ?? "", n.addEventListener("mousedown", (s) => s.preventDefault()), n.addEventListener("click", () => {
       var s;
-      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor), t.toggle && o.classList.toggle("is-active"), this.syncActiveStates();
-    }), this.buttons.set(e, o), o;
+      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor), t.toggle && n.classList.toggle("is-active"), this.syncActiveStates();
+    }), this.buttons.set(e, n), n;
   }
   buildSelect(e, t) {
     const i = document.createElement("select");
-    return i.className = "ife-toolbar__select", i.setAttribute("aria-label", t.label), t.options.forEach(([n, o]) => {
+    return i.className = "ife-toolbar__select", i.setAttribute("aria-label", t.label), t.options.forEach(([o, n]) => {
       const s = document.createElement("option");
-      s.value = n, s.textContent = o, i.appendChild(s);
-    }), i.addEventListener("mousedown", (n) => n.stopPropagation()), i.addEventListener("change", () => {
+      s.value = o, s.textContent = n, i.appendChild(s);
+    }), i.addEventListener("mousedown", (o) => o.stopPropagation()), i.addEventListener("change", () => {
       this.editor.selection.restore(), t.onChange(this.editor, i.value);
     }), this.buttons.set(e, i), i;
   }
   buildColorPicker(e, t) {
     const i = document.createElement("label");
     i.className = "ife-toolbar__color", i.title = t.label, i.innerHTML = t.icon;
-    const n = document.createElement("input");
-    return n.type = "color", n.setAttribute("aria-label", t.label), n.addEventListener("input", () => {
-      this.editor.selection.restore(), this.editor.commands.exec(t.command, n.value);
-    }), i.appendChild(n), this.buttons.set(e, i), i;
+    const o = document.createElement("input");
+    return o.type = "color", o.setAttribute("aria-label", t.label), o.addEventListener("input", () => {
+      this.editor.selection.restore(), this.editor.commands.exec(t.command, o.value);
+    }), i.appendChild(o), this.buttons.set(e, i), i;
   }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
   syncActiveStates() {
@@ -1021,9 +1044,25 @@ class V {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([t, i]) => {
-      const n = this.buttons.get(t);
-      n instanceof HTMLElement && n.classList.toggle("is-active", this.editor.commands.queryState(i));
+    }).forEach(([o, n]) => {
+      const s = this.buttons.get(o);
+      s instanceof HTMLElement && s.classList.toggle("is-active", this.editor.commands.queryState(n));
+    });
+    const t = this.editor.selection.getBlockElement();
+    let i = "";
+    if (t) {
+      let o = t;
+      for (; o && o !== this.editor.root; ) {
+        if (o.style.textAlign) {
+          i = o.style.textAlign;
+          break;
+        }
+        o = o.parentElement;
+      }
+    }
+    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((o) => {
+      const n = this.buttons.get(o);
+      n instanceof HTMLElement && n.classList.toggle("is-active", i === o.replace("align", "").toLowerCase());
     });
   }
   setEnabled(e, t) {
@@ -1034,7 +1073,7 @@ class V {
     this.el.remove();
   }
 }
-class g {
+class f {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1044,8 +1083,8 @@ class g {
    * @param {string} [config.cancelLabel]
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    */
-  constructor(e, { title: t, bodyHtml: i, confirmLabel: n = "OK", cancelLabel: o = "Cancel", onConfirm: s }) {
-    v(this, "handleEscape", (e) => {
+  constructor(e, { title: t, bodyHtml: i, confirmLabel: o = "OK", cancelLabel: n = "Cancel", onConfirm: s }) {
+    x(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1056,33 +1095,52 @@ class g {
                 </header>
                 <div class="ife-dialog__body">${i}</div>
                 <footer class="ife-dialog__footer">
-                    <button type="button" class="ife-btn ife-btn--ghost" data-action="cancel">${o}</button>
-                    <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${n}</button>
+                    <button type="button" class="ife-btn ife-btn--ghost" data-action="cancel">${n}</button>
+                    <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
-      a.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), this.onConfirm(this.form), this.close();
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((r) => {
+      r.addEventListener("click", (l) => l.stopPropagation()), r.addEventListener("keydown", (l) => l.stopPropagation());
+    }), this.overlay.querySelectorAll("button").forEach((r) => {
+      r.addEventListener("mousedown", (l) => l.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (r) => {
+      r.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (r) => {
+      r.preventDefault(), r.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
-    this.container.appendChild(this.overlay);
-    const e = this.form.querySelector("input, textarea, select");
-    e == null || e.focus();
+    this.scrollPos = { x: window.scrollX, y: window.scrollY }, this.containerScrollTop = this.container.scrollTop, document.body.style.overflow = "hidden", document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`, document.body.appendChild(this.overlay);
+    const e = getComputedStyle(this.container);
+    [
+      "--ife-bg",
+      "--ife-text",
+      "--ife-border",
+      "--ife-toolbar-bg",
+      "--ife-btn-hover",
+      "--ife-btn-active",
+      "--ife-accent",
+      "--ife-danger",
+      "--ife-radius",
+      "--ife-font"
+    ].forEach((o) => {
+      this.overlay.style.setProperty(o, e.getPropertyValue(o));
+    });
+    const i = this.form.querySelector("input, textarea, select");
+    i == null || i.focus({ preventScroll: !0 });
   }
   close() {
-    document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
+    document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
   }
 }
-class B {
+class ie {
   constructor(e) {
     this.editor = e, this.handleDblClick = this.handleDblClick.bind(this), e.root.addEventListener("dblclick", this.handleDblClick);
   }
   /** @param {MouseEvent} event */
   handleDblClick(e) {
-    var n, o;
-    const t = (o = (n = e.target).closest) == null ? void 0 : o.call(n, "a");
+    var o, n;
+    const t = (n = (o = e.target).closest) == null ? void 0 : n.call(o, "a");
     if (!t || !this.editor.root.contains(t)) return;
     e.preventDefault();
     const i = document.createRange();
@@ -1113,24 +1171,26 @@ class B {
                 <label class="ife-field--inline"><input type="checkbox" name="noreferrer" ${e != null && e.rel.includes("noreferrer") ? "checked" : ""}> noreferrer</label>
             </fieldset>
         `;
-    if (this.dialog = new g(this.editor.wrapper, {
+    if (this.dialog = new f(this.editor.wrapper, {
       title: e ? "Edit link" : "Insert link",
       bodyHtml: i,
       confirmLabel: e ? "Update" : "Insert",
-      onConfirm: (n) => this.apply(n, e)
+      onConfirm: (o) => this.apply(o, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
-      const n = document.createElement("button");
-      n.type = "button", n.className = "ife-btn ife-btn--danger", n.textContent = "Remove link", n.addEventListener("click", () => {
-        this.remove(e), this.dialog.close();
-      }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(n);
+      const o = document.createElement("button");
+      o.type = "button", o.className = "ife-btn ife-btn--danger", o.textContent = "Remove link", o.addEventListener("mousedown", (n) => n.preventDefault()), o.addEventListener("click", (n) => {
+        n.stopPropagation(), this.remove(e), this.dialog.close();
+      }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(o);
     }
   }
   apply(e, t) {
-    const i = new FormData(e), n = ["nofollow", "noopener", "noreferrer"].filter((s) => i.get(s)).join(" "), o = t ?? document.createElement("a");
-    if (o.textContent = String(i.get("text")), o.setAttribute("href", String(i.get("href"))), o.setAttribute("title", String(i.get("title") ?? "")), o.setAttribute("target", i.get("newTab") ? "_blank" : "_self"), n ? o.setAttribute("rel", n) : o.removeAttribute("rel"), this.editor.history.push(), !t) {
+    const i = new FormData(e), o = ["nofollow", "noopener", "noreferrer"].filter((r) => i.get(r)).join(" "), n = t ?? document.createElement("a");
+    n.textContent = String(i.get("text"));
+    const s = String(i.get("href"));
+    if (n.setAttribute("href", this.editor.sanitizer.isSafeUrl(s) ? s : "#"), n.setAttribute("title", String(i.get("title") ?? "")), n.setAttribute("target", i.get("newTab") ? "_blank" : "_self"), o ? n.setAttribute("rel", o) : n.removeAttribute("rel"), this.editor.history.push(), !t) {
       this.editor.selection.restore();
-      const s = this.editor.selection.getRange();
-      s == null || s.deleteContents(), s == null || s.insertNode(o);
+      const r = this.editor.selection.getRange();
+      r == null || r.deleteContents(), r == null || r.insertNode(n);
     }
     this.editor.emitChange();
   }
@@ -1141,19 +1201,19 @@ class B {
     t.removeChild(e), this.editor.emitChange();
   }
   escape(e) {
-    return String(e ?? "").replace(/"/g, "&quot;");
+    return String(e ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   destroy() {
     var e;
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("dblclick", this.handleDblClick);
   }
 }
-class q {
+class oe {
   constructor(e) {
     this.editor = e, this.uploadUrl = e.options.uploadUrl, this.handleDrop = this.handleDrop.bind(this), this.handleClick = this.handleClick.bind(this), this.handleDblClick = this.handleDblClick.bind(this), this.handleMouseDown = this.handleMouseDown.bind(this), e.root.addEventListener("dragover", (t) => t.preventDefault()), e.root.addEventListener("drop", this.handleDrop), e.root.addEventListener("click", this.handleClick), e.root.addEventListener("dblclick", this.handleDblClick), e.root.addEventListener("mousedown", this.handleMouseDown);
   }
   open() {
-    const e = this.getSelectedFigure(), t = e == null ? void 0 : e.querySelector("img"), i = e == null ? void 0 : e.querySelector("figcaption"), n = ["left", "center", "right"].find((s) => e == null ? void 0 : e.classList.contains(`ife-image--${s}`)) ?? "center", o = `
+    const e = this.getSelectedFigure(), t = e == null ? void 0 : e.querySelector("img"), i = e == null ? void 0 : e.querySelector("figcaption"), o = ["left", "center", "right"].find((s) => e == null ? void 0 : e.classList.contains(`ife-image--${s}`)) ?? "center", n = `
             <div class="ife-tabs">
                 <label class="ife-field">
                     <span>Image URL</span>
@@ -1174,10 +1234,10 @@ class q {
                 <label class="ife-field">
                     <span>Alignment</span>
                     <select name="align">
-                        <option value="none" ${n === "none" ? "selected" : ""}>None</option>
-                        <option value="left" ${n === "left" ? "selected" : ""}>Left</option>
-                        <option value="center" ${n === "center" ? "selected" : ""}>Center</option>
-                        <option value="right" ${n === "right" ? "selected" : ""}>Right</option>
+                        <option value="none" ${o === "none" ? "selected" : ""}>None</option>
+                        <option value="left" ${o === "left" ? "selected" : ""}>Left</option>
+                        <option value="center" ${o === "center" ? "selected" : ""}>Center</option>
+                        <option value="right" ${o === "right" ? "selected" : ""}>Right</option>
                     </select>
                 </label>
                 <label class="ife-field--inline">
@@ -1186,15 +1246,15 @@ class q {
                 </label>
             </div>
         `;
-    if (this.dialog = new g(this.editor.wrapper, {
+    if (this.dialog = new f(this.editor.wrapper, {
       title: e ? "Edit image" : "Insert image",
-      bodyHtml: o,
+      bodyHtml: n,
       confirmLabel: e ? "Update" : "Insert",
       onConfirm: (s) => this.handleSubmit(s, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
       const s = document.createElement("button");
-      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("click", () => {
-        this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
+      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("mousedown", (r) => r.preventDefault()), s.addEventListener("click", (r) => {
+        r.stopPropagation(), this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
       }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(s);
     }
   }
@@ -1203,11 +1263,11 @@ class q {
     return this.editor.root.querySelector("figure.ife-image--selected") ?? this.editor.selection.closest("figure.ife-image");
   }
   async handleSubmit(e, t) {
-    const i = new FormData(e), n = i.get("file");
-    let o = String(i.get("src") ?? "");
-    if (n instanceof File && n.size > 0 && (o = await this.upload(n), !o) || !o) return;
+    const i = new FormData(e), o = i.get("file");
+    let n = String(i.get("src") ?? "");
+    if (o instanceof File && o.size > 0 && (n = await this.upload(o), !n) || !n) return;
     const s = {
-      src: o,
+      src: n,
       alt: String(i.get("alt") ?? ""),
       caption: String(i.get("caption") ?? ""),
       align: String(i.get("align") ?? "center"),
@@ -1217,35 +1277,35 @@ class q {
   }
   /** @param {File} file */
   async upload(e) {
-    var n;
+    var o;
     if (!this.uploadUrl)
       return console.warn("InkForge Editor: no uploadUrl configured, falling back to a local object URL."), URL.createObjectURL(e);
     const t = new FormData();
     t.append("file", e);
-    const i = (n = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : n.content;
+    const i = (o = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : o.content;
     try {
-      const o = await fetch(this.uploadUrl, {
+      const n = await fetch(this.uploadUrl, {
         method: "POST",
         headers: i ? { "X-CSRF-TOKEN": i } : {},
         body: t,
         credentials: "same-origin"
-      }), s = await o.json();
-      if (!o.ok || !s.success)
+      }), s = await n.json();
+      if (!n.ok || !s.success)
         throw new Error(s.message ?? "Upload failed");
       return s.url;
-    } catch (o) {
-      return this.editor.events.emit("error", o), null;
+    } catch (n) {
+      return this.editor.events.emit("error", n), null;
     }
   }
   /**
    * @param {{src:string, alt:string, caption:string, align:string, lazy:boolean}} options
    */
-  insert({ src: e, alt: t, caption: i, align: n, lazy: o }) {
+  insert({ src: e, alt: t, caption: i, align: o, lazy: n }) {
     this.editor.history.push(), this.editor.selection.restore();
     const s = document.createElement("figure");
-    s.className = `ife-image ife-image--${n}`;
-    const a = document.createElement("img");
-    if (a.src = e, a.alt = t, o && (a.loading = "lazy"), s.appendChild(a), i) {
+    s.className = `ife-image ife-image--${o}`;
+    const r = document.createElement("img");
+    if (this.editor.sanitizer.isSafeUrl(e) && (r.src = e), r.alt = t, n && (r.loading = "lazy"), s.appendChild(r), i) {
       const d = document.createElement("figcaption");
       d.textContent = i, s.appendChild(d);
     }
@@ -1258,58 +1318,58 @@ class q {
    * @param {HTMLElement} figure
    * @param {{src:string, alt:string, caption:string, align:string, lazy:boolean}} options
    */
-  update(e, { src: t, alt: i, caption: n, align: o, lazy: s }) {
-    this.editor.history.push(), e.className = `ife-image ife-image--${o}`;
-    const a = e.querySelector("img");
-    a && (a.src = t, a.alt = i, s ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading"));
+  update(e, { src: t, alt: i, caption: o, align: n, lazy: s }) {
+    this.editor.history.push(), e.className = `ife-image ife-image--${n}`;
+    const r = e.querySelector("img");
+    r && (this.editor.sanitizer.isSafeUrl(t) && (r.src = t), r.alt = i, s ? r.setAttribute("loading", "lazy") : r.removeAttribute("loading"));
     let l = e.querySelector("figcaption");
-    n ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = n) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
+    o ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = o) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
   }
   /** Marks the clicked image's <figure> as selected (for edit/resize), or clears selection. */
   handleClick(e) {
     var i;
     const t = e.target.closest("figure.ife-image img");
-    this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), t && ((i = t.closest("figure")) == null || i.classList.add("ife-image--selected"));
+    this.editor.root.querySelectorAll(".ife-image--selected").forEach((o) => o.classList.remove("ife-image--selected")), t && ((i = t.closest("figure")) == null || i.classList.add("ife-image--selected"));
   }
   /** Double-clicking an image opens the edit dialog directly. */
   handleDblClick(e) {
     var i;
     const t = e.target.closest("figure.ife-image img");
-    t && (e.preventDefault(), this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), (i = t.closest("figure")) == null || i.classList.add("ife-image--selected"), this.open());
+    t && (e.preventDefault(), this.editor.root.querySelectorAll(".ife-image--selected").forEach((o) => o.classList.remove("ife-image--selected")), (i = t.closest("figure")) == null || i.classList.add("ife-image--selected"), this.open());
   }
   /** Alt+drag on an image resizes it (avoids clashing with normal caret placement). */
   handleMouseDown(e) {
     const t = e.target.closest("figure.ife-image img");
     if (!t || !e.altKey) return;
     e.preventDefault();
-    const i = e.clientX, n = t.getBoundingClientRect().width, o = (a) => {
-      const l = a.clientX - i;
-      t.style.width = `${Math.max(40, n + l)}px`;
+    const i = e.clientX, o = t.getBoundingClientRect().width, n = (r) => {
+      const l = r.clientX - i;
+      t.style.width = `${Math.max(40, o + l)}px`;
     }, s = () => {
-      document.removeEventListener("mousemove", o), document.removeEventListener("mouseup", s), this.editor.emitChange();
+      document.removeEventListener("mousemove", n), document.removeEventListener("mouseup", s), this.editor.emitChange();
     };
-    document.addEventListener("mousemove", o), document.addEventListener("mouseup", s);
+    document.addEventListener("mousemove", n), document.addEventListener("mouseup", s);
   }
   /** @param {DragEvent} event */
   async handleDrop(e) {
-    var n, o;
-    const t = (o = (n = e.dataTransfer) == null ? void 0 : n.files) == null ? void 0 : o[0];
+    var o, n;
+    const t = (n = (o = e.dataTransfer) == null ? void 0 : o.files) == null ? void 0 : n[0];
     if (!t || !t.type.startsWith("image/")) return;
     e.preventDefault();
     const i = await this.upload(t);
     i && (this.editor.selection.save(), this.insert({ src: i, alt: "", caption: "", align: "center", lazy: !0 }));
   }
   escape(e) {
-    return String(e ?? "").replace(/"/g, "&quot;");
+    return String(e ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   destroy() {
     var e;
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("drop", this.handleDrop), this.editor.root.removeEventListener("click", this.handleClick), this.editor.root.removeEventListener("dblclick", this.handleDblClick), this.editor.root.removeEventListener("mousedown", this.handleMouseDown);
   }
 }
-class U {
+class ne {
   constructor(e) {
-    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar());
+    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight);
   }
   /**
    * Builds the floating mini-toolbar that appears whenever the caret is
@@ -1328,25 +1388,25 @@ class U {
       ["Merge right", () => this.mergeRight()],
       ["Split cell", () => this.splitCell()],
       ["Delete table", () => this.deleteTable(), !0]
-    ].forEach(([o, s, a]) => {
+    ].forEach(([n, s, r]) => {
       const l = document.createElement("button");
-      l.type = "button", l.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${a ? " ife-table-toolbar__btn--danger" : ""}`, l.textContent = o, l.title = o, l.addEventListener("mousedown", (d) => d.preventDefault()), l.addEventListener("click", () => {
+      l.type = "button", l.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${r ? " ife-table-toolbar__btn--danger" : ""}`, l.textContent = n, l.title = n, l.addEventListener("mousedown", (d) => d.preventDefault()), l.addEventListener("click", () => {
         this.editor.selection.restore(), s(), this.syncContextToolbar();
       }), this.contextToolbar.appendChild(l);
     });
     const t = document.createElement("label");
     t.className = "ife-table-toolbar__color", t.title = "Cell background color", t.textContent = "Cell";
     const i = document.createElement("input");
-    i.type = "color", i.setAttribute("aria-label", "Cell background color"), i.addEventListener("mousedown", (o) => o.stopPropagation()), i.addEventListener("input", () => {
+    i.type = "color", i.setAttribute("aria-label", "Cell background color"), i.addEventListener("mousedown", (n) => n.stopPropagation()), i.addEventListener("input", () => {
       this.editor.selection.restore(), this.setCellBackground(i.value);
     }), t.appendChild(i), this.contextToolbar.appendChild(t);
-    const n = document.createElement("select");
-    n.className = "ife-toolbar__select", n.setAttribute("aria-label", "Table alignment"), [["left", "Align left"], ["center", "Align center"], ["right", "Align right"]].forEach(([o, s]) => {
-      const a = document.createElement("option");
-      a.value = o, a.textContent = s, n.appendChild(a);
-    }), n.addEventListener("mousedown", (o) => o.stopPropagation()), n.addEventListener("change", () => {
-      this.editor.selection.restore(), this.setTableAlignment(n.value);
-    }), this.contextToolbar.appendChild(n);
+    const o = document.createElement("select");
+    o.className = "ife-toolbar__select", o.setAttribute("aria-label", "Table alignment"), [["left", "Align left"], ["center", "Align center"], ["right", "Align right"]].forEach(([n, s]) => {
+      const r = document.createElement("option");
+      r.value = n, r.textContent = s, o.appendChild(r);
+    }), o.addEventListener("mousedown", (n) => n.stopPropagation()), o.addEventListener("change", () => {
+      this.editor.selection.restore(), this.setTableAlignment(o.value);
+    }), this.contextToolbar.appendChild(o);
   }
   openInsertDialog() {
     const e = `
@@ -1363,36 +1423,36 @@ class U {
                 <span>Include header row</span>
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert table",
       bodyHtml: e,
       confirmLabel: "Insert",
       onConfirm: (i) => {
-        const n = new FormData(i);
-        this.insertTable(Number(n.get("rows")), Number(n.get("cols")), !!n.get("header"));
+        const o = new FormData(i);
+        this.insertTable(Number(o.get("rows")), Number(o.get("cols")), !!o.get("header"));
       }
     }).open();
   }
   insertTable(e, t, i) {
     this.editor.history.push(), this.editor.selection.restore();
-    const n = document.createElement("table");
-    if (n.className = "ife-table", i) {
-      const d = n.createTHead().insertRow();
+    const o = document.createElement("table");
+    if (o.className = "ife-table", i) {
+      const d = o.createTHead().insertRow();
       for (let u = 0; u < t; u += 1) {
         const m = document.createElement("th");
         m.contentEditable = "true", m.innerHTML = "<br>", d.appendChild(m);
       }
     }
-    const o = n.createTBody(), s = i ? e - 1 : e;
+    const n = o.createTBody(), s = i ? e - 1 : e;
     for (let l = 0; l < Math.max(s, 1); l += 1) {
-      const d = o.insertRow();
+      const d = n.insertRow();
       for (let u = 0; u < t; u += 1) {
         const m = d.insertCell();
         m.innerHTML = "<br>";
       }
     }
-    const a = this.editor.selection.getRange();
-    a == null || a.deleteContents(), a == null || a.insertNode(n), this.editor.emitChange();
+    const r = this.editor.selection.getRange();
+    r == null || r.deleteContents(), r == null || r.insertNode(o), this.editor.emitChange(), this.adjustTableHeight();
   }
   getCurrentCell() {
     return this.editor.selection.closest("td, th");
@@ -1404,10 +1464,10 @@ class U {
     const t = this.getCurrentCell(), i = t == null ? void 0 : t.closest("tr");
     if (!i) return;
     this.editor.history.push();
-    const n = i.cloneNode(!0);
-    [...n.children].forEach((o) => {
-      o.innerHTML = "<br>";
-    }), i.parentNode.insertBefore(n, e ? i : i.nextSibling), this.editor.emitChange();
+    const o = i.cloneNode(!0);
+    [...o.children].forEach((n) => {
+      n.innerHTML = "<br>";
+    }), i.parentNode.insertBefore(o, e ? i : i.nextSibling), this.editor.emitChange();
   }
   deleteRow() {
     var t;
@@ -1417,20 +1477,26 @@ class U {
   addColumn(e = !1) {
     const t = this.getCurrentTable(), i = this.getCurrentCell();
     if (!t || !i) return;
-    const n = [...i.parentNode.children].indexOf(i);
-    this.editor.history.push(), t.querySelectorAll("tr").forEach((o) => {
-      const s = o.children[n], a = document.createElement((s == null ? void 0 : s.tagName.toLowerCase()) === "th" ? "th" : "td");
-      a.innerHTML = "<br>", o.insertBefore(a, e ? s : (s == null ? void 0 : s.nextSibling) ?? null);
-    }), this.editor.emitChange();
+    const o = i.parentNode;
+    if (!o) return;
+    let n = [...o.children].indexOf(i);
+    n < 0 || (this.editor.history.push(), t.querySelectorAll("tr").forEach((s) => {
+      const r = s.children[n];
+      if (!r) return;
+      const l = document.createElement(r.tagName.toLowerCase() === "th" ? "th" : "td");
+      l.innerHTML = "<br>", s.insertBefore(l, e ? r : r.nextSibling);
+    }), this.editor.emitChange());
   }
   deleteColumn() {
     const e = this.getCurrentTable(), t = this.getCurrentCell();
     if (!e || !t) return;
-    const i = [...t.parentNode.children].indexOf(t);
-    this.editor.history.push(), e.querySelectorAll("tr").forEach((n) => {
-      var o;
-      return (o = n.children[i]) == null ? void 0 : o.remove();
-    }), this.editor.emitChange();
+    const i = t.parentNode;
+    if (!i) return;
+    const o = [...i.children].indexOf(t);
+    o < 0 || (this.editor.history.push(), e.querySelectorAll("tr").forEach((n) => {
+      var s;
+      return (s = n.children[o]) == null ? void 0 : s.remove();
+    }), this.editor.emitChange());
   }
   deleteTable() {
     const e = this.getCurrentTable();
@@ -1463,14 +1529,36 @@ class U {
   /** Shows/hides the contextual table toolbar based on caret position. */
   syncContextToolbar() {
     const e = !!this.getCurrentTable();
-    e && !this.contextToolbar.isConnected && this.editor.wrapper.insertBefore(this.contextToolbar, this.editor.root), this.contextToolbar.style.display = e ? "flex" : "none", this.editor.events.emit("table:context", e);
+    e && !this.contextToolbar.isConnected && this.editor.wrapper.insertBefore(this.contextToolbar, this.editor.root);
+    const t = this.contextToolbar.style.display === "none";
+    this.contextToolbar.style.display = e ? "flex" : "none", (e || !t) && this.adjustTableHeight(), this.editor.events.emit("table:context", e);
+  }
+  /** Constrains table and content area height to fit within the viewport. */
+  adjustTableHeight() {
+    var k, L, T;
+    if (!((k = this.editor.root) != null && k.isConnected)) return;
+    const e = this.editor.root.querySelectorAll("table.ife-table");
+    if (!e.length) {
+      this.editor.root.style.maxHeight = "";
+      return;
+    }
+    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), p = parseFloat(m.borderTopWidth) || 0, y = parseFloat(m.borderBottomWidth) || 0, $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, _ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16, E = i - o.top - p - s - l - u - y;
+    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(E))}px`, e.forEach((C) => {
+      let H = 0, b = C.previousElementSibling;
+      for (; b; ) {
+        const M = getComputedStyle(b);
+        H += b.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), b = b.previousElementSibling;
+      }
+      const S = getComputedStyle(C), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = E - $ - H - D - F - _;
+      C.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
+    });
   }
   destroy() {
     var e;
-    (e = this.contextToolbar) == null || e.remove();
+    window.removeEventListener("resize", this.adjustTableHeight), this.editor.root.style.maxHeight = "", (e = this.contextToolbar) == null || e.remove();
   }
 }
-class O {
+class se {
   constructor(e) {
     this.editor = e, this.active = !1;
   }
@@ -1490,12 +1578,12 @@ class O {
     const i = e.replace(/></g, `>
 <`).split(`
 `);
-    let n = 0;
-    return i.map((o) => {
-      const s = /^<\//.test(o);
-      s && (n = Math.max(n - 1, 0));
-      const a = `${"  ".repeat(n)}${o}`, l = /\/>$/.test(o) || /<(br|hr|img|input|source)[ >]/i.test(o);
-      return /^<[a-z]/i.test(o) && !s && !l && (n += 1), a;
+    let o = 0;
+    return i.map((n) => {
+      const s = /^<\//.test(n);
+      s && (o = Math.max(o - 1, 0));
+      const r = `${"  ".repeat(o)}${n}`, l = /\/>$/.test(n) || /<(br|hr|img|input|source)[ >]/i.test(n);
+      return /^<[a-z]/i.test(n) && !s && !l && (o += 1), r;
     }).join(`
 `);
   }
@@ -1504,7 +1592,7 @@ class O {
     (e = this.source) == null || e.remove();
   }
 }
-class j {
+class re {
   constructor(e) {
     this.editor = e, this.active = !1, this.handleChange = this.handleChange.bind(this), document.addEventListener("fullscreenchange", this.handleChange);
   }
@@ -1533,7 +1621,7 @@ class j {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
-class P {
+class ae {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
@@ -1550,39 +1638,43 @@ class P {
             <label class="ife-field--inline"><input type="checkbox" name="caseSensitive"> Case sensitive</label>
             <label class="ife-field--inline"><input type="checkbox" name="useRegex"> Regular expression</label>
         `;
-    this.dialog = new g(this.editor.wrapper, {
+    this.dialog = new f(this.editor.wrapper, {
       title: "Find & Replace",
       bodyHtml: e,
       confirmLabel: "Replace all",
       onConfirm: (i) => this.replaceAll(i)
     });
     const t = document.createElement("button");
-    t.type = "button", t.className = "ife-btn ife-btn--ghost", t.textContent = "Highlight all", t.addEventListener("click", () => {
-      this.highlightAll(new FormData(this.dialog.form));
+    t.type = "button", t.className = "ife-btn ife-btn--ghost", t.textContent = "Highlight all", t.addEventListener("mousedown", (i) => i.preventDefault()), t.addEventListener("click", (i) => {
+      i.stopPropagation(), this.highlightAll(new FormData(this.dialog.form));
     }), this.dialog.open(), this.dialog.form.querySelector(".ife-dialog__footer").prepend(t);
   }
   buildRegex(e) {
-    const t = String(e.get("query") ?? ""), i = !!e.get("caseSensitive"), n = !!e.get("useRegex"), o = `g${i ? "" : "i"}`, s = n ? t : t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(s, o);
+    const t = String(e.get("query") ?? "").trim();
+    if (!t) return null;
+    const i = !!e.get("caseSensitive"), o = !!e.get("useRegex"), n = `g${i ? "" : "i"}`, s = o ? t : t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(s, n);
   }
   highlightAll(e) {
     this.clearHighlights();
-    const t = this.buildRegex(e), i = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), n = [];
-    let o = i.nextNode();
-    for (; o; )
-      n.push(o), o = i.nextNode();
-    n.forEach((s) => {
-      const a = s.textContent ?? "";
-      if (!t.test(a)) return;
+    const t = this.buildRegex(e);
+    if (!t) return;
+    const i = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), o = [];
+    let n = i.nextNode();
+    for (; n; )
+      o.push(n), n = i.nextNode();
+    o.forEach((s) => {
+      const r = s.textContent ?? "";
+      if (!t.test(r)) return;
       t.lastIndex = 0;
       const l = document.createDocumentFragment();
-      let d = 0, u = t.exec(a);
+      let d = 0, u = t.exec(r);
       for (; u; ) {
-        l.appendChild(document.createTextNode(a.slice(d, u.index)));
+        l.appendChild(document.createTextNode(r.slice(d, u.index)));
         const m = document.createElement("mark");
-        m.className = "ife-search-highlight", m.textContent = u[0], l.appendChild(m), d = u.index + u[0].length, u = t.exec(a);
+        m.className = "ife-search-highlight", m.textContent = u[0], l.appendChild(m), d = u.index + u[0].length, u = t.exec(r);
       }
-      l.appendChild(document.createTextNode(a.slice(d))), s.replaceWith(l);
+      l.appendChild(document.createTextNode(r.slice(d))), s.replaceWith(l);
     });
   }
   clearHighlights() {
@@ -1591,14 +1683,16 @@ class P {
     }), this.editor.root.normalize();
   }
   replaceAll(e) {
-    const t = new FormData(e), i = this.buildRegex(t), n = String(t.get("replacement") ?? "");
+    const t = new FormData(e), i = this.buildRegex(t);
+    if (!i) return;
+    const o = String(t.get("replacement") ?? "");
     this.editor.history.push(), this.clearHighlights();
-    const o = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), s = [];
-    let a = o.nextNode();
-    for (; a; )
-      s.push(a), a = o.nextNode();
+    const n = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), s = [];
+    let r = n.nextNode();
+    for (; r; )
+      s.push(r), r = n.nextNode();
     s.forEach((l) => {
-      l.textContent = (l.textContent ?? "").replace(i, n);
+      l.textContent = (l.textContent ?? "").replace(i, o);
     }), this.editor.emitChange();
   }
   destroy() {
@@ -1606,8 +1700,8 @@ class P {
     this.clearHighlights(), (e = this.dialog) == null || e.close();
   }
 }
-const W = ["info", "warning", "danger", "success", "quote", "tip"];
-class X {
+const le = ["info", "warning", "danger", "success", "quote", "tip"];
+class ce {
   constructor(e) {
     this.editor = e;
   }
@@ -1615,20 +1709,20 @@ class X {
     const t = `
             <label class="ife-field">
                 <span>Type</span>
-                <select name="type">${W.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
+                <select name="type">${le.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
             </label>
             <label class="ife-field">
                 <span>Text</span>
                 <textarea name="text" rows="3">${this.editor.selection.getText()}</textarea>
             </label>
         `;
-    this.dialog = new g(this.editor.wrapper, {
+    this.dialog = new f(this.editor.wrapper, {
       title: "Insert note",
       bodyHtml: t,
       confirmLabel: "Insert",
       onConfirm: (i) => {
-        const n = new FormData(i);
-        this.insert(String(n.get("type")), String(n.get("text")));
+        const o = new FormData(i);
+        this.insert(String(o.get("type")), String(o.get("text")));
       }
     }), this.editor.selection.save(), this.dialog.open();
   }
@@ -1636,16 +1730,16 @@ class X {
     this.editor.history.push(), this.editor.selection.restore();
     const i = document.createElement("div");
     i.className = `note note-${e}`, i.textContent = t;
-    const n = this.editor.selection.getRange();
-    n == null || n.deleteContents(), n == null || n.insertNode(i), this.editor.emitChange();
+    const o = this.editor.selection.getRange();
+    o == null || o.deleteContents(), o == null || o.insertNode(i), this.editor.emitChange();
   }
   destroy() {
     var e;
     (e = this.dialog) == null || e.close();
   }
 }
-const w = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, L = /vimeo\.com\/(\d+)/;
-class K {
+const N = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, A = /vimeo\.com\/(\d+)/;
+class he {
   constructor(e) {
     this.editor = e;
   }
@@ -1664,7 +1758,7 @@ class K {
                 <input type="number" name="height" value="360">
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert video",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1675,19 +1769,19 @@ class K {
     }).open();
   }
   insertVideo(e, t, i) {
-    const n = e.trim();
-    let o;
-    if (n.startsWith("<iframe"))
-      o = n;
-    else if (w.test(n)) {
-      const s = n.match(w)[1];
-      o = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (L.test(n)) {
-      const s = n.match(L)[1];
-      o = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+    const o = e.trim();
+    let n;
+    if (o.startsWith("<iframe"))
+      n = o;
+    else if (N.test(o)) {
+      const s = o.match(N)[1];
+      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else if (A.test(o)) {
+      const s = o.match(A)[1];
+      n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
-      o = `<video controls width="${t}" height="${i}"><source src="${n}"></video>`;
-    this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(o));
+      n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
+    this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(n));
   }
   openAudio() {
     const e = `
@@ -1696,13 +1790,13 @@ class K {
                 <input type="url" name="source" required>
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert audio",
       bodyHtml: e,
       confirmLabel: "Insert",
       onConfirm: (t) => {
-        const n = `<audio controls><source src="${String(new FormData(t).get("source"))}"></audio>`;
-        this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(n));
+        const o = `<audio controls><source src="${String(new FormData(t).get("source"))}"></audio>`;
+        this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(o));
       }
     }).open();
   }
@@ -1712,7 +1806,7 @@ class K {
   destroy() {
   }
 }
-class G {
+class de {
   constructor(e) {
     this.editor = e;
   }
@@ -1808,12 +1902,12 @@ ${t()}
         return `
 `;
       case "UL":
-        return `${[...e.children].map((n) => `- ${this.nodeToMarkdown(n).trim()}`).join(`
+        return `${[...e.children].map((o) => `- ${this.nodeToMarkdown(o).trim()}`).join(`
 `)}
 
 `;
       case "OL":
-        return `${[...e.children].map((n, o) => `${o + 1}. ${this.nodeToMarkdown(n).trim()}`).join(`
+        return `${[...e.children].map((o, n) => `${n + 1}. ${this.nodeToMarkdown(o).trim()}`).join(`
 `)}
 
 `;
@@ -1825,33 +1919,33 @@ ${t()}
   markdownToHtml(e) {
     const t = e.split(`
 `), i = [];
-    let n = null;
-    return t.forEach((o) => {
-      const s = o, a = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), u = s.match(/^>\s?(.*)$/);
-      if (a) {
-        this.closeList(i, n), n = null;
-        const m = a[1].length;
-        i.push(`<h${m}>${this.inlineMarkdown(a[2])}</h${m}>`);
+    let o = null;
+    return t.forEach((n) => {
+      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), u = s.match(/^>\s?(.*)$/);
+      if (r) {
+        this.closeList(i, o), o = null;
+        const m = r[1].length;
+        i.push(`<h${m}>${this.inlineMarkdown(r[2])}</h${m}>`);
         return;
       }
       if (l) {
-        n !== "ul" && (this.closeList(i, n), i.push("<ul>"), n = "ul"), i.push(`<li>${this.inlineMarkdown(l[1])}</li>`);
+        o !== "ul" && (this.closeList(i, o), i.push("<ul>"), o = "ul"), i.push(`<li>${this.inlineMarkdown(l[1])}</li>`);
         return;
       }
       if (d) {
-        n !== "ol" && (this.closeList(i, n), i.push("<ol>"), n = "ol"), i.push(`<li>${this.inlineMarkdown(d[1])}</li>`);
+        o !== "ol" && (this.closeList(i, o), i.push("<ol>"), o = "ol"), i.push(`<li>${this.inlineMarkdown(d[1])}</li>`);
         return;
       }
       if (u) {
-        this.closeList(i, n), n = null, i.push(`<blockquote>${this.inlineMarkdown(u[1])}</blockquote>`);
+        this.closeList(i, o), o = null, i.push(`<blockquote>${this.inlineMarkdown(u[1])}</blockquote>`);
         return;
       }
       if (s.trim() === "---") {
-        this.closeList(i, n), n = null, i.push("<hr>");
+        this.closeList(i, o), o = null, i.push("<hr>");
         return;
       }
-      this.closeList(i, n), n = null, s.trim() !== "" && i.push(`<p>${this.inlineMarkdown(s)}</p>`);
-    }), this.closeList(i, n), i.join(`
+      this.closeList(i, o), o = null, s.trim() !== "" && i.push(`<p>${this.inlineMarkdown(s)}</p>`);
+    }), this.closeList(i, o), i.join(`
 `);
   }
   closeList(e, t) {
@@ -1864,71 +1958,386 @@ ${t()}
   destroy() {
   }
 }
-class J {
+class ue {
   constructor(e) {
     this.editor = e, this.update = this.update.bind(this), this.buildDom(), this.bindEvents(), this.update();
   }
   buildDom() {
-    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = "Made by ITkha", this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
+    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.wordsEl = document.createElement("span"), this.wordsEl.className = "ife-statusbar__item", this.wordsEl.innerHTML = `${h.wordCount} <span class="ife-statusbar__value">0</span>`, this.charsEl = document.createElement("span"), this.charsEl.className = "ife-statusbar__item", this.charsEl.innerHTML = `${h.charCount} <span class="ife-statusbar__value">0</span>`, this.left.appendChild(this.wordsEl), this.left.appendChild(this.charsEl), this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = "Made by ITkha", this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
   }
   bindEvents() {
-    this.editor.root.addEventListener("input", this.update), this.editor.on("destroy", () => this.destroy());
+    this.editor.root.addEventListener("input", this.update), this.editor.on("change", this.update), this.editor.on("destroy", () => this.destroy());
   }
   update() {
     const e = this.editor.getText(), t = e.length, i = e.trim() ? e.trim().split(/\s+/).length : 0;
-    this.left.textContent = `Words: ${i}, Characters: ${t}`;
+    this.wordsEl.querySelector(".ife-statusbar__value").textContent = i, this.charsEl.querySelector(".ife-statusbar__value").textContent = t;
   }
   destroy() {
     this.editor.root.removeEventListener("input", this.update), this.el.remove();
   }
 }
-const Y = {
-  link: B,
-  image: q,
-  table: U,
-  codeView: O,
-  fullscreen: j,
-  find: P,
-  note: X,
-  media: K,
-  markdown: G,
-  statusBar: J
+class me {
+  constructor(e) {
+    this.editor = e, this.picker = null;
+  }
+  open() {
+    if (this.picker) {
+      this.picker.remove(), this.picker = null;
+      return;
+    }
+    this.editor.selection.save(), this.picker = document.createElement("div"), this.picker.className = "ife-emoji-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", "Emoji picker");
+    const e = document.createElement("div");
+    e.className = "ife-emoji-picker__header";
+    const t = document.createElement("span");
+    t.className = "ife-emoji-picker__title", t.textContent = "Emoji", e.appendChild(t);
+    const i = document.createElement("button");
+    i.type = "button", i.className = "ife-emoji-picker__close", i.innerHTML = "&times;", i.setAttribute("aria-label", "Close"), i.addEventListener("click", () => this.close()), e.appendChild(i), this.picker.appendChild(e);
+    const o = [
+      { name: "Smileys", emojis: [
+        "😀",
+        "😃",
+        "😄",
+        "😁",
+        "😆",
+        "😅",
+        "🤣",
+        "😂",
+        "🙂",
+        "😊",
+        "😇",
+        "🥰",
+        "😍",
+        "🤩",
+        "😘",
+        "😗",
+        "😚",
+        "😙",
+        "🥲",
+        "😋",
+        "😛",
+        "😜",
+        "🤪",
+        "😝",
+        "🤑",
+        "🤗",
+        "🤭",
+        "🫢",
+        "🫣",
+        "🤫",
+        "🤔",
+        "🫡",
+        "🤐",
+        "🤨",
+        "😐",
+        "😑",
+        "😶",
+        "🫥",
+        "😏",
+        "😒",
+        "🙄",
+        "😬",
+        "🤥",
+        "😌",
+        "😔",
+        "😪",
+        "🤤",
+        "😴",
+        "😷",
+        "🤒",
+        "🤕",
+        "🤢",
+        "🤮",
+        "🥴",
+        "😵",
+        "🤯",
+        "🥳",
+        "🥺",
+        "😢",
+        "😭",
+        "😤",
+        "😠",
+        "😡",
+        "🤬",
+        "💀",
+        "☠️",
+        "💩",
+        "🤡",
+        "👹",
+        "👺"
+      ] },
+      { name: "Gestures", emojis: [
+        "👋",
+        "🤚",
+        "🖐️",
+        "✋",
+        "🖖",
+        "🫱",
+        "🫲",
+        "🫳",
+        "🫴",
+        "👌",
+        "🤌",
+        "🤏",
+        "✌️",
+        "🤞",
+        "🫰",
+        "🤟",
+        "🤘",
+        "🤙",
+        "👈",
+        "👉",
+        "👆",
+        "🖕",
+        "👇",
+        "🫵",
+        "👍",
+        "👎",
+        "✊",
+        "👊",
+        "🤛",
+        "🤜",
+        "👏",
+        "🙌",
+        "🫶",
+        "👐",
+        "🤲",
+        "🤝",
+        "🙏",
+        "✍️",
+        "💅",
+        "🤳"
+      ] },
+      { name: "Nature", emojis: [
+        "🐶",
+        "🐱",
+        "🐭",
+        "🐹",
+        "🐰",
+        "🦊",
+        "🐻",
+        "🐼",
+        "🐨",
+        "🐯",
+        "🦁",
+        "🐮",
+        "🐷",
+        "🐸",
+        "🐵",
+        "🐔",
+        "🐧",
+        "🐦",
+        "🐤",
+        "🦆",
+        "🦅",
+        "🦉",
+        "🦇",
+        "🐺",
+        "🐗",
+        "🐴",
+        "🦄",
+        "🐝",
+        "🐛",
+        "🦋",
+        "🐌",
+        "🐞",
+        "🐜",
+        "🦟",
+        "🦗",
+        "🪳",
+        "🪰",
+        "🪱",
+        "🐢",
+        "🐍",
+        "🦎",
+        "🦖",
+        "🦕",
+        "🐙",
+        "🦑",
+        "🦐",
+        "🦞",
+        "🦀",
+        "🐡",
+        "🐠"
+      ] },
+      { name: "Food", emojis: [
+        "🍏",
+        "🍎",
+        "🍐",
+        "🍊",
+        "🍋",
+        "🍌",
+        "🍉",
+        "🍇",
+        "🍓",
+        "🫐",
+        "🍈",
+        "🍒",
+        "🍑",
+        "🥭",
+        "🍍",
+        "🥥",
+        "🥝",
+        "🍅",
+        "🍆",
+        "🥑",
+        "🥦",
+        "🥬",
+        "🥒",
+        "🌶️",
+        "🫑",
+        "🌽",
+        "🥕",
+        "🫒",
+        "🧄",
+        "🧅",
+        "🥔",
+        "🍠",
+        "🫓",
+        "🥐",
+        "🥖",
+        "🥨",
+        "🧀",
+        "🥚",
+        "🍳",
+        "🥞",
+        "🧇",
+        "🥓",
+        "🥩",
+        "🍗",
+        "🍖",
+        "🦴",
+        "🌭",
+        "🍔",
+        "🍟",
+        "🍕"
+      ] },
+      { name: "Symbols", emojis: [
+        "❤️",
+        "🧡",
+        "💛",
+        "💚",
+        "💙",
+        "💜",
+        "🖤",
+        "🤍",
+        "🤎",
+        "💔",
+        "❣️",
+        "💕",
+        "💞",
+        "💓",
+        "💗",
+        "💖",
+        "💘",
+        "💝",
+        "💟",
+        "☮️",
+        "✝️",
+        "☪️",
+        "🕉️",
+        "☸️",
+        "✡️",
+        "🔯",
+        "🕎",
+        "☯️",
+        "🪯",
+        "♈",
+        "♉",
+        "♊",
+        "♋",
+        "♌",
+        "♍",
+        "♎",
+        "♏",
+        "♐",
+        "♑",
+        "♒",
+        "♓",
+        "⛎",
+        "🔀",
+        "🔁",
+        "🔂",
+        "▶️",
+        "⏩",
+        "⏭️",
+        "⏯️",
+        "◀️"
+      ] }
+    ], n = document.createElement("div");
+    n.className = "ife-emoji-picker__body", o.forEach((r) => {
+      const l = document.createElement("div");
+      l.className = "ife-emoji-picker__group";
+      const d = document.createElement("div");
+      d.className = "ife-emoji-picker__group-label", d.textContent = r.name, l.appendChild(d);
+      const u = document.createElement("div");
+      u.className = "ife-emoji-picker__grid", r.emojis.forEach((m) => {
+        const p = document.createElement("button");
+        p.type = "button", p.className = "ife-emoji-picker__btn", p.textContent = m, p.setAttribute("aria-label", m), p.addEventListener("mousedown", (y) => y.preventDefault()), p.addEventListener("click", () => {
+          this.editor.selection.restore(), this.editor.commands.insertHTML(m), this.close();
+        }), u.appendChild(p);
+      }), l.appendChild(u), n.appendChild(l);
+    }), this.picker.appendChild(n);
+    const s = this.editor.wrapper;
+    s.appendChild(this.picker), this.picker.style.setProperty("--ife-bg", getComputedStyle(s).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(s).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(s).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(s).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(s).getPropertyValue("--ife-btn-active")), setTimeout(() => {
+      const r = this.picker.querySelector(".ife-emoji-picker__btn");
+      r && r.focus();
+    }, 50);
+  }
+  close() {
+    this.picker && (this.picker.remove(), this.picker = null);
+  }
+  destroy() {
+    this.close();
+  }
+}
+const pe = {
+  link: ie,
+  image: oe,
+  table: ne,
+  codeView: se,
+  fullscreen: re,
+  find: ae,
+  note: ce,
+  media: he,
+  markdown: de,
+  statusBar: ue,
+  emoji: me
 };
-Object.entries(Y).forEach(([r, e]) => {
-  b.registerPlugin(r, (t) => new e(t));
+Object.entries(pe).forEach(([a, e]) => {
+  w.registerPlugin(a, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), ee = {
+const g = /* @__PURE__ */ new Map(), be = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
    * @returns {EditorCore}
    */
-  init(r, e = {}) {
-    const t = typeof r == "string" ? document.querySelector(r) : r;
+  init(a, e = {}) {
+    const t = typeof a == "string" ? document.querySelector(a) : a;
     if (!t)
-      throw new Error(`InkForge Editor: target "${r}" not found`);
+      throw new Error(`InkForge Editor: target "${a}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
-    if (p.has(t))
-      return p.get(t);
-    const i = new b(t, e), n = new V(i, e.toolbar);
-    return i.on("destroy", () => n.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
+    if (g.has(t))
+      return g.get(t);
+    const i = new w(t, e), o = new te(i, e.toolbar);
+    return i.on("destroy", () => o.destroy()), g.set(t, i), i.on("destroy", () => g.delete(t)), i;
   },
   /**
    * @param {string|HTMLTextAreaElement} target
    * @returns {EditorCore|undefined}
    */
-  get(r) {
-    const e = typeof r == "string" ? document.querySelector(r) : r;
-    return e ? p.get(e) : void 0;
+  get(a) {
+    const e = typeof a == "string" ? document.querySelector(a) : a;
+    return e ? g.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    p.forEach((r) => r.destroy()), p.clear();
+    g.forEach((a) => a.destroy()), g.clear();
   },
-  registerPlugin: b.registerPlugin
+  registerPlugin: w.registerPlugin
 };
 export {
-  ee as default
+  be as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map

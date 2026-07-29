@@ -342,12 +342,12 @@ A minimal Laravel demo app lives in [`/demo`](demo) — see
 ## Testing
 
 ```bash
-composer test          # Pest (PHP)
-composer analyse        # PHPStan
+composer test          # Pest (PHP) — 13+ tests across Unit & Feature
+composer analyse        # PHPStan level 6
 composer format -- --test  # Pint (formatting check)
 
 cd resources/js
-npm run test            # Vitest (JS)
+npm run test            # Vitest (JS) — 60+ tests across all core modules
 npm run lint             # ESLint
 ```
 

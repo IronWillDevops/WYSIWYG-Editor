@@ -53,8 +53,10 @@ export default class Editor {
             onChange: (type) => this.events.emit(type),
         });
 
+        this.handleShortcut = this.handleShortcut.bind(this);
         this.bindEvents();
         this.applyTheme(this.options.theme);
+
         this.loadPlugins();
         this.setupAutosave();
 
@@ -101,7 +103,7 @@ export default class Editor {
         this.root.addEventListener('paste', (event) => this.handlePaste(event));
         this.root.addEventListener('drop', (event) => this.events.emit('drop', event));
 
-        document.addEventListener('keydown', this.handleShortcut.bind(this));
+        document.addEventListener('keydown', this.handleShortcut);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -125,6 +127,7 @@ export default class Editor {
     /** @param {ClipboardEvent} event */
     handlePaste(event) {
         event.preventDefault();
+        if (this.destroyed) return;
         const html = event.clipboardData?.getData('text/html');
         const text = event.clipboardData?.getData('text/plain') ?? '';
         const clean = html ? this.sanitizer.sanitize(html) : this.escapeHtml(text);
@@ -141,7 +144,7 @@ export default class Editor {
 
     /** @param {KeyboardEvent} event */
     handleShortcut(event) {
-        if (!this.root.contains(document.activeElement)) return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
         const ctrl = event.ctrlKey || event.metaKey;
         if (!ctrl) return;
 
@@ -240,6 +243,13 @@ export default class Editor {
     clear() {
         this.setHTML('');
         this.history.clear();
+        if (this.options.autosave?.enabled) {
+            try {
+                window.localStorage.removeItem(this.options.autosave.storage_key);
+            } catch {
+                // Storage unavailable — skip.
+            }
+        }
     }
 
     focus() {
@@ -251,10 +261,13 @@ export default class Editor {
     }
 
     destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
         this.plugins.forEach((instance) => instance?.destroy?.());
         this.events.emit('destroy', this);
         clearInterval(this.autosaveTimer);
         document.removeEventListener('keydown', this.handleShortcut);
+        this.history.destroy();
         this.wrapper.remove();
         this.textarea.style.display = '';
         this.events.destroy();

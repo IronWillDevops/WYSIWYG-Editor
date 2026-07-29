@@ -39,7 +39,9 @@ export default class FindModule {
         findNextBtn.type = 'button';
         findNextBtn.className = 'ife-btn ife-btn--ghost';
         findNextBtn.textContent = 'Highlight all';
-        findNextBtn.addEventListener('click', () => {
+        findNextBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        findNextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             this.highlightAll(new FormData(this.dialog.form));
         });
 
@@ -48,7 +50,8 @@ export default class FindModule {
     }
 
     buildRegex(form) {
-        const query = String(form.get('query') ?? '');
+        const query = String(form.get('query') ?? '').trim();
+        if (!query) return null;
         const caseSensitive = Boolean(form.get('caseSensitive'));
         const useRegex = Boolean(form.get('useRegex'));
         const flags = `g${caseSensitive ? '' : 'i'}`;
@@ -61,6 +64,8 @@ export default class FindModule {
         const query = String(form.get('query') ?? '');
         if (!query) return;
         const regex = this.buildRegex(form);
+        if (!regex) return;
+
         const walker = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null);
         const textNodes = [];
         let node = walker.nextNode();
@@ -101,6 +106,7 @@ export default class FindModule {
     replaceAll(form) {
         const data = new FormData(form);
         const regex = this.buildRegex(data);
+        if (!regex) return;
         const replacement = String(data.get('replacement') ?? '');
 
         this.editor.history.push();

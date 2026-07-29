@@ -349,10 +349,8 @@ export default class Commands {
         const candidates = container.style?.length ? [container, ...container.querySelectorAll('*')] : [...container.querySelectorAll('*')];
 
         candidates.forEach((el) => {
-            if (!range.intersectsNode(el)) return;
+            if (!this.root.contains(el) || !range.intersectsNode(el)) return;
             el.removeAttribute('style');
-            // Drop now-purposeless wrapper spans/fonts entirely so we don't
-            // leave empty tags cluttering the markup.
             if (['SPAN', 'FONT'].includes(el.tagName) && el.attributes.length === 0) {
                 const parent = el.parentNode;
                 if (!parent) return;

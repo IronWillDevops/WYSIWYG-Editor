@@ -79,7 +79,9 @@ export default class ImageModule {
             removeBtn.type = 'button';
             removeBtn.className = 'ife-btn ife-btn--danger';
             removeBtn.textContent = 'Remove image';
-            removeBtn.addEventListener('click', () => {
+            removeBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.editor.history.push();
                 existing.remove();
                 this.editor.emitChange();
@@ -127,7 +129,6 @@ export default class ImageModule {
     /** @param {File} file */
     async upload(file) {
         if (!this.uploadUrl) {
-            // eslint-disable-next-line no-console
             console.warn('InkForge Editor: no uploadUrl configured, falling back to a local object URL.');
             return URL.createObjectURL(file);
         }
@@ -165,7 +166,11 @@ export default class ImageModule {
         figure.className = `ife-image ife-image--${align}`;
 
         const img = document.createElement('img');
-        img.src = src;
+        // Only set src when the URL passes safety checks; leave it empty
+        // otherwise so a malicious javascript:-link is never loaded.
+        if (this.editor.sanitizer.isSafeUrl(src)) {
+            img.src = src;
+        }
         img.alt = alt;
         if (lazy) img.loading = 'lazy';
         figure.appendChild(img);
@@ -196,7 +201,9 @@ export default class ImageModule {
 
         const img = figure.querySelector('img');
         if (img) {
-            img.src = src;
+            if (this.editor.sanitizer.isSafeUrl(src)) {
+                img.src = src;
+            }
             img.alt = alt;
             if (lazy) img.setAttribute('loading', 'lazy');
             else img.removeAttribute('loading');
@@ -270,7 +277,11 @@ export default class ImageModule {
     }
 
     escape(value) {
-        return String(value ?? '').replace(/"/g, '&quot;');
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     destroy() {

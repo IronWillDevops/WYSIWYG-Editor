@@ -1,6 +1,6 @@
 const DEFAULT_ALLOWED_TAGS = new Set([
     'p', 'br', 'div', 'span', 'a', 'strong', 'em', 'u', 's', 'sup', 'sub',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
     'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
 ]);
@@ -55,32 +55,30 @@ export default class Sanitizer {
 
     /** @param {Node} root */
     cleanNode(root) {
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
-        const toRemove = [];
-        let node = walker.nextNode();
+        const nodes = [...root.childNodes];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-        while (node) {
             const el = /** @type {HTMLElement} */ (node);
             const tag = el.tagName.toLowerCase();
 
             if (tag === 'script' || tag === 'style' || tag === 'noscript') {
-                toRemove.push(el);
-                node = walker.nextNode();
+                el.remove();
                 continue;
             }
 
+            // Recurse into children first so that unwrapping the current node
+            // does not skip its descendants.
+            this.cleanNode(el);
+
             if (!this.allowedTags.has(tag)) {
-                // Unwrap unknown tags instead of deleting their (possibly safe) content.
                 this.unwrap(el);
-                node = walker.nextNode();
                 continue;
             }
 
             this.cleanAttributes(el, tag);
-            node = walker.nextNode();
         }
-
-        toRemove.forEach((el) => el.remove());
     }
 
     /**
@@ -126,7 +124,16 @@ export default class Sanitizer {
         }
     }
 
-    /** Strips dangerous CSS such as expression()/url(javascript:). */
+    /**
+     * Strips dangerous CSS such as expression()/url(javascript:) using a
+     * simple regex filter over each declaration. This is sufficient for the
+     * common XSS patterns found in pasted content. A full CSS parser would
+     * be needed to catch obfuscated variants (e.g. nested expressions,
+     * string-encoded javascript: inside url()), but the editor targets
+     * typical copy-paste scenarios where a dedicated attacker would use
+     * far simpler vectors like <script> or event handlers, which the
+     * whitelist-based tag/attr sanitizer already blocks entirely.
+     */
     cleanStyle(style) {
         return style
             .split(';')

@@ -11,14 +11,13 @@ import Icons from '../icons/Icons.js';
  * @property {'command'|'action'|'select'|'color'} type
  * @property {string} [command]
  * @property {any} [value]
- * @property {string} [shortcut]
  * @property {(editor: import('../core/Editor').default) => void} [action]
  */
 
 /** @type {Record<string, ButtonDef>} */
 const ToolbarConfig = {
-    undo: { icon: Icons.undo, label: 'Undo', type: 'action', shortcut: 'Ctrl+Z', action: (e) => e.undo() },
-    redo: { icon: Icons.redo, label: 'Redo', type: 'action', shortcut: 'Ctrl+Y', action: (e) => e.redo() },
+    undo: { icon: Icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', type: 'action', action: (e) => e.undo() },
+    redo: { icon: Icons.redo, label: 'Redo', shortcut: 'Ctrl+Y', type: 'action', action: (e) => e.redo() },
 
     blockFormat: {
         label: 'Paragraph style',
@@ -61,9 +60,9 @@ const ToolbarConfig = {
         onChange: (editor, value) => editor.commands.exec('fontSize', value),
     },
 
-    bold: { icon: Icons.bold, label: 'Bold', type: 'command', shortcut: 'Ctrl+B', command: 'bold' },
-    italic: { icon: Icons.italic, label: 'Italic', type: 'command', shortcut: 'Ctrl+I', command: 'italic' },
-    underline: { icon: Icons.underline, label: 'Underline', type: 'command', shortcut: 'Ctrl+U', command: 'underline' },
+    bold: { icon: Icons.bold, label: 'Bold', shortcut: 'Ctrl+B', type: 'command', command: 'bold' },
+    italic: { icon: Icons.italic, label: 'Italic', shortcut: 'Ctrl+I', type: 'command', command: 'italic' },
+    underline: { icon: Icons.underline, label: 'Underline', shortcut: 'Ctrl+U', type: 'command', command: 'underline' },
     strike: { icon: Icons.strikeThrough, label: 'Strikethrough', type: 'command', command: 'strikeThrough' },
     superscript: { icon: Icons.superscript, label: 'Superscript', type: 'command', command: 'superscript' },
     subscript: { icon: Icons.subscript, label: 'Subscript', type: 'command', command: 'subscript' },
@@ -93,7 +92,7 @@ const ToolbarConfig = {
     indent: { icon: Icons.indent, label: 'Increase indent', type: 'command', command: 'indent' },
     outdent: { icon: Icons.outdent, label: 'Decrease indent', type: 'command', command: 'outdent' },
 
-    link: { icon: Icons.link, label: 'Insert/edit link', type: 'action', shortcut: 'Ctrl+K', action: (e) => e.module('link').open() },
+    link: { icon: Icons.link, label: 'Insert/edit link', type: 'action', action: (e) => e.module('link').open() },
     unlink: {
         icon: Icons.unlink,
         label: 'Remove link',
@@ -124,7 +123,7 @@ const ToolbarConfig = {
         icon: Icons.emoji,
         label: 'Emoji',
         type: 'action',
-        action: (e) => e.commands.insertHTML('😀'),
+        action: (e) => e.module('emoji').open(),
     },
     specialChars: {
         icon: Icons.specialChars,
@@ -133,7 +132,7 @@ const ToolbarConfig = {
         action: (e) => e.commands.insertHTML('&amp;copy;'),
     },
 
-    find: { icon: Icons.find, label: 'Find & Replace', type: 'action', shortcut: 'Ctrl+F', action: (e) => e.module('find').open() },
+    find: { icon: Icons.find, label: 'Find & Replace', type: 'action', action: (e) => e.module('find').open() },
     sourceCode: {
         icon: Icons.sourceCode,
         label: 'Source code',

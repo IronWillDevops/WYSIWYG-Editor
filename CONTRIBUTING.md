@@ -73,6 +73,14 @@ php artisan serve
    any UI change.
 6. Be responsive to review feedback — small, focused PRs get merged fastest.
 
+### Test file conventions
+
+- **PHP tests** live in `tests/Unit/` or `tests/Feature/`, using Pest.
+- **JS tests** live in `resources/js/tests/` (one file per module under test).
+  Core utilities may also have co-located `*.test.js` files next to the source.
+  Use `describe`/`it` blocks; mock DOM via jsdom (available in the Vitest
+  environment; no browser needed).
+
 ## Reporting bugs
 
 Please include:

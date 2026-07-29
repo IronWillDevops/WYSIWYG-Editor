@@ -58,6 +58,7 @@
     gap: 2px;
     padding-right: 6px;
     border-right: 1px solid var(--ife-border);
+    position: relative;
 }
 
 .ife-toolbar__group:last-child {
@@ -117,11 +118,6 @@
     background: var(--ife-btn-hover);
 }
 
-.ife-toolbar__color.is-active {
-    background: var(--ife-btn-active);
-    color: var(--ife-accent);
-}
-
 .ife-toolbar__color input[type="color"] {
     position: absolute;
     inset: 0;
@@ -146,12 +142,62 @@
     border-collapse: collapse;
     width: 100%;
     margin: 8px 0;
+    display: block;
+    max-width: 100%;
+    overflow-y: auto;
+}
+
+.ife-content table.ife-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.ife-content table.ife-table thead th {
+    background: var(--ife-toolbar-bg);
+    position: sticky;
+    top: 0;
 }
 
 .ife-content table.ife-table td,
 .ife-content table.ife-table th {
     border: 1px solid var(--ife-border);
     padding: 6px 10px;
+}
+
+@media (max-width: 640px) {
+    .ife-content {
+        padding: 12px 8px;
+    }
+
+    .ife-content table.ife-table {
+        font-size: 14px;
+    }
+
+    .ife-content table.ife-table td,
+    .ife-content table.ife-table th {
+        padding: 4px 6px;
+    }
+
+    .ife-table-toolbar {
+        gap: 4px;
+        padding: 4px 6px;
+    }
+
+    .ife-table-toolbar__btn {
+        font-size: 11px;
+        padding: 3px 7px;
+    }
+
+    .ife-toolbar {
+        gap: 4px;
+        padding: 4px 6px;
+    }
+
+    .ife-toolbar__btn {
+        width: 28px;
+        height: 28px;
+    }
 }
 
 .ife-content ul,
@@ -334,9 +380,51 @@
 .note-quote { border-color: #6e7781; background: rgba(110, 119, 129, 0.08); font-style: italic; }
 .note-tip { border-color: #8250df; background: rgba(130, 80, 223, 0.08); }
 
+/* Status bar */
+.ife-statusbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 12px;
+    background: var(--ife-toolbar-bg);
+    border-top: 1px solid var(--ife-border);
+    font-size: 12px;
+    color: #6e7781;
+    user-select: none;
+}
+
+.ife-wrapper[data-resolved-theme="dark"] .ife-statusbar {
+    color: #9198a1;
+}
+
+.ife-wrapper.ife-fullscreen .ife-statusbar {
+    flex-shrink: 0;
+}
+
+.ife-statusbar__left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ife-statusbar__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ife-statusbar__item svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ife-statusbar__value {
+    font-variant-numeric: tabular-nums;
+}
+
 /* Dialogs */
 .ife-dialog-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.4);
     display: flex;
@@ -450,23 +538,97 @@
     border-color: var(--ife-danger);
 }
 
-/* Status bar */
-.ife-statusbar {
+/* Emoji picker */
+.ife-emoji-picker {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    width: 352px;
+    max-height: 320px;
+    background: var(--ife-bg);
+    border: 1px solid var(--ife-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ife-emoji-picker__header {
+    display: flex;
     align-items: center;
-    padding: 4px 12px;
-    background: var(--ife-toolbar-bg);
-    border-top: 1px solid var(--ife-border);
-    font-size: 12px;
-    color: #6e7781;
-    user-select: none;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ife-border);
 }
 
-.ife-wrapper[data-resolved-theme="dark"] .ife-statusbar {
-    color: #9198a1;
+.ife-emoji-picker__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ife-text);
 }
 
-.ife-wrapper.ife-fullscreen .ife-statusbar {
-    flex-shrink: 0;
+.ife-emoji-picker__close {
+    border: none;
+    background: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--ife-text);
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.ife-emoji-picker__close:hover {
+    opacity: 0.7;
+}
+
+.ife-emoji-picker__body {
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.ife-emoji-picker__group {
+    margin-bottom: 8px;
+}
+
+.ife-emoji-picker__group-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ife-text);
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    padding: 0 4px;
+}
+
+.ife-emoji-picker__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.ife-emoji-picker__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.ife-emoji-picker__btn:hover {
+    background: var(--ife-btn-hover);
+}
+
+.ife-emoji-picker__btn:focus-visible {
+    outline: 2px solid var(--ife-accent);
+    outline-offset: -2px;
 }
