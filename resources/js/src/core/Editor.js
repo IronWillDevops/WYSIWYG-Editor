@@ -53,8 +53,10 @@ export default class Editor {
             onChange: (type) => this.events.emit(type),
         });
 
+        this.handleShortcut = this.handleShortcut.bind(this);
         this.bindEvents();
         this.applyTheme(this.options.theme);
+
         this.loadPlugins();
         this.setupAutosave();
 
@@ -101,7 +103,7 @@ export default class Editor {
         this.root.addEventListener('paste', (event) => this.handlePaste(event));
         this.root.addEventListener('drop', (event) => this.events.emit('drop', event));
 
-        document.addEventListener('keydown', this.handleShortcut.bind(this));
+        document.addEventListener('keydown', this.handleShortcut);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
