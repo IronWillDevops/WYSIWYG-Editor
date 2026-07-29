@@ -1533,23 +1533,22 @@ class ne {
     const t = this.contextToolbar.style.display === "none";
     this.contextToolbar.style.display = e ? "flex" : "none", (e || !t) && this.adjustTableHeight(), this.editor.events.emit("table:context", e);
   }
-  /** Constrains table and content area height to fit within the viewport. */
+  /** Constrains content area and table height to fit within the viewport. */
   adjustTableHeight() {
     var k, L, T;
     if (!((k = this.editor.root) != null && k.isConnected)) return;
-    const e = this.editor.root.querySelectorAll("table.ife-table");
-    if (!e.length) {
-      this.editor.root.style.maxHeight = "";
-      return;
-    }
-    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), p = parseFloat(m.borderTopWidth) || 0, y = parseFloat(m.borderBottomWidth) || 0, $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, _ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16, E = i - o.top - p - s - l - u - y;
-    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(E))}px`, e.forEach((C) => {
+    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, l = e.querySelector(".ife-statusbar"), d = l ? l.offsetHeight : 0, u = getComputedStyle(e), m = parseFloat(u.borderTopWidth) || 0, p = parseFloat(u.borderBottomWidth) || 0, y = t - i.top - m - n - r - d - p;
+    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(y))}px`;
+    const E = this.editor.root.querySelectorAll("table.ife-table");
+    if (!E.length) return;
+    const $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, _ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
+    E.forEach((C) => {
       let H = 0, b = C.previousElementSibling;
       for (; b; ) {
         const M = getComputedStyle(b);
         H += b.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), b = b.previousElementSibling;
       }
-      const S = getComputedStyle(C), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = E - $ - H - D - F - _;
+      const S = getComputedStyle(C), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = y - $ - H - D - F - _;
       C.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
     });
   }

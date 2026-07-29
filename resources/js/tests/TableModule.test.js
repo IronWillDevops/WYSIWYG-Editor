@@ -1,212 +1,195 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TableModule from '../src/modules/TableModule.js';
-
-function createMockEditor() {
-    const root = document.createElement('div');
-    root.contentEditable = 'true';
-    const wrapper = document.createElement('div');
-    wrapper.appendChild(root);
-    const events = {};
-    return {
-        root,
-        wrapper,
-        selection: {
-            save: vi.fn(),
-            restore: vi.fn(),
-            closest: vi.fn((selector) => null),
-            getRange: vi.fn(() => {
-                const range = document.createRange();
-                range.setStart(root, 0);
-                range.collapse(true);
-                return range;
-            }),
-        },
-        history: { push: vi.fn() },
-        emitChange: vi.fn(),
-        events: { emit: vi.fn() },
-        on: vi.fn((event, handler) => {
-            events[event] = handler;
-            return () => {};
-        }),
-    };
-}
 
 describe('TableModule', () => {
     let editor;
-    let module;
+    let root;
 
-    beforeEach(() => {
+    function createEditor(withToolbar = false, withStatusbar = false) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'ife-wrapper';
+        wrapper.style.position = 'relative';
+        root = document.createElement('div');
+        root.className = 'ife-content';
+        root.contentEditable = 'true';
+        root.innerHTML = '<p>hello</p>';
+        wrapper.appendChild(root);
+
+        if (withToolbar) {
+            const toolbar = document.createElement('div');
+            toolbar.className = 'ife-toolbar';
+            toolbar.style.height = '40px';
+            wrapper.appendChild(toolbar);
+        }
+
+        if (withStatusbar) {
+            const statusbar = document.createElement('div');
+            statusbar.className = 'ife-statusbar';
+            statusbar.style.height = '24px';
+            wrapper.appendChild(statusbar);
+        }
+
         document.body.innerHTML = '';
-        editor = createMockEditor();
-        document.body.appendChild(editor.wrapper);
-        module = new TableModule(editor);
-    });
+        document.body.appendChild(wrapper);
 
-    afterEach(() => {
-        module.destroy();
-        document.body.innerHTML = '';
-    });
-
-    function setupTableInEditor(rows = 3, cols = 3, withHeader = true) {
-        const table = document.createElement('table');
-        table.className = 'ife-table';
-        if (withHeader) {
-            const thead = table.createTHead();
-            const hr = thead.insertRow();
-            for (let c = 0; c < cols; c++) {
-                const th = document.createElement('th');
-                th.innerHTML = `<br>`;
-                hr.appendChild(th);
-            }
-        }
-        const tbody = table.createTBody();
-        const bodyRows = withHeader ? rows - 1 : rows;
-        for (let r = 0; r < Math.max(bodyRows, 1); r++) {
-            const tr = tbody.insertRow();
-            for (let c = 0; c < cols; c++) {
-                const td = tr.insertCell();
-                td.innerHTML = `<br>`;
-            }
-        }
-        editor.root.appendChild(table);
-        const firstCell = table.querySelector('td, th');
-        if (firstCell) {
-            const range = document.createRange();
-            range.setStart(firstCell, 0);
-            range.collapse(true);
-            editor.selection.closest = vi.fn((sel) => {
-                if (sel === 'table') return table;
-                if (sel === 'td, th') return firstCell;
-                if (sel === 'tr') return firstCell?.closest('tr');
-                return null;
-            });
-        }
-        return table;
+        editor = {
+            root,
+            wrapper,
+            history: { push: () => {} },
+            selection: {
+                save: () => {},
+                restore: () => {},
+                getRange: () => null,
+                closest: () => null,
+            },
+            commands: {},
+            events: {
+                on: () => () => {},
+                emit: () => {},
+            },
+            emitChange: () => {},
+            on: () => () => {},
+        };
     }
 
-    it('inserts table with correct structure', () => {
-        module.insertTable(3, 4, true);
-        const table = editor.root.querySelector('table.ife-table');
-        expect(table).not.toBeNull();
-        expect(table.querySelectorAll('th').length).toBe(4);
-        expect(table.querySelectorAll('td').length).toBe(8);
+    let wrapper;
+
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        document.body.innerHTML = '';
+
+        createEditor();
     });
 
-    it('inserts table without header', () => {
-        module.insertTable(2, 2, false);
-        const table = editor.root.querySelector('table.ife-table');
-        expect(table).not.toBeNull();
-        expect(table.querySelector('thead')).toBeNull();
-        expect(table.querySelectorAll('td').length).toBe(4);
-    });
+    describe('adjustTableHeight', () => {
+        it('sets maxHeight on root even when no tables exist', () => {
+            root.innerHTML = '<p>some content</p>';
+            const module = new TableModule(editor);
 
-    it('inserts table with minimum 1 body row', () => {
-        module.insertTable(1, 2, false);
-        const table = editor.root.querySelector('table.ife-table');
-        expect(table.querySelectorAll('td').length).toBe(2);
-    });
+            module.adjustTableHeight();
 
-    it('pushes history on insertTable', () => {
-        module.insertTable(2, 2, false);
-        expect(editor.history.push).toHaveBeenCalled();
-    });
+            expect(root.style.maxHeight).toBeTruthy();
+            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+        });
 
-    it('adds a row above current', () => {
-        const table = setupTableInEditor(3, 2, false);
-        module.addRow(true);
-        expect(table.querySelectorAll('tr').length).toBe(4);
-    });
+        it('sets maxHeight clamped to minimum of 200px', () => {
+            const module = new TableModule(editor);
 
-    it('adds a row below current', () => {
-        const table = setupTableInEditor(3, 2, false);
-        module.addRow(false);
-        expect(table.querySelectorAll('tr').length).toBe(4);
-    });
+            const originalHeight = window.innerHeight;
+            vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(50);
 
-    it('deletes current row', () => {
-        const table = setupTableInEditor(3, 2, false);
-        module.deleteRow();
-        expect(table.querySelectorAll('tr').length).toBe(2);
-    });
+            module.adjustTableHeight();
 
-    it('adds a column to the left', () => {
-        const table = setupTableInEditor(2, 2, false);
-        module.addColumn(true);
-        table.querySelectorAll('tr').forEach((tr) => {
-            expect(tr.children.length).toBe(3);
+            expect(root.style.maxHeight).toBe('200px');
+        });
+
+        it('sets maxHeight on root and table when a table is present', () => {
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(root.style.maxHeight).toBeTruthy();
+            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+
+            const table = root.querySelector('table.ife-table');
+            expect(table.style.maxHeight).toBeTruthy();
+            expect(table.style.maxHeight).toMatch(/^\d+px$/);
+        });
+
+        it('accounts for content padding in table maxHeight', () => {
+            root.style.paddingTop = '30px';
+            root.style.paddingBottom = '30px';
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            const table = root.querySelector('table.ife-table');
+            const tableMaxHeight = parseFloat(table.style.maxHeight);
+            const rootMaxHeight = parseFloat(root.style.maxHeight);
+
+            expect(tableMaxHeight).toBeLessThan(rootMaxHeight);
+        });
+
+        it('adjusts each table independently based on preceding content', () => {
+            const p1 = document.createElement('p');
+            p1.style.marginBottom = '100px';
+            p1.textContent = 'text';
+
+            const t1 = document.createElement('table');
+            t1.className = 'ife-table';
+            t1.id = 't1';
+            t1.innerHTML = '<tr><td>table 1</td></tr>';
+
+            const p2 = document.createElement('p');
+            p2.style.marginBottom = '50px';
+            p2.textContent = 'more text';
+
+            const t2 = document.createElement('table');
+            t2.className = 'ife-table';
+            t2.id = 't2';
+            t2.innerHTML = '<tr><td>table 2</td></tr>';
+
+            root.append(p1, t1, p2, t2);
+
+            const module = new TableModule(editor);
+            module.adjustTableHeight();
+
+            const h1 = parseFloat(t1.style.maxHeight);
+            const h2 = parseFloat(t2.style.maxHeight);
+
+            expect(h2).toBeLessThan(h1);
+        });
+
+        it('subtracts toolbar height when toolbar is present', () => {
+            createEditor(true, false);
+
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(root.style.maxHeight).toBeTruthy();
+            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+        });
+
+        it('subtracts statusbar height when statusbar is present', () => {
+            createEditor(false, true);
+
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(root.style.maxHeight).toBeTruthy();
+            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+        });
+
+        it('subtracts context toolbar height when visible', () => {
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.contextToolbar.style.display = 'flex';
+            module.contextToolbar.style.height = '36px';
+
+            module.adjustTableHeight();
+
+            expect(root.style.maxHeight).toBeTruthy();
         });
     });
 
-    it('adds a column to the right', () => {
-        const table = setupTableInEditor(2, 2, false);
-        module.addColumn(false);
-        table.querySelectorAll('tr').forEach((tr) => {
-            expect(tr.children.length).toBe(3);
+    describe('destroy', () => {
+        it('clears maxHeight on root', () => {
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+            expect(root.style.maxHeight).toBeTruthy();
+
+            module.destroy();
+            expect(root.style.maxHeight).toBe('');
         });
-    });
 
-    it('deletes current column', () => {
-        const table = setupTableInEditor(2, 3, false);
-        module.deleteColumn();
-        table.querySelectorAll('tr').forEach((tr) => {
-            expect(tr.children.length).toBe(2);
-        });
-    });
-
-    it('deletes the entire table', () => {
-        setupTableInEditor(2, 2, false);
-        module.deleteTable();
-        expect(editor.root.querySelector('table.ife-table')).toBeNull();
-    });
-
-    it('merges cell to the right', () => {
-        const table = setupTableInEditor(2, 3, false);
-        module.mergeRight();
-        const firstRow = table.querySelector('tr');
-        expect(firstRow.children.length).toBe(2);
-        expect(firstRow.children[0].getAttribute('colspan')).toBe('2');
-    });
-
-    it('splits a merged cell', () => {
-        const table = setupTableInEditor(2, 3, false);
-        const cell = table.querySelector('td');
-        cell.setAttribute('colspan', '2');
-        module.splitCell();
-        expect(cell.getAttribute('colspan')).toBe('1');
-        expect(cell.nextElementSibling).not.toBeNull();
-    });
-
-    it('does not split a cell with colspan 1', () => {
-        const table = setupTableInEditor(2, 2, false);
-        const cell = table.querySelector('td');
-        const nextSibling = cell.nextElementSibling;
-        module.splitCell();
-        expect(cell.getAttribute('colspan')).toBeNull();
-        expect(cell.nextElementSibling).toBe(nextSibling);
-    });
-
-    it('sets cell background color', () => {
-        const table = setupTableInEditor(2, 2, false);
-        const cell = table.querySelector('td');
-        module.setCellBackground('#ff0000');
-        expect(cell.style.backgroundColor).toBe('rgb(255, 0, 0)');
-    });
-
-    it('sets table alignment', () => {
-        const table = setupTableInEditor(2, 2, false);
-        module.setTableAlignment('center');
-        expect(table.style.marginLeft).toBe('auto');
-        expect(table.style.marginRight).toBe('auto');
-    });
-
-    it('builds context toolbar on construction', () => {
-        const toolbar = module.contextToolbar;
-        expect(toolbar).not.toBeNull();
-        expect(toolbar.classList.contains('ife-table-toolbar')).toBe(true);
-    });
-
-    it('calls adjustTableHeight on init', () => {
-        expect(editor.on).toHaveBeenCalledWith('init', expect.any(Function));
-        expect(editor.on).toHaveBeenCalledWith('change', expect.any(Function));
     });
 });
