@@ -276,12 +276,20 @@ class P {
   }
   /**
    * Replaces the current block element's tag (p, h1-h6, blockquote, pre).
+   * If the block is already the target tag, toggles back to <p>.
    * @param {string} tagName
    */
   setBlockFormat(e) {
     const t = this.selection.getBlockElement();
     if (!t || t === this.root) {
       document.execCommand("formatBlock", !1, `<${e}>`);
+      return;
+    }
+    if (t.tagName === e.toUpperCase()) {
+      const n = document.createElement("p");
+      n.innerHTML = t.innerHTML, t.replaceWith(n);
+      const s = document.createRange();
+      s.selectNodeContents(n), s.collapse(!1), this.selection.setRange(s);
       return;
     }
     const i = document.createElement(e);
