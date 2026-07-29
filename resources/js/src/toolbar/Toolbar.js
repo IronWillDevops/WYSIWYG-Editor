@@ -248,6 +248,13 @@ export default class Toolbar {
                     select.value = optionValue;
                     return;
                 }
+            } else if (id === 'fontSize') {
+                const computedNum = parseFloat(computedValue);
+                const optionNum = parseFloat(optionValue);
+                if (!isNaN(computedNum) && !isNaN(optionNum) && Math.abs(computedNum - optionNum) < 0.5) {
+                    select.value = optionValue;
+                    return;
+                }
             } else {
                 if (computedValue === optionValue) {
                     select.value = optionValue;
