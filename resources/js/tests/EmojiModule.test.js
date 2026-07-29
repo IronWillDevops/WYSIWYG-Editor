@@ -81,6 +81,35 @@ describe('EmojiModule', () => {
         expect(editor.selection.save).toHaveBeenCalled();
     });
 
+    it('closes when clicking outside the picker', () => {
+        module.open();
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
+    });
+
+    it('does not close when clicking on the trigger element', () => {
+        const btn = document.createElement('button');
+        btn.className = 'ife-toolbar__btn';
+        btn.setAttribute('data-command', 'emoji');
+        document.body.appendChild(btn);
+
+        module.open(btn);
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+
+        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+
+        document.body.removeChild(btn);
+    });
+
+    it('closes when an emoji is selected', () => {
+        module.open();
+        const firstBtn = document.body.querySelector('.ife-emoji-picker__btn');
+        firstBtn.click();
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
+    });
+
     it('positions picker relative to trigger button with fixed positioning', () => {
         const btn = document.createElement('button');
         btn.className = 'ife-toolbar__btn';
