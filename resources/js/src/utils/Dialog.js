@@ -35,9 +35,11 @@ export default class Dialog {
         this.form = this.overlay.querySelector('form');
 
         this.overlay.querySelectorAll('button, input, select, textarea').forEach((el) => {
-            el.addEventListener('mousedown', (e) => e.preventDefault());
             el.addEventListener('click', (e) => e.stopPropagation());
             el.addEventListener('keydown', (e) => e.stopPropagation());
+        });
+        this.overlay.querySelectorAll('button').forEach((el) => {
+            el.addEventListener('mousedown', (e) => e.preventDefault());
         });
 
         this.overlay.querySelector('.ife-dialog__close').addEventListener('click', () => this.close());

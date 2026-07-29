@@ -105,4 +105,46 @@ describe('Dialog', () => {
 
         expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
     });
+
+    it('auto-focuses the first input on open', () => {
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<input name="val" type="text">',
+            onConfirm: () => {},
+        });
+        dialog.open();
+
+        const input = document.body.querySelector('input');
+        expect(document.activeElement).toBe(input);
+    });
+
+    it('does not prevent mousedown default on input elements', () => {
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<input name="val" type="text">',
+            onConfirm: () => {},
+        });
+        dialog.open();
+
+        const input = document.body.querySelector('input');
+        const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+        input.dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('prevents button from receiving focus on mousedown', () => {
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<p>body</p>',
+            onConfirm: () => {},
+        });
+        dialog.open();
+
+        const confirmBtn = document.body.querySelector('[data-action="confirm"]');
+        const mousedownEvent = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+        confirmBtn.dispatchEvent(mousedownEvent);
+
+        expect(mousedownEvent.defaultPrevented).toBe(true);
+    });
 });
