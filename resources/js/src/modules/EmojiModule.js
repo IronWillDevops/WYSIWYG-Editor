@@ -3,7 +3,6 @@ export default class EmojiModule {
         this.editor = editor;
         this.picker = null;
         this._triggerEl = null;
-        this._boundOnScroll = null;
         this._boundOnResize = null;
         this._boundOnClickOutside = null;
     }
@@ -126,10 +125,6 @@ export default class EmojiModule {
 
         this.positionPicker();
 
-        this._boundOnScroll = (e) => {
-            if (this.picker && this.picker.contains(e.target)) return;
-            this.close();
-        };
         this._boundOnResize = () => this.positionPicker();
         this._boundOnClickOutside = (e) => {
             if (!this.picker) return;
@@ -137,9 +132,8 @@ export default class EmojiModule {
             if (this._triggerEl && this._triggerEl.contains(e.target)) return;
             this.close();
         };
-        document.addEventListener('scroll', this._boundOnScroll, { capture: true });
         window.addEventListener('resize', this._boundOnResize);
-        document.addEventListener('mousedown', this._boundOnClickOutside);
+        document.addEventListener('click', this._boundOnClickOutside);
 
         setTimeout(() => {
             if (!this.picker) return;
@@ -187,16 +181,12 @@ export default class EmojiModule {
     }
 
     _removeListeners() {
-        if (this._boundOnScroll) {
-            document.removeEventListener('scroll', this._boundOnScroll, { capture: true });
-            this._boundOnScroll = null;
-        }
         if (this._boundOnResize) {
             window.removeEventListener('resize', this._boundOnResize);
             this._boundOnResize = null;
         }
         if (this._boundOnClickOutside) {
-            document.removeEventListener('mousedown', this._boundOnClickOutside);
+            document.removeEventListener('click', this._boundOnClickOutside);
             this._boundOnClickOutside = null;
         }
     }

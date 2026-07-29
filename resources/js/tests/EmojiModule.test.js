@@ -84,7 +84,7 @@ describe('EmojiModule', () => {
     it('closes when clicking outside the picker', () => {
         module.open();
         expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
-        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
@@ -97,10 +97,18 @@ describe('EmojiModule', () => {
         module.open(btn);
         expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
 
-        btn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
 
         document.body.removeChild(btn);
+    });
+
+    it('does not close on scroll', () => {
+        module.open();
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+        document.dispatchEvent(new Event('scroll'));
+        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
+        module.close();
     });
 
     it('closes when an emoji is selected', () => {
