@@ -43,7 +43,7 @@ class q {
     this.listeners.clear();
   }
 }
-class j {
+class O {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class j {
     this.root.focus(), this.restore();
   }
 }
-class O {
+class j {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -598,14 +598,14 @@ const G = {
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
 }, z = /* @__PURE__ */ new Map();
-let E = class {
+let k = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...G, ...t }, this.events = new q(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new j(this.root), this.commands = new P(this), this.history = new O({
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new q(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new O(this.root), this.commands = new P(this), this.history = new j({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -1591,8 +1591,8 @@ class ne {
   }
   /** Constrains content area and table height to fit within the viewport. */
   adjustTableHeight() {
-    var k, L, T;
-    if (!((k = this.editor.root) != null && k.isConnected)) return;
+    var E, L, T;
+    if (!((E = this.editor.root) != null && E.isConnected)) return;
     const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, l = e.querySelector(".ife-statusbar"), d = l ? l.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
     this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(p))}px`;
     const C = this.editor.root.querySelectorAll("table.ife-table");
@@ -2035,7 +2035,7 @@ class ue {
 }
 class me {
   constructor(e) {
-    this.editor = e, this.picker = null, this._triggerEl = null, this._boundOnScroll = null, this._boundOnResize = null;
+    this.editor = e, this.picker = null, this._triggerEl = null, this._boundOnResize = null, this._boundOnClickOutside = null;
   }
   open(e) {
     if (this.picker) {
@@ -2335,9 +2335,9 @@ class me {
       }), d.appendChild(u), s.appendChild(d);
     }), this.picker.appendChild(s), document.body.appendChild(this.picker);
     const r = this.editor.wrapper;
-    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnScroll = (l) => {
-      this.picker && this.picker.contains(l.target) || this.close();
-    }, this._boundOnResize = () => this.positionPicker(), document.addEventListener("scroll", this._boundOnScroll, { capture: !0 }), window.addEventListener("resize", this._boundOnResize), setTimeout(() => {
+    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnClickOutside = (l) => {
+      this.picker && (this.picker.contains(l.target) || this._triggerEl && this._triggerEl.contains(l.target) || this.close());
+    }, window.addEventListener("resize", this._boundOnResize), document.addEventListener("click", this._boundOnClickOutside), setTimeout(() => {
       if (!this.picker) return;
       const l = this.picker.querySelector(".ife-emoji-picker__btn");
       l && l.focus();
@@ -2355,7 +2355,7 @@ class me {
     this.picker && (this.picker.remove(), this.picker = null), this._triggerEl = null, this._removeListeners();
   }
   _removeListeners() {
-    this._boundOnScroll && (document.removeEventListener("scroll", this._boundOnScroll, { capture: !0 }), this._boundOnScroll = null), this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null);
+    this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null), this._boundOnClickOutside && (document.removeEventListener("click", this._boundOnClickOutside), this._boundOnClickOutside = null);
   }
   destroy() {
     this.close();
@@ -2375,7 +2375,7 @@ const pe = {
   emoji: me
 };
 Object.entries(pe).forEach(([a, e]) => {
-  E.registerPlugin(a, (t) => new e(t));
+  k.registerPlugin(a, (t) => new e(t));
 });
 const f = /* @__PURE__ */ new Map(), be = {
   /**
@@ -2391,7 +2391,7 @@ const f = /* @__PURE__ */ new Map(), be = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (f.has(t))
       return f.get(t);
-    const i = new E(t, e), o = new te(i, e.toolbar);
+    const i = new k(t, e), o = new te(i, e.toolbar);
     return i.on("destroy", () => o.destroy()), f.set(t, i), i.on("destroy", () => f.delete(t)), i;
   },
   /**
@@ -2406,7 +2406,7 @@ const f = /* @__PURE__ */ new Map(), be = {
   destroyAll() {
     f.forEach((a) => a.destroy()), f.clear();
   },
-  registerPlugin: E.registerPlugin
+  registerPlugin: k.registerPlugin
 };
 export {
   be as default
