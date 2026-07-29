@@ -12,6 +12,8 @@ export default class FindModule {
     }
 
     open() {
+        this.clearHighlights();
+
         const body = `
             <label class="ife-field">
                 <span>Find</span>
@@ -30,6 +32,7 @@ export default class FindModule {
             bodyHtml: body,
             confirmLabel: 'Replace all',
             onConfirm: (form) => this.replaceAll(form),
+            onClose: () => this.clearHighlights(),
         });
 
         const findNextBtn = document.createElement('button');
@@ -58,6 +61,8 @@ export default class FindModule {
 
     highlightAll(form) {
         this.clearHighlights();
+        const query = String(form.get('query') ?? '');
+        if (!query) return;
         const regex = this.buildRegex(form);
         if (!regex) return;
 

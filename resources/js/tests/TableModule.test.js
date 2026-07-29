@@ -190,5 +190,6 @@ describe('TableModule', () => {
             module.destroy();
             expect(root.style.maxHeight).toBe('');
         });
+
     });
 });
