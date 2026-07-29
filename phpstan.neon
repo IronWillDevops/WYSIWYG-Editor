@@ -4,4 +4,6 @@ parameters:
         - src
     excludePaths:
         - src/../vendor
-    checkMissingIterableValueType: false
+    ignoreErrors:
+        -
+            identifier: missingType.iterableValue
