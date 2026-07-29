@@ -12,6 +12,11 @@ export default class TableModule {
         this.editor.root.addEventListener('click', () => this.syncContextToolbar());
         this.editor.root.addEventListener('keyup', () => this.syncContextToolbar());
         this.editor.on('selectionchange', () => this.syncContextToolbar());
+
+        this.adjustTableHeight = this.adjustTableHeight.bind(this);
+        window.addEventListener('resize', this.adjustTableHeight);
+        this.editor.on('init', this.adjustTableHeight);
+        this.editor.on('change', this.adjustTableHeight);
     }
 
     /**
@@ -148,6 +153,7 @@ export default class TableModule {
         range?.insertNode(table);
 
         this.editor.emitChange();
+        this.adjustTableHeight();
     }
 
     getCurrentCell() {
@@ -272,11 +278,59 @@ export default class TableModule {
             this.editor.wrapper.insertBefore(this.contextToolbar, this.editor.root);
         }
 
+        const wasHidden = this.contextToolbar.style.display === 'none';
         this.contextToolbar.style.display = inTable ? 'flex' : 'none';
+
+        if (inTable || !wasHidden) {
+            this.adjustTableHeight();
+        }
+
         this.editor.events.emit('table:context', inTable);
     }
 
+    /** Constrains table height to fit within the viewport, accounting for all editor chrome. */
+    adjustTableHeight() {
+        const tables = this.editor.root.querySelectorAll('table.ife-table');
+        if (!tables.length) return;
+
+        const wrapper = this.editor.wrapper;
+        const viewportHeight = window.innerHeight;
+        const wrapperRect = wrapper.getBoundingClientRect();
+
+        const toolbarEl = wrapper.querySelector('.ife-toolbar');
+        const toolbarHeight = toolbarEl ? toolbarEl.offsetHeight : 0;
+
+        const contextToolbarVisible = this.contextToolbar?.style.display !== 'none';
+        const contextToolbarHeight = contextToolbarVisible ? (this.contextToolbar?.offsetHeight || 0) : 0;
+
+        const statusbarEl = wrapper.querySelector('.ife-statusbar');
+        const statusbarHeight = statusbarEl ? statusbarEl.offsetHeight : 0;
+
+        const wrapperStyle = getComputedStyle(wrapper);
+        const wrapperBorderTop = parseFloat(wrapperStyle.borderTopWidth) || 0;
+        const wrapperBorderBottom = parseFloat(wrapperStyle.borderBottomWidth) || 0;
+
+        const contentStyle = getComputedStyle(this.editor.root);
+        const contentPaddingTop = parseFloat(contentStyle.paddingTop) || 16;
+        const contentPaddingBottom = parseFloat(contentStyle.paddingBottom) || 16;
+
+        const availableHeight = viewportHeight
+            - wrapperRect.top
+            - wrapperBorderTop
+            - toolbarHeight
+            - contextToolbarHeight
+            - contentPaddingTop
+            - contentPaddingBottom
+            - statusbarHeight
+            - wrapperBorderBottom;
+
+        tables.forEach((table) => {
+            table.style.maxHeight = `${Math.max(100, Math.floor(availableHeight))}px`;
+        });
+    }
+
     destroy() {
+        window.removeEventListener('resize', this.adjustTableHeight);
         this.contextToolbar?.remove();
     }
 }
