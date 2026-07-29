@@ -51,4 +51,22 @@ describe('Editor', () => {
         expect(keydownRemoves).toHaveLength(1);
         expect(keydownRemoves[0][1]).toBe(keydownAdds[0][1]);
     });
+
+    it('calls history.destroy() on editor destroy', () => {
+        const editor = new Editor(textarea);
+        vi.spyOn(editor.history, 'destroy');
+
+        editor.destroy();
+
+        expect(editor.history.destroy).toHaveBeenCalledOnce();
+    });
+
+    it('clears history timer after editor.destroy()', () => {
+        const editor = new Editor(textarea);
+        vi.spyOn(globalThis, 'clearTimeout');
+
+        editor.destroy();
+
+        expect(clearTimeout).toHaveBeenCalled();
+    });
 });

@@ -255,6 +255,7 @@ export default class Editor {
         this.events.emit('destroy', this);
         clearInterval(this.autosaveTimer);
         document.removeEventListener('keydown', this.handleShortcut);
+        this.history.destroy();
         this.wrapper.remove();
         this.textarea.style.display = '';
         this.events.destroy();

@@ -124,7 +124,16 @@ export default class Sanitizer {
         }
     }
 
-    /** Strips dangerous CSS such as expression()/url(javascript:). */
+    /**
+     * Strips dangerous CSS such as expression()/url(javascript:) using a
+     * simple regex filter over each declaration. This is sufficient for the
+     * common XSS patterns found in pasted content. A full CSS parser would
+     * be needed to catch obfuscated variants (e.g. nested expressions,
+     * string-encoded javascript: inside url()), but the editor targets
+     * typical copy-paste scenarios where a dedicated attacker would use
+     * far simpler vectors like <script> or event handlers, which the
+     * whitelist-based tag/attr sanitizer already blocks entirely.
+     */
     cleanStyle(style) {
         return style
             .split(';')
