@@ -623,7 +623,7 @@ let k = class {
     this.root.addEventListener("input", () => {
       this.history.record(), this.emitChange();
     }), this.root.addEventListener("keyup", () => this.syncSelectionState()), this.root.addEventListener("mouseup", () => this.syncSelectionState()), this.root.addEventListener("focus", () => this.events.emit("focus", this)), this.root.addEventListener("blur", () => {
-      this.selection.save(), this.syncTextarea(), this.events.emit("blur", this);
+      this.syncTextarea(), this.events.emit("blur", this);
     }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), document.addEventListener("keydown", this.handleShortcut), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
   }
   syncSelectionState() {
@@ -1062,7 +1062,9 @@ class te {
     return i.className = "ife-toolbar__select", i.setAttribute("aria-label", t.label), t.options.forEach(([o, n]) => {
       const s = document.createElement("option");
       s.value = o, s.textContent = n, i.appendChild(s);
-    }), i.addEventListener("mousedown", (o) => o.stopPropagation()), i.addEventListener("change", () => {
+    }), i.addEventListener("mousedown", (o) => {
+      o.stopPropagation(), this.editor.selection.save();
+    }), i.addEventListener("change", () => {
       this.editor.selection.restore(), t.onChange(this.editor, i.value), this.syncActiveStates();
     }), this.buttons.set(e, i), i;
   }

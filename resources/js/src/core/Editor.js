@@ -95,7 +95,6 @@ export default class Editor {
 
         this.root.addEventListener('focus', () => this.events.emit('focus', this));
         this.root.addEventListener('blur', () => {
-            this.selection.save();
             this.syncTextarea();
             this.events.emit('blur', this);
         });
