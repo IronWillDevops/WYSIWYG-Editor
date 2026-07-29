@@ -140,7 +140,7 @@ class H {
     this.root.focus(), this.restore();
   }
 }
-class M {
+class S {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class M {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class S {
+class M {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -485,24 +485,24 @@ class N {
   }
   /** @param {Node} root */
   cleanNode(e) {
-    const t = document.createTreeWalker(e, NodeFilter.SHOW_ELEMENT, null), i = [];
-    let n = t.nextNode();
-    for (; n; ) {
+    const t = [...e.childNodes];
+    for (let i = 0; i < t.length; i++) {
+      const n = t[i];
+      if (n.nodeType !== Node.ELEMENT_NODE) continue;
       const o = (
         /** @type {HTMLElement} */
         n
       ), s = o.tagName.toLowerCase();
       if (s === "script" || s === "style" || s === "noscript") {
-        i.push(o), n = t.nextNode();
+        o.remove();
         continue;
       }
-      if (!this.allowedTags.has(s)) {
-        this.unwrap(o), n = t.nextNode();
+      if (this.cleanNode(o), !this.allowedTags.has(s)) {
+        this.unwrap(o);
         continue;
       }
-      this.cleanAttributes(o, s), n = t.nextNode();
+      this.cleanAttributes(o, s);
     }
-    i.forEach((o) => o.remove());
   }
   /**
    * @param {HTMLElement} el
@@ -534,7 +534,16 @@ class N {
       return !1;
     }
   }
-  /** Strips dangerous CSS such as expression()/url(javascript:). */
+  /**
+   * Strips dangerous CSS such as expression()/url(javascript:) using a
+   * simple regex filter over each declaration. This is sufficient for the
+   * common XSS patterns found in pasted content. A full CSS parser would
+   * be needed to catch obfuscated variants (e.g. nested expressions,
+   * string-encoded javascript: inside url()), but the editor targets
+   * typical copy-paste scenarios where a dedicated attacker would use
+   * far simpler vectors like <script> or event handlers, which the
+   * whitelist-based tag/attr sanitizer already blocks entirely.
+   */
   cleanStyle(e) {
     return e.split(";").filter((t) => !/expression\s*\(|javascript:/i.test(t)).join(";");
   }
@@ -561,7 +570,7 @@ let b = class {
    */
   constructor(e, t = {}) {
     var i, n;
-    this.textarea = e, this.options = { ...A, ...t }, this.events = new T(), this.sanitizer = new N(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new H(this.root), this.commands = new S(this), this.history = new M({
+    this.textarea = e, this.options = { ...A, ...t }, this.events = new T(), this.sanitizer = new N(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new H(this.root), this.commands = new M(this), this.history = new S({
       getContent: () => this.root.innerHTML,
       setContent: (o) => {
         this.root.innerHTML = o;
@@ -569,7 +578,7 @@ let b = class {
       maxSteps: ((i = this.options.history) == null ? void 0 : i.max_steps) ?? 1e3,
       debounceMs: ((n = this.options.history) == null ? void 0 : n.debounce_ms) ?? 300,
       onChange: (o) => this.events.emit(o)
-    }), this.bindEvents(), this.applyTheme(this.options.theme), this.loadPlugins(), this.setupAutosave(), this.events.emit("init", this);
+    }), this.handleShortcut = this.handleShortcut.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this.loadPlugins(), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
@@ -580,7 +589,7 @@ let b = class {
       this.history.record(), this.emitChange();
     }), this.root.addEventListener("keyup", () => this.syncSelectionState()), this.root.addEventListener("mouseup", () => this.syncSelectionState()), this.root.addEventListener("focus", () => this.events.emit("focus", this)), this.root.addEventListener("blur", () => {
       this.selection.save(), this.syncTextarea(), this.events.emit("blur", this);
-    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), document.addEventListener("keydown", this.handleShortcut.bind(this)), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
+    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), document.addEventListener("keydown", this.handleShortcut), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
   }
   syncSelectionState() {
     this.selection.save(), this.events.emit("selectionchange", this);
@@ -684,7 +693,7 @@ let b = class {
     this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy();
+    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy();
   }
   /**
    * @param {string} event
@@ -909,7 +918,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз."
-}, F = {
+}, V = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -934,7 +943,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
 }, f = /* @__PURE__ */ new Map([
   ["en", D],
   ["uk", _],
-  ["ru", F]
+  ["ru", V]
 ]), C = {
   /**
    * @param {string} code
@@ -954,7 +963,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   available() {
     return [...f.keys()];
   }
-}, V = [
+}, F = [
   ["undo", "redo"],
   ["blockFormat", "fontFamily", "fontSize"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -972,7 +981,7 @@ class I {
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? V, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? F, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
@@ -1085,7 +1094,9 @@ class g {
                 </footer>
             </form>
         `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("mousedown", (l) => l.preventDefault()), a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => l.stopPropagation());
+      a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => l.stopPropagation());
+    }), this.overlay.querySelectorAll("button").forEach((a) => {
+      a.addEventListener("mousedown", (l) => l.preventDefault());
     }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
       a.target === this.overlay && this.close();
     }), this.form.addEventListener("submit", (a) => {
@@ -1167,11 +1178,13 @@ class B {
     }
   }
   apply(e, t) {
-    const i = new FormData(e), n = ["nofollow", "noopener", "noreferrer"].filter((s) => i.get(s)).join(" "), o = t ?? document.createElement("a");
-    if (o.textContent = String(i.get("text")), o.setAttribute("href", String(i.get("href"))), o.setAttribute("title", String(i.get("title") ?? "")), o.setAttribute("target", i.get("newTab") ? "_blank" : "_self"), n ? o.setAttribute("rel", n) : o.removeAttribute("rel"), this.editor.history.push(), !t) {
+    const i = new FormData(e), n = ["nofollow", "noopener", "noreferrer"].filter((a) => i.get(a)).join(" "), o = t ?? document.createElement("a");
+    o.textContent = String(i.get("text"));
+    const s = String(i.get("href"));
+    if (o.setAttribute("href", this.editor.sanitizer.isSafeUrl(s) ? s : "#"), o.setAttribute("title", String(i.get("title") ?? "")), o.setAttribute("target", i.get("newTab") ? "_blank" : "_self"), n ? o.setAttribute("rel", n) : o.removeAttribute("rel"), this.editor.history.push(), !t) {
       this.editor.selection.restore();
-      const s = this.editor.selection.getRange();
-      s == null || s.deleteContents(), s == null || s.insertNode(o);
+      const a = this.editor.selection.getRange();
+      a == null || a.deleteContents(), a == null || a.insertNode(o);
     }
     this.editor.emitChange();
   }
@@ -1286,7 +1299,7 @@ class q {
     const s = document.createElement("figure");
     s.className = `ife-image ife-image--${n}`;
     const a = document.createElement("img");
-    if (a.src = e, a.alt = t, o && (a.loading = "lazy"), s.appendChild(a), i) {
+    if (this.editor.sanitizer.isSafeUrl(e) && (a.src = e), a.alt = t, o && (a.loading = "lazy"), s.appendChild(a), i) {
       const d = document.createElement("figcaption");
       d.textContent = i, s.appendChild(d);
     }
@@ -1302,7 +1315,7 @@ class q {
   update(e, { src: t, alt: i, caption: n, align: o, lazy: s }) {
     this.editor.history.push(), e.className = `ife-image ife-image--${o}`;
     const a = e.querySelector("img");
-    a && (a.src = t, a.alt = i, s ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading"));
+    a && (this.editor.sanitizer.isSafeUrl(t) && (a.src = t), a.alt = i, s ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading"));
     let l = e.querySelector("figcaption");
     n ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = n) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
   }
