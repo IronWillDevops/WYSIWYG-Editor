@@ -23,7 +23,7 @@ export default class StatusBar {
 
         this.charsEl = document.createElement('span');
         this.charsEl.className = 'ife-statusbar__item';
-        this.charsEl.innerHTML = `${Icons.charCount} <span class="ife-statusbar__value">0</span>`;
+        this.charsEl.innerHTML = `${Icons.specialChars} <span class="ife-statusbar__value">0</span>`;
 
         this.left.appendChild(this.wordsEl);
         this.left.appendChild(this.charsEl);

@@ -125,7 +125,10 @@ export default class EmojiModule {
 
         this.positionPicker();
 
-        this._boundOnScroll = () => this.close();
+        this._boundOnScroll = (e) => {
+            if (this.picker && this.picker.contains(e.target)) return;
+            this.close();
+        };
         this._boundOnResize = () => this.positionPicker();
         document.addEventListener('scroll', this._boundOnScroll, { capture: true });
         window.addEventListener('resize', this._boundOnResize);
