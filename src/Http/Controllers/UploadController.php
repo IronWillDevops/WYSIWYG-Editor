@@ -43,9 +43,12 @@ final class UploadController extends Controller
             ], 422);
         }
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+        $storage = Storage::disk($disk);
+
         return response()->json([
             'success' => true,
-            'url' => Storage::disk($disk)->url($path),
+            'url' => $storage->url($path),
             'path' => $path,
             'name' => $file->getClientOriginalName(),
             'size' => $file->getSize(),
