@@ -1,7 +1,7 @@
 var V = Object.defineProperty;
-var O = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
-var N = (a, e, t) => O(a, typeof e != "symbol" ? e + "" : e, t);
-class I {
+var I = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var N = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
+class O {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -250,16 +250,12 @@ class U {
       case "blockFormat":
         this.setBlockFormat(t);
         break;
-      case "fontName": {
-        const i = t.split(",")[0].replace(/["']/g, "").trim();
-        document.execCommand("fontName", !1, i), this.cleanFontTags();
+      case "fontName":
+        this.setInlineStyle("fontFamily", t);
         break;
-      }
-      case "fontSize": {
-        const i = t, n = { "12px": "1", "14px": "2", "16px": "3", "18px": "4", "24px": "5", "32px": "6", "48px": "7" }[i] || "3";
-        document.execCommand("fontSize", !1, n), this.cleanFontTags(), this.normalizeFontSizeSpans(i);
+      case "fontSize":
+        this.setInlineStyle("fontSize", t);
         break;
-      }
       case "lineHeight":
         this.setInlineStyle("lineHeight", t, !0);
         break;
@@ -639,7 +635,7 @@ let k = class {
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...J, ...t }, this.events = new I(), this.sanitizer = new G(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new j(this.root), this.commands = new U(this), this.history = new P({
+    this.textarea = e, this.options = { ...J, ...t }, this.events = new O(), this.sanitizer = new G(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new j(this.root), this.commands = new U(this), this.history = new P({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;

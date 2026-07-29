@@ -110,22 +110,13 @@ export default class Commands {
                 this.setBlockFormat(value);
                 break;
 
-            case 'fontName': {
-                const fontName = value.split(',')[0].replace(/["']/g, '').trim();
-                document.execCommand('fontName', false, fontName);
-                this.cleanFontTags();
+            case 'fontName':
+                this.setInlineStyle('fontFamily', value);
                 break;
-            }
 
-            case 'fontSize': {
-                const targetPx = value;
-                const htmlSizes = { '12px': '1', '14px': '2', '16px': '3', '18px': '4', '24px': '5', '32px': '6', '48px': '7' };
-                const htmlSize = htmlSizes[targetPx] || '3';
-                document.execCommand('fontSize', false, htmlSize);
-                this.cleanFontTags();
-                this.normalizeFontSizeSpans(targetPx);
+            case 'fontSize':
+                this.setInlineStyle('fontSize', value);
                 break;
-            }
 
             case 'lineHeight':
                 this.setInlineStyle('lineHeight', value, true);
