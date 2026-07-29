@@ -1,6 +1,6 @@
 const DEFAULT_ALLOWED_TAGS = new Set([
     'p', 'br', 'div', 'span', 'a', 'strong', 'em', 'u', 's', 'sup', 'sub',
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
     'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
 ]);

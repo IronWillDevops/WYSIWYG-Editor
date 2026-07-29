@@ -1,7 +1,7 @@
-var D = Object.defineProperty;
-var _ = (r, e, t) => e in r ? D(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var E = (r, e, t) => _(r, typeof e != "symbol" ? e + "" : e, t);
-class F {
+var _ = Object.defineProperty;
+var F = (r, e, t) => e in r ? _(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var L = (r, e, t) => F(r, typeof e != "symbol" ? e + "" : e, t);
+class V {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class F {
     this.listeners.clear();
   }
 }
-class V {
+class B {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class V {
     this.root.focus(), this.restore();
   }
 }
-class B {
+class I {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class B {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class I {
+class q {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -394,7 +394,7 @@ class I {
     let t = e.commonAncestorContainer;
     if (t.nodeType === Node.TEXT_NODE && (t = t.parentElement), !(t instanceof HTMLElement)) return;
     ((o = t.style) != null && o.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((n) => {
-      if (e.intersectsNode(n) && (n.removeAttribute("style"), ["SPAN", "FONT"].includes(n.tagName) && n.attributes.length === 0)) {
+      if (!(!this.root.contains(n) || !e.intersectsNode(n)) && (n.removeAttribute("style"), ["SPAN", "FONT"].includes(n.tagName) && n.attributes.length === 0)) {
         const s = n.parentNode;
         if (!s) return;
         for (; n.firstChild; ) s.insertBefore(n.firstChild, n);
@@ -416,7 +416,7 @@ class I {
     this.editor.emitChange();
   }
 }
-const q = /* @__PURE__ */ new Set([
+const U = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -437,6 +437,7 @@ const q = /* @__PURE__ */ new Set([
   "blockquote",
   "pre",
   "code",
+  "mark",
   "ul",
   "ol",
   "li",
@@ -454,7 +455,7 @@ const q = /* @__PURE__ */ new Set([
   "source",
   "iframe",
   "hr"
-]), U = {
+]), O = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -464,8 +465,8 @@ const q = /* @__PURE__ */ new Set([
   source: /* @__PURE__ */ new Set(["src", "type"]),
   td: /* @__PURE__ */ new Set(["colspan", "rowspan"]),
   th: /* @__PURE__ */ new Set(["colspan", "rowspan", "scope"])
-}, O = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class P {
+}, P = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class j {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -473,7 +474,7 @@ class P {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : q, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : U, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : O;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : U, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : O, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : P;
   }
   /**
    * @param {string} dirtyHtml
@@ -556,13 +557,13 @@ class P {
     }
   }
 }
-const j = {
+const W = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, L = /* @__PURE__ */ new Map();
+}, k = /* @__PURE__ */ new Map();
 let b = class {
   /**
    * @param {HTMLTextAreaElement} textarea
@@ -570,7 +571,7 @@ let b = class {
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...j, ...t }, this.events = new F(), this.sanitizer = new P(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new V(this.root), this.commands = new I(this), this.history = new B({
+    this.textarea = e, this.options = { ...W, ...t }, this.events = new V(), this.sanitizer = new j(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new B(this.root), this.commands = new q(this), this.history = new I({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -603,7 +604,7 @@ let b = class {
   /** @param {ClipboardEvent} event */
   handlePaste(e) {
     var n, s;
-    e.preventDefault();
+    if (e.preventDefault(), this.destroyed) return;
     const t = (n = e.clipboardData) == null ? void 0 : n.getData("text/html"), i = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "", o = t ? this.sanitizer.sanitize(t) : this.escapeHtml(i);
     this.commands.insertHTML(o), this.events.emit("paste", { html: t, text: i });
   }
@@ -614,7 +615,7 @@ let b = class {
   }
   /** @param {KeyboardEvent} event */
   handleShortcut(e) {
-    if (!this.root.contains(document.activeElement) || !(e.ctrlKey || e.metaKey)) return;
+    if (this.destroyed || !this.root.contains(document.activeElement) || !(e.ctrlKey || e.metaKey)) return;
     const o = {
       b: () => this.commands.exec("bold"),
       i: () => this.commands.exec("italic"),
@@ -642,7 +643,7 @@ let b = class {
    */
   loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []);
-    L.forEach((t, i) => {
+    k.forEach((t, i) => {
       e.has(i) || this.plugins.set(i, t(this));
     });
   }
@@ -681,7 +682,12 @@ let b = class {
     this.history.redo(), this.emitChange();
   }
   clear() {
-    this.setHTML(""), this.history.clear();
+    var e;
+    if (this.setHTML(""), this.history.clear(), (e = this.options.autosave) != null && e.enabled)
+      try {
+        window.localStorage.removeItem(this.options.autosave.storage_key);
+      } catch {
+      }
   }
   focus() {
     this.selection.focus();
@@ -690,10 +696,10 @@ let b = class {
     return this.root.textContent ?? "";
   }
   destroy() {
-    this.plugins.forEach((e) => {
+    this.destroyed || (this.destroyed = !0, this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy();
+    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
   }
   /**
    * @param {string} event
@@ -707,7 +713,7 @@ let b = class {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    L.set(e, t);
+    k.set(e, t);
   }
 };
 const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, h = {
@@ -749,7 +755,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
   charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
-}, W = {
+}, X = {
   undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
   redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
   blockFormat: {
@@ -874,7 +880,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     toggle: !0,
     action: (r) => r.module("fullscreen").toggle()
   }
-}, X = {
+}, K = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -896,7 +902,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Source code",
   fullscreen: "Fullscreen",
   uploadFailed: "Failed to upload the file. Please try again."
-}, K = {
+}, G = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -918,7 +924,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз."
-}, G = {
+}, J = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -941,10 +947,10 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   fullscreen: "Полноэкранный режим",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
 }, f = /* @__PURE__ */ new Map([
-  ["en", X],
-  ["uk", K],
-  ["ru", G]
-]), k = {
+  ["en", K],
+  ["uk", G],
+  ["ru", J]
+]), T = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
@@ -963,7 +969,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   available() {
     return [...f.keys()];
   }
-}, J = [
+}, Y = [
   ["undo", "redo"],
   ["blockFormat", "fontFamily", "fontSize"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -975,19 +981,19 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   ["emoji", "specialChars"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class Y {
+class Q {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? J, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? Y, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((i) => {
-        const o = W[i];
+        const o = X[i];
         if (!o) return;
         const n = this.buildControl(i, o);
         n && t.appendChild(n);
@@ -999,7 +1005,7 @@ class Y {
   }
   buildButton(e, t) {
     const i = this.editor.options.locale ?? "en";
-    let o = k.t(i, e) !== e ? k.t(i, e) : t.label;
+    let o = T.t(i, e) !== e ? T.t(i, e) : t.label;
     if (t.shortcut) {
       const s = t.shortcut.replace(/Ctrl/g, "⌘");
       o += ` (${t.shortcut} / ${s})`;
@@ -1078,7 +1084,7 @@ class g {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    */
   constructor(e, { title: t, bodyHtml: i, confirmLabel: o = "OK", cancelLabel: n = "Cancel", onConfirm: s }) {
-    E(this, "handleEscape", (e) => {
+    L(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1127,7 +1133,7 @@ class g {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove();
   }
 }
-class Q {
+class Z {
   constructor(e) {
     this.editor = e, this.handleDblClick = this.handleDblClick.bind(this), e.root.addEventListener("dblclick", this.handleDblClick);
   }
@@ -1195,14 +1201,14 @@ class Q {
     t.removeChild(e), this.editor.emitChange();
   }
   escape(e) {
-    return String(e ?? "").replace(/"/g, "&quot;");
+    return String(e ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   destroy() {
     var e;
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("dblclick", this.handleDblClick);
   }
 }
-class Z {
+class ee {
   constructor(e) {
     this.editor = e, this.uploadUrl = e.options.uploadUrl, this.handleDrop = this.handleDrop.bind(this), this.handleClick = this.handleClick.bind(this), this.handleDblClick = this.handleDblClick.bind(this), this.handleMouseDown = this.handleMouseDown.bind(this), e.root.addEventListener("dragover", (t) => t.preventDefault()), e.root.addEventListener("drop", this.handleDrop), e.root.addEventListener("click", this.handleClick), e.root.addEventListener("dblclick", this.handleDblClick), e.root.addEventListener("mousedown", this.handleMouseDown);
   }
@@ -1354,14 +1360,14 @@ class Z {
     i && (this.editor.selection.save(), this.insert({ src: i, alt: "", caption: "", align: "center", lazy: !0 }));
   }
   escape(e) {
-    return String(e ?? "").replace(/"/g, "&quot;");
+    return String(e ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   destroy() {
     var e;
     (e = this.dialog) == null || e.close(), this.editor.root.removeEventListener("drop", this.handleDrop), this.editor.root.removeEventListener("click", this.handleClick), this.editor.root.removeEventListener("dblclick", this.handleDblClick), this.editor.root.removeEventListener("mousedown", this.handleMouseDown);
   }
 }
-class ee {
+class te {
   constructor(e) {
     this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight);
   }
@@ -1471,20 +1477,26 @@ class ee {
   addColumn(e = !1) {
     const t = this.getCurrentTable(), i = this.getCurrentCell();
     if (!t || !i) return;
-    const o = [...i.parentNode.children].indexOf(i);
-    this.editor.history.push(), t.querySelectorAll("tr").forEach((n) => {
-      const s = n.children[o], a = document.createElement((s == null ? void 0 : s.tagName.toLowerCase()) === "th" ? "th" : "td");
-      a.innerHTML = "<br>", n.insertBefore(a, e ? s : (s == null ? void 0 : s.nextSibling) ?? null);
-    }), this.editor.emitChange();
+    const o = i.parentNode;
+    if (!o) return;
+    let n = [...o.children].indexOf(i);
+    n < 0 || (this.editor.history.push(), t.querySelectorAll("tr").forEach((s) => {
+      const a = s.children[n];
+      if (!a) return;
+      const l = document.createElement(a.tagName.toLowerCase() === "th" ? "th" : "td");
+      l.innerHTML = "<br>", s.insertBefore(l, e ? a : a.nextSibling);
+    }), this.editor.emitChange());
   }
   deleteColumn() {
     const e = this.getCurrentTable(), t = this.getCurrentCell();
     if (!e || !t) return;
-    const i = [...t.parentNode.children].indexOf(t);
-    this.editor.history.push(), e.querySelectorAll("tr").forEach((o) => {
-      var n;
-      return (n = o.children[i]) == null ? void 0 : n.remove();
-    }), this.editor.emitChange();
+    const i = t.parentNode;
+    if (!i) return;
+    const o = [...i.children].indexOf(t);
+    o < 0 || (this.editor.history.push(), e.querySelectorAll("tr").forEach((n) => {
+      var s;
+      return (s = n.children[o]) == null ? void 0 : s.remove();
+    }), this.editor.emitChange());
   }
   deleteTable() {
     const e = this.getCurrentTable();
@@ -1523,12 +1535,13 @@ class ee {
   }
   /** Constrains table height to fit within the viewport, accounting for all editor chrome. */
   adjustTableHeight() {
-    var C, w;
+    var C, w, E;
+    if (!((C = this.editor.root) != null && C.isConnected)) return;
     const e = this.editor.root.querySelectorAll("table.ife-table");
     if (!e.length) return;
-    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((C = this.contextToolbar) == null ? void 0 : C.style.display) !== "none" && ((w = this.contextToolbar) == null ? void 0 : w.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), S = parseFloat(m.borderTopWidth) || 0, M = parseFloat(m.borderBottomWidth) || 0, v = getComputedStyle(this.editor.root), x = parseFloat(v.paddingTop) || 16, z = parseFloat(v.paddingBottom) || 16, y = getComputedStyle(e[0]), R = parseFloat(y.marginTop) || 0, N = parseFloat(y.marginBottom) || 0, A = i - o.top - S - s - l - x - R - N - z - u - M;
-    e.forEach(($) => {
-      $.style.maxHeight = `${Math.max(200, Math.floor(A))}px`;
+    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((w = this.contextToolbar) == null ? void 0 : w.style.display) !== "none" && ((E = this.contextToolbar) == null ? void 0 : E.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), M = parseFloat(m.borderTopWidth) || 0, x = parseFloat(m.borderBottomWidth) || 0, v = getComputedStyle(this.editor.root), z = parseFloat(v.paddingTop) || 16, R = parseFloat(v.paddingBottom) || 16, y = getComputedStyle(e[0]), N = parseFloat(y.marginTop) || 0, A = parseFloat(y.marginBottom) || 0, $ = i - o.top - M - s - l - z - N - A - R - u - x;
+    e.forEach((D) => {
+      D.style.maxHeight = `${Math.max(200, Math.floor($))}px`;
     });
   }
   destroy() {
@@ -1536,7 +1549,7 @@ class ee {
     window.removeEventListener("resize", this.adjustTableHeight), (e = this.contextToolbar) == null || e.remove();
   }
 }
-class te {
+class ie {
   constructor(e) {
     this.editor = e, this.active = !1;
   }
@@ -1570,7 +1583,7 @@ class te {
     (e = this.source) == null || e.remove();
   }
 }
-class ie {
+class oe {
   constructor(e) {
     this.editor = e, this.active = !1, this.handleChange = this.handleChange.bind(this), document.addEventListener("fullscreenchange", this.handleChange);
   }
@@ -1599,7 +1612,7 @@ class ie {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
-class oe {
+class ne {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
@@ -1678,8 +1691,8 @@ class oe {
     this.clearHighlights(), (e = this.dialog) == null || e.close();
   }
 }
-const ne = ["info", "warning", "danger", "success", "quote", "tip"];
-class se {
+const se = ["info", "warning", "danger", "success", "quote", "tip"];
+class re {
   constructor(e) {
     this.editor = e;
   }
@@ -1687,7 +1700,7 @@ class se {
     const t = `
             <label class="ife-field">
                 <span>Type</span>
-                <select name="type">${ne.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
+                <select name="type">${se.map((i) => `<option value="${i}">${i[0].toUpperCase()}${i.slice(1)}</option>`).join("")}</select>
             </label>
             <label class="ife-field">
                 <span>Text</span>
@@ -1716,8 +1729,8 @@ class se {
     (e = this.dialog) == null || e.close();
   }
 }
-const T = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, H = /vimeo\.com\/(\d+)/;
-class re {
+const H = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, S = /vimeo\.com\/(\d+)/;
+class ae {
   constructor(e) {
     this.editor = e;
   }
@@ -1751,11 +1764,11 @@ class re {
     let n;
     if (o.startsWith("<iframe"))
       n = o;
-    else if (T.test(o)) {
-      const s = o.match(T)[1];
-      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (H.test(o)) {
+    else if (H.test(o)) {
       const s = o.match(H)[1];
+      n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+    } else if (S.test(o)) {
+      const s = o.match(S)[1];
       n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
@@ -1784,7 +1797,7 @@ class re {
   destroy() {
   }
 }
-class ae {
+class le {
   constructor(e) {
     this.editor = e;
   }
@@ -1936,7 +1949,7 @@ ${t()}
   destroy() {
   }
 }
-class le {
+class ce {
   constructor(e) {
     this.editor = e, this.update = this.update.bind(this), this.buildDom(), this.bindEvents(), this.update();
   }
@@ -1954,22 +1967,22 @@ class le {
     this.editor.root.removeEventListener("input", this.update), this.el.remove();
   }
 }
-const ce = {
-  link: Q,
-  image: Z,
-  table: ee,
-  codeView: te,
-  fullscreen: ie,
-  find: oe,
-  note: se,
-  media: re,
-  markdown: ae,
-  statusBar: le
+const he = {
+  link: Z,
+  image: ee,
+  table: te,
+  codeView: ie,
+  fullscreen: oe,
+  find: ne,
+  note: re,
+  media: ae,
+  markdown: le,
+  statusBar: ce
 };
-Object.entries(ce).forEach(([r, e]) => {
+Object.entries(he).forEach(([r, e]) => {
   b.registerPlugin(r, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), ue = {
+const p = /* @__PURE__ */ new Map(), me = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1983,7 +1996,7 @@ const p = /* @__PURE__ */ new Map(), ue = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (p.has(t))
       return p.get(t);
-    const i = new b(t, e), o = new Y(i, e.toolbar);
+    const i = new b(t, e), o = new Q(i, e.toolbar);
     return i.on("destroy", () => o.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
   },
   /**
@@ -2001,6 +2014,6 @@ const p = /* @__PURE__ */ new Map(), ue = {
   registerPlugin: b.registerPlugin
 };
 export {
-  ue as default
+  me as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map

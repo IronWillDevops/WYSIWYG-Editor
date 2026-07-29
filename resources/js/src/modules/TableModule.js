@@ -190,14 +190,18 @@ export default class TableModule {
         const table = this.getCurrentTable();
         const cell = this.getCurrentCell();
         if (!table || !cell) return;
-        const index = [...cell.parentNode.children].indexOf(cell);
+        const cellRow = cell.parentNode;
+        if (!cellRow) return;
+        let index = [...cellRow.children].indexOf(cell);
+        if (index < 0) return;
 
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => {
             const reference = row.children[index];
-            const newCell = document.createElement(reference?.tagName.toLowerCase() === 'th' ? 'th' : 'td');
+            if (!reference) return;
+            const newCell = document.createElement(reference.tagName.toLowerCase() === 'th' ? 'th' : 'td');
             newCell.innerHTML = '<br>';
-            row.insertBefore(newCell, before ? reference : reference?.nextSibling ?? null);
+            row.insertBefore(newCell, before ? reference : reference.nextSibling);
         });
         this.editor.emitChange();
     }
@@ -206,7 +210,10 @@ export default class TableModule {
         const table = this.getCurrentTable();
         const cell = this.getCurrentCell();
         if (!table || !cell) return;
-        const index = [...cell.parentNode.children].indexOf(cell);
+        const cellRow = cell.parentNode;
+        if (!cellRow) return;
+        const index = [...cellRow.children].indexOf(cell);
+        if (index < 0) return;
 
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => row.children[index]?.remove());
@@ -270,10 +277,6 @@ export default class TableModule {
     syncContextToolbar() {
         const inTable = Boolean(this.getCurrentTable());
 
-        // Mounted lazily on first use (rather than in the constructor) so it
-        // lands after the main Toolbar in the DOM even though modules are
-        // constructed before the Toolbar is — this keeps it visually docked
-        // right above the content area instead of above the main toolbar.
         if (inTable && !this.contextToolbar.isConnected) {
             this.editor.wrapper.insertBefore(this.contextToolbar, this.editor.root);
         }
@@ -290,6 +293,7 @@ export default class TableModule {
 
     /** Constrains table height to fit within the viewport, accounting for all editor chrome. */
     adjustTableHeight() {
+        if (!this.editor.root?.isConnected) return;
         const tables = this.editor.root.querySelectorAll('table.ife-table');
         if (!tables.length) return;
 
