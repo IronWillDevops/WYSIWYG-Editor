@@ -97,4 +97,35 @@ describe('Sanitizer', () => {
         const result = sanitizer.sanitize('<a href="ftp://example.com">ftp</a>');
         expect(result).not.toContain('ftp:');
     });
+
+    // ── Regression: TreeWalker-based cleanNode skipped children of unwrapped tags ──
+
+    it('strips <script> inside a non-whitelisted tag (<foo>)', () => {
+        const result = sanitizer.sanitize('<foo><script>alert(1)</script>hello</foo>');
+        expect(result).not.toContain('<script>');
+        expect(result).toContain('hello');
+    });
+
+    it('strips <script> inside <svg> (non-whitelisted)', () => {
+        const result = sanitizer.sanitize('<svg><script>alert(1)</script></svg>');
+        expect(result).not.toContain('<script>');
+    });
+
+    it('strips deeply nested <script> inside double-unwrapped tags', () => {
+        const result = sanitizer.sanitize('<foo><bar><script>alert(1)</script>hello</bar></foo>');
+        expect(result).not.toContain('<script>');
+        expect(result).toContain('hello');
+    });
+
+    it('removes onerror from <img> inside a non-whitelisted wrapper', () => {
+        const result = sanitizer.sanitize('<foo><img src=x onerror=alert(1)></foo>');
+        expect(result).not.toContain('onerror');
+        expect(result).toMatch(/<img[^>]*src="?x"?/);
+    });
+
+    it('preserves safe content inside unwrapped tags', () => {
+        const result = sanitizer.sanitize('<foo><p>текст</p></foo>');
+        expect(result).not.toContain('<foo>');
+        expect(result).toContain('<p>текст</p>');
+    });
 });

@@ -55,32 +55,30 @@ export default class Sanitizer {
 
     /** @param {Node} root */
     cleanNode(root) {
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
-        const toRemove = [];
-        let node = walker.nextNode();
+        const nodes = [...root.childNodes];
+        for (let i = 0; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-        while (node) {
             const el = /** @type {HTMLElement} */ (node);
             const tag = el.tagName.toLowerCase();
 
             if (tag === 'script' || tag === 'style' || tag === 'noscript') {
-                toRemove.push(el);
-                node = walker.nextNode();
+                el.remove();
                 continue;
             }
 
+            // Recurse into children first so that unwrapping the current node
+            // does not skip its descendants.
+            this.cleanNode(el);
+
             if (!this.allowedTags.has(tag)) {
-                // Unwrap unknown tags instead of deleting their (possibly safe) content.
                 this.unwrap(el);
-                node = walker.nextNode();
                 continue;
             }
 
             this.cleanAttributes(el, tag);
-            node = walker.nextNode();
         }
-
-        toRemove.forEach((el) => el.remove());
     }
 
     /**
