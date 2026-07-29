@@ -291,14 +291,9 @@ export default class TableModule {
         this.editor.events.emit('table:context', inTable);
     }
 
-    /** Constrains table and content area height to fit within the viewport. */
+    /** Constrains content area and table height to fit within the viewport. */
     adjustTableHeight() {
         if (!this.editor.root?.isConnected) return;
-        const tables = this.editor.root.querySelectorAll('table.ife-table');
-        if (!tables.length) {
-            this.editor.root.style.maxHeight = '';
-            return;
-        }
 
         const wrapper = this.editor.wrapper;
         const viewportHeight = window.innerHeight;
@@ -317,9 +312,6 @@ export default class TableModule {
         const wrapperBorderTop = parseFloat(wrapperStyle.borderTopWidth) || 0;
         const wrapperBorderBottom = parseFloat(wrapperStyle.borderBottomWidth) || 0;
 
-        const contentPaddingTop = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16;
-        const contentPaddingBottom = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
-
         const maxContentHeight = viewportHeight
             - wrapperRect.top
             - wrapperBorderTop
@@ -329,6 +321,12 @@ export default class TableModule {
             - wrapperBorderBottom;
 
         this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(maxContentHeight))}px`;
+
+        const tables = this.editor.root.querySelectorAll('table.ife-table');
+        if (!tables.length) return;
+
+        const contentPaddingTop = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16;
+        const contentPaddingBottom = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
 
         tables.forEach((table) => {
             let precedingHeight = 0;
