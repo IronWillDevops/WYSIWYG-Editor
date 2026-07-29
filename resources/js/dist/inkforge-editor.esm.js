@@ -1,7 +1,7 @@
 var V = Object.defineProperty;
-var I = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
-var x = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
-class q {
+var O = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var x = (a, e, t) => O(a, typeof e != "symbol" ? e + "" : e, t);
+class I {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class q {
     this.listeners.clear();
   }
 }
-class O {
+class q {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -605,7 +605,7 @@ let k = class {
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...G, ...t }, this.events = new q(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new O(this.root), this.commands = new P(this), this.history = new j({
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new I(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new q(this.root), this.commands = new P(this), this.history = new j({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -2035,7 +2035,7 @@ class ue {
 }
 class me {
   constructor(e) {
-    this.editor = e, this.picker = null, this._triggerEl = null, this._boundOnResize = null, this._boundOnClickOutside = null;
+    this.editor = e, this.picker = null, this._triggerEl = null, this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null;
   }
   open(e) {
     if (this.picker) {
@@ -2335,9 +2335,11 @@ class me {
       }), d.appendChild(u), s.appendChild(d);
     }), this.picker.appendChild(s), document.body.appendChild(this.picker);
     const r = this.editor.wrapper;
-    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnClickOutside = (l) => {
+    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnScroll = (l) => {
+      this.picker && this.picker.contains(l.target) || this.close();
+    }, this._boundOnClickOutside = (l) => {
       this.picker && (this.picker.contains(l.target) || this._triggerEl && this._triggerEl.contains(l.target) || this.close());
-    }, window.addEventListener("resize", this._boundOnResize), document.addEventListener("click", this._boundOnClickOutside), setTimeout(() => {
+    }, window.addEventListener("resize", this._boundOnResize), document.addEventListener("scroll", this._boundOnScroll, { capture: !0 }), document.addEventListener("click", this._boundOnClickOutside), setTimeout(() => {
       if (!this.picker) return;
       const l = this.picker.querySelector(".ife-emoji-picker__btn");
       l && l.focus();
@@ -2355,7 +2357,7 @@ class me {
     this.picker && (this.picker.remove(), this.picker = null), this._triggerEl = null, this._removeListeners();
   }
   _removeListeners() {
-    this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null), this._boundOnClickOutside && (document.removeEventListener("click", this._boundOnClickOutside), this._boundOnClickOutside = null);
+    this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null), this._boundOnScroll && (document.removeEventListener("scroll", this._boundOnScroll, { capture: !0 }), this._boundOnScroll = null), this._boundOnClickOutside && (document.removeEventListener("click", this._boundOnClickOutside), this._boundOnClickOutside = null);
   }
   destroy() {
     this.close();

@@ -103,12 +103,11 @@ describe('EmojiModule', () => {
         document.body.removeChild(btn);
     });
 
-    it('does not close on scroll', () => {
+    it('closes on scroll outside the picker', () => {
         module.open();
         expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
-        document.dispatchEvent(new Event('scroll'));
-        expect(document.body.querySelector('.ife-emoji-picker')).not.toBeNull();
-        module.close();
+        document.body.dispatchEvent(new Event('scroll', { bubbles: true }));
+        expect(document.body.querySelector('.ife-emoji-picker')).toBeNull();
     });
 
     it('closes when an emoji is selected', () => {
