@@ -198,6 +198,12 @@ export default class Commands {
             }
         }
 
+        const existing = this.selection.closest('span');
+        if (existing) {
+            existing.style[cssProperty] = value;
+            return;
+        }
+
         const span = this.selection.wrap('span');
         if (span) span.style[cssProperty] = value;
     }

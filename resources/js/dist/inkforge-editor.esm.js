@@ -305,14 +305,19 @@ class U {
    */
   setInlineStyle(e, t, i = !1) {
     if (i) {
-      const n = this.selection.getBlockElement();
-      if (n) {
-        n.style[e] = t;
+      const s = this.selection.getBlockElement();
+      if (s) {
+        s.style[e] = t;
         return;
       }
     }
-    const o = this.selection.wrap("span");
-    o && (o.style[e] = t);
+    const o = this.selection.closest("span");
+    if (o) {
+      o.style[e] = t;
+      return;
+    }
+    const n = this.selection.wrap("span");
+    n && (n.style[e] = t);
   }
   /**
    * Toggles the current selection in/out of a <ul>/<ol> list, or converts
