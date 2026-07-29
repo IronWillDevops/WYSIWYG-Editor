@@ -1,7 +1,7 @@
 var B = Object.defineProperty;
 var I = (a, e, t) => e in a ? B(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
 var x = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
-class j {
+class q {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class j {
     this.listeners.clear();
   }
 }
-class q {
+class j {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class q {
     this.root.focus(), this.restore();
   }
 }
-class P {
+class O {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class P {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class U {
+class P {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -242,10 +242,10 @@ class U {
         this.toggleList("ol");
         break;
       case "foreColor":
-        document.execCommand("foreColor", !1, t);
+        t ? document.execCommand("foreColor", !1, t) : this.clearColor("color");
         break;
       case "backColor":
-        document.execCommand("hiliteColor", !1, t);
+        t ? document.execCommand("hiliteColor", !1, t) : this.clearColor("backgroundColor");
         break;
       case "blockFormat":
         this.setBlockFormat(t);
@@ -383,6 +383,32 @@ class U {
     }
   }
   /**
+   * Removes a specific CSS property from every element touched by
+   * the current selection. Used by the color button "clear" action.
+   * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
+   */
+  clearColor(e) {
+    var n;
+    const t = this.selection.getRange();
+    if (!t) return;
+    let i = t.commonAncestorContainer;
+    if (i.nodeType === Node.TEXT_NODE && (i = i.parentElement), !(i instanceof HTMLElement)) return;
+    ((n = i.style) != null && n.length ? [i, ...i.querySelectorAll("*")] : [...i.querySelectorAll("*")]).forEach((s) => {
+      var r;
+      try {
+        if (!t.intersectsNode(s)) return;
+      } catch {
+        return;
+      }
+      if ((r = s.style) != null && r[e] && (s.style[e] = "", s.style.length === 0 && s.removeAttribute("style")), ["SPAN", "FONT"].includes(s.tagName) && s.attributes.length === 0) {
+        const l = s.parentNode;
+        if (!l) return;
+        for (; s.firstChild; ) l.insertBefore(s.firstChild, s);
+        l.removeChild(s);
+      }
+    });
+  }
+  /**
    * Strips leftover inline style attributes (text color, background,
    * font, etc.) from every element touched by the current selection.
    * Backs the "clear formatting" / "reset text color" toolbar action.
@@ -416,7 +442,7 @@ class U {
     this.editor.emitChange();
   }
 }
-const O = /* @__PURE__ */ new Set([
+const U = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -474,7 +500,7 @@ class K {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : O, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : U, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
   }
   /**
    * @param {string} dirtyHtml
@@ -564,14 +590,14 @@ const G = {
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
 }, z = /* @__PURE__ */ new Map();
-let w = class {
+let E = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...G, ...t }, this.events = new j(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new q(this.root), this.commands = new U(this), this.history = new P({
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new q(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new j(this.root), this.commands = new P(this), this.history = new O({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -620,6 +646,14 @@ let w = class {
       b: () => this.commands.exec("bold"),
       i: () => this.commands.exec("italic"),
       u: () => this.commands.exec("underline"),
+      k: () => {
+        var n;
+        return (n = this.module("link")) == null ? void 0 : n.open();
+      },
+      f: () => {
+        var n;
+        return (n = this.module("find")) == null ? void 0 : n.open();
+      },
       z: () => e.shiftKey ? this.history.redo() : this.history.undo(),
       y: () => this.history.redo(),
       s: () => this.events.emit("save", this.getHTML())
@@ -857,7 +891,7 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     icon: h.emoji,
     label: "Emoji",
     type: "action",
-    action: (a) => a.module("emoji").open()
+    action: (a, e) => a.module("emoji").open(e)
   },
   specialChars: {
     icon: h.specialChars,
@@ -946,7 +980,7 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Исходный код",
   fullscreen: "Полноэкранный режим",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
-}, v = /* @__PURE__ */ new Map([
+}, y = /* @__PURE__ */ new Map([
   ["en", Y],
   ["uk", Q],
   ["ru", Z]
@@ -956,7 +990,7 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
    * @param {Record<string, string>} strings
    */
   register(a, e) {
-    v.set(a, e);
+    y.set(a, e);
   },
   /**
    * @param {string} locale
@@ -964,10 +998,10 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
    * @returns {string}
    */
   t(a, e) {
-    return (v.get(a) ?? v.get("en"))[e] ?? v.get("en")[e] ?? e;
+    return (y.get(a) ?? y.get("en"))[e] ?? y.get("en")[e] ?? e;
   },
   available() {
-    return [...v.keys()];
+    return [...y.keys()];
   }
 }, ee = [
   ["undo", "redo"],
@@ -1013,7 +1047,7 @@ class te {
     const n = document.createElement("button");
     return n.type = "button", n.className = "ife-toolbar__btn", n.dataset.command = e, n.title = o, n.setAttribute("aria-label", o), n.innerHTML = t.icon ?? "", n.addEventListener("mousedown", (s) => s.preventDefault()), n.addEventListener("click", () => {
       var s;
-      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor), t.toggle && n.classList.toggle("is-active"), this.syncActiveStates();
+      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor, n), t.toggle && n.classList.toggle("is-active"), this.syncActiveStates();
     }), this.buttons.set(e, n), n;
   }
   buildSelect(e, t) {
@@ -1073,7 +1107,7 @@ class te {
     this.el.remove();
   }
 }
-class f {
+class b {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1171,7 +1205,7 @@ class ie {
                 <label class="ife-field--inline"><input type="checkbox" name="noreferrer" ${e != null && e.rel.includes("noreferrer") ? "checked" : ""}> noreferrer</label>
             </fieldset>
         `;
-    if (this.dialog = new f(this.editor.wrapper, {
+    if (this.dialog = new b(this.editor.wrapper, {
       title: e ? "Edit link" : "Insert link",
       bodyHtml: i,
       confirmLabel: e ? "Update" : "Insert",
@@ -1246,7 +1280,7 @@ class oe {
                 </label>
             </div>
         `;
-    if (this.dialog = new f(this.editor.wrapper, {
+    if (this.dialog = new b(this.editor.wrapper, {
       title: e ? "Edit image" : "Insert image",
       bodyHtml: n,
       confirmLabel: e ? "Update" : "Insert",
@@ -1423,7 +1457,7 @@ class ne {
                 <span>Include header row</span>
             </label>
         `;
-    this.editor.selection.save(), new f(this.editor.wrapper, {
+    this.editor.selection.save(), new b(this.editor.wrapper, {
       title: "Insert table",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1438,17 +1472,17 @@ class ne {
     const o = document.createElement("table");
     if (o.className = "ife-table", i) {
       const d = o.createTHead().insertRow();
-      for (let u = 0; u < t; u += 1) {
-        const m = document.createElement("th");
-        m.contentEditable = "true", m.innerHTML = "<br>", d.appendChild(m);
+      for (let m = 0; m < t; m += 1) {
+        const u = document.createElement("th");
+        u.contentEditable = "true", u.innerHTML = "<br>", d.appendChild(u);
       }
     }
     const n = o.createTBody(), s = i ? e - 1 : e;
     for (let l = 0; l < Math.max(s, 1); l += 1) {
       const d = n.insertRow();
-      for (let u = 0; u < t; u += 1) {
-        const m = d.insertCell();
-        m.innerHTML = "<br>";
+      for (let m = 0; m < t; m += 1) {
+        const u = d.insertCell();
+        u.innerHTML = "<br>";
       }
     }
     const r = this.editor.selection.getRange();
@@ -1537,19 +1571,19 @@ class ne {
   adjustTableHeight() {
     var k, L, T;
     if (!((k = this.editor.root) != null && k.isConnected)) return;
-    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, l = e.querySelector(".ife-statusbar"), d = l ? l.offsetHeight : 0, u = getComputedStyle(e), m = parseFloat(u.borderTopWidth) || 0, p = parseFloat(u.borderBottomWidth) || 0, y = t - i.top - m - n - r - d - p;
-    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(y))}px`;
-    const E = this.editor.root.querySelectorAll("table.ife-table");
-    if (!E.length) return;
-    const $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, _ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
-    E.forEach((C) => {
-      let H = 0, b = C.previousElementSibling;
-      for (; b; ) {
-        const M = getComputedStyle(b);
-        H += b.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), b = b.previousElementSibling;
+    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, l = e.querySelector(".ife-statusbar"), d = l ? l.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
+    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(p))}px`;
+    const C = this.editor.root.querySelectorAll("table.ife-table");
+    if (!C.length) return;
+    const A = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, $ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
+    C.forEach((w) => {
+      let H = 0, v = w.previousElementSibling;
+      for (; v; ) {
+        const M = getComputedStyle(v);
+        H += v.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), v = v.previousElementSibling;
       }
-      const S = getComputedStyle(C), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = y - $ - H - D - F - _;
-      C.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
+      const S = getComputedStyle(w), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = p - A - H - D - F - $;
+      w.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
     });
   }
   destroy() {
@@ -1625,6 +1659,7 @@ class ae {
     this.editor = e, this.matches = [], this.currentIndex = -1;
   }
   open() {
+    this.clearHighlights();
     const e = `
             <label class="ife-field">
                 <span>Find</span>
@@ -1637,11 +1672,12 @@ class ae {
             <label class="ife-field--inline"><input type="checkbox" name="caseSensitive"> Case sensitive</label>
             <label class="ife-field--inline"><input type="checkbox" name="useRegex"> Regular expression</label>
         `;
-    this.dialog = new f(this.editor.wrapper, {
+    this.dialog = new b(this.editor.wrapper, {
       title: "Find & Replace",
       bodyHtml: e,
       confirmLabel: "Replace all",
-      onConfirm: (i) => this.replaceAll(i)
+      onConfirm: (i) => this.replaceAll(i),
+      onClose: () => this.clearHighlights()
     });
     const t = document.createElement("button");
     t.type = "button", t.className = "ife-btn ife-btn--ghost", t.textContent = "Highlight all", t.addEventListener("mousedown", (i) => i.preventDefault()), t.addEventListener("click", (i) => {
@@ -1655,25 +1691,25 @@ class ae {
     return new RegExp(s, n);
   }
   highlightAll(e) {
-    this.clearHighlights();
-    const t = this.buildRegex(e);
-    if (!t) return;
-    const i = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), o = [];
-    let n = i.nextNode();
-    for (; n; )
-      o.push(n), n = i.nextNode();
-    o.forEach((s) => {
-      const r = s.textContent ?? "";
-      if (!t.test(r)) return;
-      t.lastIndex = 0;
-      const l = document.createDocumentFragment();
-      let d = 0, u = t.exec(r);
+    if (this.clearHighlights(), !String(e.get("query") ?? "")) return;
+    const i = this.buildRegex(e);
+    if (!i) return;
+    const o = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), n = [];
+    let s = o.nextNode();
+    for (; s; )
+      n.push(s), s = o.nextNode();
+    n.forEach((r) => {
+      const l = r.textContent ?? "";
+      if (!i.test(l)) return;
+      i.lastIndex = 0;
+      const d = document.createDocumentFragment();
+      let m = 0, u = i.exec(l);
       for (; u; ) {
-        l.appendChild(document.createTextNode(r.slice(d, u.index)));
-        const m = document.createElement("mark");
-        m.className = "ife-search-highlight", m.textContent = u[0], l.appendChild(m), d = u.index + u[0].length, u = t.exec(r);
+        d.appendChild(document.createTextNode(l.slice(m, u.index)));
+        const g = document.createElement("mark");
+        g.className = "ife-search-highlight", g.textContent = u[0], d.appendChild(g), m = u.index + u[0].length, u = i.exec(l);
       }
-      l.appendChild(document.createTextNode(r.slice(d))), s.replaceWith(l);
+      d.appendChild(document.createTextNode(l.slice(m))), r.replaceWith(d);
     });
   }
   clearHighlights() {
@@ -1715,7 +1751,7 @@ class ce {
                 <textarea name="text" rows="3">${this.editor.selection.getText()}</textarea>
             </label>
         `;
-    this.dialog = new f(this.editor.wrapper, {
+    this.dialog = new b(this.editor.wrapper, {
       title: "Insert note",
       bodyHtml: t,
       confirmLabel: "Insert",
@@ -1737,7 +1773,7 @@ class ce {
     (e = this.dialog) == null || e.close();
   }
 }
-const N = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, A = /vimeo\.com\/(\d+)/;
+const N = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, _ = /vimeo\.com\/(\d+)/;
 class he {
   constructor(e) {
     this.editor = e;
@@ -1757,7 +1793,7 @@ class he {
                 <input type="number" name="height" value="360">
             </label>
         `;
-    this.editor.selection.save(), new f(this.editor.wrapper, {
+    this.editor.selection.save(), new b(this.editor.wrapper, {
       title: "Insert video",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1775,8 +1811,8 @@ class he {
     else if (N.test(o)) {
       const s = o.match(N)[1];
       n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (A.test(o)) {
-      const s = o.match(A)[1];
+    } else if (_.test(o)) {
+      const s = o.match(_)[1];
       n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
@@ -1789,7 +1825,7 @@ class he {
                 <input type="url" name="source" required>
             </label>
         `;
-    this.editor.selection.save(), new f(this.editor.wrapper, {
+    this.editor.selection.save(), new b(this.editor.wrapper, {
       title: "Insert audio",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1920,11 +1956,11 @@ ${t()}
 `), i = [];
     let o = null;
     return t.forEach((n) => {
-      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), u = s.match(/^>\s?(.*)$/);
+      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), m = s.match(/^>\s?(.*)$/);
       if (r) {
         this.closeList(i, o), o = null;
-        const m = r[1].length;
-        i.push(`<h${m}>${this.inlineMarkdown(r[2])}</h${m}>`);
+        const u = r[1].length;
+        i.push(`<h${u}>${this.inlineMarkdown(r[2])}</h${u}>`);
         return;
       }
       if (l) {
@@ -1935,8 +1971,8 @@ ${t()}
         o !== "ol" && (this.closeList(i, o), i.push("<ol>"), o = "ol"), i.push(`<li>${this.inlineMarkdown(d[1])}</li>`);
         return;
       }
-      if (u) {
-        this.closeList(i, o), o = null, i.push(`<blockquote>${this.inlineMarkdown(u[1])}</blockquote>`);
+      if (m) {
+        this.closeList(i, o), o = null, i.push(`<blockquote>${this.inlineMarkdown(m[1])}</blockquote>`);
         return;
       }
       if (s.trim() === "---") {
@@ -1977,21 +2013,21 @@ class ue {
 }
 class me {
   constructor(e) {
-    this.editor = e, this.picker = null;
+    this.editor = e, this.picker = null, this._triggerEl = null, this._boundOnScroll = null, this._boundOnResize = null;
   }
-  open() {
+  open(e) {
     if (this.picker) {
-      this.picker.remove(), this.picker = null;
+      this.close();
       return;
     }
-    this.editor.selection.save(), this.picker = document.createElement("div"), this.picker.className = "ife-emoji-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", "Emoji picker");
-    const e = document.createElement("div");
-    e.className = "ife-emoji-picker__header";
-    const t = document.createElement("span");
-    t.className = "ife-emoji-picker__title", t.textContent = "Emoji", e.appendChild(t);
-    const i = document.createElement("button");
-    i.type = "button", i.className = "ife-emoji-picker__close", i.innerHTML = "&times;", i.setAttribute("aria-label", "Close"), i.addEventListener("click", () => this.close()), e.appendChild(i), this.picker.appendChild(e);
-    const o = [
+    this._triggerEl = e || this.editor.wrapper.querySelector('[data-command="emoji"]'), this.editor.selection.save(), this.picker = document.createElement("div"), this.picker.className = "ife-emoji-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", "Emoji picker");
+    const t = document.createElement("div");
+    t.className = "ife-emoji-picker__header";
+    const i = document.createElement("span");
+    i.className = "ife-emoji-picker__title", i.textContent = "Emoji", t.appendChild(i);
+    const o = document.createElement("button");
+    o.type = "button", o.className = "ife-emoji-picker__close", o.innerHTML = "&times;", o.setAttribute("aria-label", "Close"), o.addEventListener("click", () => this.close()), t.appendChild(o), this.picker.appendChild(t);
+    const n = [
       { name: "Smileys", emojis: [
         "😀",
         "😃",
@@ -2262,28 +2298,40 @@ class me {
         "⏯️",
         "◀️"
       ] }
-    ], n = document.createElement("div");
-    n.className = "ife-emoji-picker__body", o.forEach((r) => {
-      const l = document.createElement("div");
-      l.className = "ife-emoji-picker__group";
+    ], s = document.createElement("div");
+    s.className = "ife-emoji-picker__body", n.forEach((l) => {
       const d = document.createElement("div");
-      d.className = "ife-emoji-picker__group-label", d.textContent = r.name, l.appendChild(d);
+      d.className = "ife-emoji-picker__group";
+      const m = document.createElement("div");
+      m.className = "ife-emoji-picker__group-label", m.textContent = l.name, d.appendChild(m);
       const u = document.createElement("div");
-      u.className = "ife-emoji-picker__grid", r.emojis.forEach((m) => {
+      u.className = "ife-emoji-picker__grid", l.emojis.forEach((g) => {
         const p = document.createElement("button");
-        p.type = "button", p.className = "ife-emoji-picker__btn", p.textContent = m, p.setAttribute("aria-label", m), p.addEventListener("mousedown", (y) => y.preventDefault()), p.addEventListener("click", () => {
-          this.editor.selection.restore(), this.editor.commands.insertHTML(m), this.close();
+        p.type = "button", p.className = "ife-emoji-picker__btn", p.textContent = g, p.setAttribute("aria-label", g), p.addEventListener("mousedown", (C) => C.preventDefault()), p.addEventListener("click", () => {
+          this.editor.selection.restore(), this.editor.commands.insertHTML(g), this.close();
         }), u.appendChild(p);
-      }), l.appendChild(u), n.appendChild(l);
-    }), this.picker.appendChild(n);
-    const s = this.editor.wrapper;
-    s.appendChild(this.picker), this.picker.style.setProperty("--ife-bg", getComputedStyle(s).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(s).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(s).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(s).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(s).getPropertyValue("--ife-btn-active")), setTimeout(() => {
-      const r = this.picker.querySelector(".ife-emoji-picker__btn");
-      r && r.focus();
+      }), d.appendChild(u), s.appendChild(d);
+    }), this.picker.appendChild(s), document.body.appendChild(this.picker);
+    const r = this.editor.wrapper;
+    this.picker.style.setProperty("--ife-bg", getComputedStyle(r).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(r).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(r).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(r).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(r).getPropertyValue("--ife-btn-active")), this.positionPicker(), this._boundOnScroll = () => this.close(), this._boundOnResize = () => this.positionPicker(), document.addEventListener("scroll", this._boundOnScroll, { capture: !0 }), window.addEventListener("resize", this._boundOnResize), setTimeout(() => {
+      if (!this.picker) return;
+      const l = this.picker.querySelector(".ife-emoji-picker__btn");
+      l && l.focus();
     }, 50);
   }
+  positionPicker() {
+    if (!this._triggerEl || !this.picker) return;
+    const e = this._triggerEl.getBoundingClientRect(), t = this.picker.offsetWidth || 352, i = this.picker.offsetHeight;
+    let o = e.bottom + 4, n = e.left;
+    o + i > window.innerHeight && e.top - i - 4 > 0 && (o = e.top - i - 4), n + t > window.innerWidth && (n = Math.max(8, window.innerWidth - t - 8)), n < 0 && (n = 8);
+    const s = parseFloat(getComputedStyle(this.editor.wrapper).zIndex);
+    isNaN(s) || (this.picker.style.zIndex = s + 1), this.picker.style.top = `${o}px`, this.picker.style.left = `${n}px`;
+  }
   close() {
-    this.picker && (this.picker.remove(), this.picker = null);
+    this.picker && (this.picker.remove(), this.picker = null), this._triggerEl = null, this._removeListeners();
+  }
+  _removeListeners() {
+    this._boundOnScroll && (document.removeEventListener("scroll", this._boundOnScroll, { capture: !0 }), this._boundOnScroll = null), this._boundOnResize && (window.removeEventListener("resize", this._boundOnResize), this._boundOnResize = null);
   }
   destroy() {
     this.close();
@@ -2303,9 +2351,9 @@ const pe = {
   emoji: me
 };
 Object.entries(pe).forEach(([a, e]) => {
-  w.registerPlugin(a, (t) => new e(t));
+  E.registerPlugin(a, (t) => new e(t));
 });
-const g = /* @__PURE__ */ new Map(), be = {
+const f = /* @__PURE__ */ new Map(), be = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -2317,10 +2365,10 @@ const g = /* @__PURE__ */ new Map(), be = {
       throw new Error(`InkForge Editor: target "${a}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
-    if (g.has(t))
-      return g.get(t);
-    const i = new w(t, e), o = new te(i, e.toolbar);
-    return i.on("destroy", () => o.destroy()), g.set(t, i), i.on("destroy", () => g.delete(t)), i;
+    if (f.has(t))
+      return f.get(t);
+    const i = new E(t, e), o = new te(i, e.toolbar);
+    return i.on("destroy", () => o.destroy()), f.set(t, i), i.on("destroy", () => f.delete(t)), i;
   },
   /**
    * @param {string|HTMLTextAreaElement} target
@@ -2328,13 +2376,13 @@ const g = /* @__PURE__ */ new Map(), be = {
    */
   get(a) {
     const e = typeof a == "string" ? document.querySelector(a) : a;
-    return e ? g.get(e) : void 0;
+    return e ? f.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    g.forEach((a) => a.destroy()), g.clear();
+    f.forEach((a) => a.destroy()), f.clear();
   },
-  registerPlugin: w.registerPlugin
+  registerPlugin: E.registerPlugin
 };
 export {
   be as default

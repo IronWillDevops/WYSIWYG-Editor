@@ -540,9 +540,9 @@
 
 /* Emoji picker */
 .ife-emoji-picker {
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
     z-index: 1000;
     width: 352px;
     max-height: 320px;

@@ -82,7 +82,7 @@ export default class Toolbar {
             if (def.type === 'command') {
                 this.editor.commands.exec(def.command);
             } else {
-                def.action?.(this.editor);
+                def.action?.(this.editor, button);
             }
             if (def.toggle) button.classList.toggle('is-active');
             this.syncActiveStates();

@@ -2,15 +2,18 @@ export default class EmojiModule {
     constructor(editor) {
         this.editor = editor;
         this.picker = null;
+        this._triggerEl = null;
+        this._boundOnScroll = null;
+        this._boundOnResize = null;
     }
 
-    open() {
+    open(triggerEl) {
         if (this.picker) {
-            this.picker.remove();
-            this.picker = null;
+            this.close();
             return;
         }
 
+        this._triggerEl = triggerEl || this.editor.wrapper.querySelector('[data-command="emoji"]');
         this.editor.selection.save();
 
         this.picker = document.createElement('div');
@@ -111,25 +114,75 @@ export default class EmojiModule {
 
         this.picker.appendChild(body);
 
-        const wrapper = this.editor.wrapper;
-        wrapper.appendChild(this.picker);
+        document.body.appendChild(this.picker);
 
+        const wrapper = this.editor.wrapper;
         this.picker.style.setProperty('--ife-bg', getComputedStyle(wrapper).getPropertyValue('--ife-bg'));
         this.picker.style.setProperty('--ife-text', getComputedStyle(wrapper).getPropertyValue('--ife-text'));
         this.picker.style.setProperty('--ife-border', getComputedStyle(wrapper).getPropertyValue('--ife-border'));
         this.picker.style.setProperty('--ife-btn-hover', getComputedStyle(wrapper).getPropertyValue('--ife-btn-hover'));
         this.picker.style.setProperty('--ife-btn-active', getComputedStyle(wrapper).getPropertyValue('--ife-btn-active'));
 
+        this.positionPicker();
+
+        this._boundOnScroll = () => this.close();
+        this._boundOnResize = () => this.positionPicker();
+        document.addEventListener('scroll', this._boundOnScroll, { capture: true });
+        window.addEventListener('resize', this._boundOnResize);
+
         setTimeout(() => {
+            if (!this.picker) return;
             const firstBtn = this.picker.querySelector('.ife-emoji-picker__btn');
             if (firstBtn) firstBtn.focus();
         }, 50);
+    }
+
+    positionPicker() {
+        if (!this._triggerEl || !this.picker) return;
+
+        const rect = this._triggerEl.getBoundingClientRect();
+        const pickerWidth = this.picker.offsetWidth || 352;
+        const pickerHeight = this.picker.offsetHeight;
+
+        let top = rect.bottom + 4;
+        let left = rect.left;
+
+        if (top + pickerHeight > window.innerHeight && rect.top - pickerHeight - 4 > 0) {
+            top = rect.top - pickerHeight - 4;
+        }
+
+        if (left + pickerWidth > window.innerWidth) {
+            left = Math.max(8, window.innerWidth - pickerWidth - 8);
+        }
+
+        if (left < 0) left = 8;
+
+        const wrapperZ = parseFloat(getComputedStyle(this.editor.wrapper).zIndex);
+        if (!isNaN(wrapperZ)) {
+            this.picker.style.zIndex = wrapperZ + 1;
+        }
+
+        this.picker.style.top = `${top}px`;
+        this.picker.style.left = `${left}px`;
     }
 
     close() {
         if (this.picker) {
             this.picker.remove();
             this.picker = null;
+        }
+        this._triggerEl = null;
+        this._removeListeners();
+    }
+
+    _removeListeners() {
+        if (this._boundOnScroll) {
+            document.removeEventListener('scroll', this._boundOnScroll, { capture: true });
+            this._boundOnScroll = null;
+        }
+        if (this._boundOnResize) {
+            window.removeEventListener('resize', this._boundOnResize);
+            this._boundOnResize = null;
         }
     }
 
