@@ -225,6 +225,30 @@ describe('Toolbar', () => {
         expect(select.value).toBe('18px');
     });
 
+    it('syncs blockFormat select to h2 when cursor is inside an h2', () => {
+        const h2 = document.createElement('h2');
+        h2.textContent = 'heading';
+        editor.root.appendChild(h2);
+
+        editor.selection.getBlockElement = vi.fn(() => h2);
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('h2');
+    });
+
+    it('syncs blockFormat select to p when cursor is inside a paragraph', () => {
+        const p = document.createElement('p');
+        p.textContent = 'text';
+        editor.root.appendChild(p);
+
+        editor.selection.getBlockElement = vi.fn(() => p);
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        toolbar.syncActiveStates();
+        expect(select.value).toBe('p');
+    });
+
     it('resets fontSize select to default when size does not match any option', () => {
         const span = document.createElement('span');
         span.style.fontSize = '11px';

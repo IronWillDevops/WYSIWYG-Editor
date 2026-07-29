@@ -1,6 +1,6 @@
 var O = Object.defineProperty;
 var I = (l, e, t) => e in l ? O(l, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : l[e] = t;
-var x = (l, e, t) => I(l, typeof e != "symbol" ? e + "" : e, t);
+var z = (l, e, t) => I(l, typeof e != "symbol" ? e + "" : e, t);
 class q {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -597,8 +597,8 @@ const J = {
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, z = /* @__PURE__ */ new Map();
-let E = class {
+}, N = /* @__PURE__ */ new Map();
+let k = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
@@ -685,7 +685,7 @@ let E = class {
    */
   loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []);
-    z.forEach((t, i) => {
+    N.forEach((t, i) => {
       e.has(i) || this.plugins.set(i, t(this));
     });
   }
@@ -755,7 +755,7 @@ let E = class {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    z.set(e, t);
+    N.set(e, t);
   }
 };
 const h = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${l}</svg>`, c = {
@@ -796,7 +796,7 @@ const h = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   indent: h('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   outdent: h('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
   wordCount: h('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>')
-}, N = {
+}, E = {
   undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (l) => l.undo() },
   redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (l) => l.redo() },
   blockFormat: {
@@ -1034,7 +1034,7 @@ class te {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((i) => {
-        const o = N[i];
+        const o = E[i];
         if (!o) return;
         const n = this.buildControl(i, o);
         n && t.appendChild(n);
@@ -1120,7 +1120,18 @@ class te {
       }
       o.classList.toggle("is-active", n);
     }
-    this._syncSelectValue("fontFamily", this._getComputedFontFamily()), this._syncSelectValue("fontSize", this._getComputedFontSize());
+    this._syncSelectValue("fontFamily", this._getComputedFontFamily()), this._syncSelectValue("fontSize", this._getComputedFontSize()), this._syncBlockFormat(t);
+  }
+  _syncBlockFormat(e) {
+    const t = this.buttons.get("blockFormat");
+    if (!(t instanceof HTMLSelectElement)) return;
+    const i = e ? e.tagName.toLowerCase() : "p";
+    for (const [o] of E.blockFormat.options)
+      if (o === i) {
+        t.value = o;
+        return;
+      }
+    t.value = "p";
   }
   _getStyleNode() {
     const e = this.editor.selection.getNativeSelection();
@@ -1143,7 +1154,7 @@ class te {
   _syncSelectValue(e, t) {
     const i = this.buttons.get(e);
     if (!(i instanceof HTMLSelectElement)) return;
-    const o = N[e];
+    const o = E[e];
     if (!(!o || !o.options)) {
       for (const [n] of o.options)
         if (n) {
@@ -1180,7 +1191,7 @@ class b {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    */
   constructor(e, { title: t, bodyHtml: i, confirmLabel: o = "OK", cancelLabel: n = "Cancel", onConfirm: s }) {
-    x(this, "handleEscape", (e) => {
+    z(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1631,20 +1642,20 @@ class ne {
   }
   /** Constrains content area and table height to fit within the viewport. */
   adjustTableHeight() {
-    var k, L, T;
-    if (!((k = this.editor.root) != null && k.isConnected)) return;
-    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, a = e.querySelector(".ife-statusbar"), d = a ? a.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
+    var L, T, S;
+    if (!((L = this.editor.root) != null && L.isConnected)) return;
+    const e = this.editor.wrapper, t = window.innerHeight, i = e.getBoundingClientRect(), o = e.querySelector(".ife-toolbar"), n = o ? o.offsetHeight : 0, r = ((T = this.contextToolbar) == null ? void 0 : T.style.display) !== "none" && ((S = this.contextToolbar) == null ? void 0 : S.offsetHeight) || 0, a = e.querySelector(".ife-statusbar"), d = a ? a.offsetHeight : 0, m = getComputedStyle(e), u = parseFloat(m.borderTopWidth) || 0, g = parseFloat(m.borderBottomWidth) || 0, p = t - i.top - u - n - r - d - g;
     this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(p))}px`;
     const C = this.editor.root.querySelectorAll("table.ife-table");
     if (!C.length) return;
     const $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, F = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
     C.forEach((w) => {
-      let S = 0, v = w.previousElementSibling;
+      let H = 0, v = w.previousElementSibling;
       for (; v; ) {
-        const M = getComputedStyle(v);
-        S += v.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), v = v.previousElementSibling;
+        const x = getComputedStyle(v);
+        H += v.offsetHeight + (parseFloat(x.marginTop) || 0) + (parseFloat(x.marginBottom) || 0), v = v.previousElementSibling;
       }
-      const H = getComputedStyle(w), D = parseFloat(H.marginTop) || 0, B = parseFloat(H.marginBottom) || 0, V = p - $ - S - D - B - F;
+      const M = getComputedStyle(w), D = parseFloat(M.marginTop) || 0, B = parseFloat(M.marginBottom) || 0, V = p - $ - H - D - B - F;
       w.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
     });
   }
@@ -2417,7 +2428,7 @@ const pe = {
   emoji: me
 };
 Object.entries(pe).forEach(([l, e]) => {
-  E.registerPlugin(l, (t) => new e(t));
+  k.registerPlugin(l, (t) => new e(t));
 });
 const f = /* @__PURE__ */ new Map(), be = {
   /**
@@ -2433,7 +2444,7 @@ const f = /* @__PURE__ */ new Map(), be = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (f.has(t))
       return f.get(t);
-    const i = new E(t, e), o = new te(i, e.toolbar);
+    const i = new k(t, e), o = new te(i, e.toolbar);
     return i.on("destroy", () => o.destroy()), f.set(t, i), i.on("destroy", () => f.delete(t)), i;
   },
   /**
@@ -2448,7 +2459,7 @@ const f = /* @__PURE__ */ new Map(), be = {
   destroyAll() {
     f.forEach((l) => l.destroy()), f.clear();
   },
-  registerPlugin: E.registerPlugin
+  registerPlugin: k.registerPlugin
 };
 export {
   be as default

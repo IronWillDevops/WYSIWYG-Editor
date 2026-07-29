@@ -190,6 +190,20 @@ export default class Toolbar {
 
         this._syncSelectValue('fontFamily', this._getComputedFontFamily());
         this._syncSelectValue('fontSize', this._getComputedFontSize());
+        this._syncBlockFormat(block);
+    }
+
+    _syncBlockFormat(block) {
+        const select = this.buttons.get('blockFormat');
+        if (!(select instanceof HTMLSelectElement)) return;
+        const tag = block ? block.tagName.toLowerCase() : 'p';
+        for (const [value] of ToolbarConfig.blockFormat.options) {
+            if (value === tag) {
+                select.value = value;
+                return;
+            }
+        }
+        select.value = 'p';
     }
 
     _getStyleNode() {
