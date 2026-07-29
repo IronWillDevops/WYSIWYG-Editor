@@ -9,6 +9,7 @@ import NoteModule from './NoteModule.js';
 import MediaModule from './MediaModule.js';
 import MarkdownModule from './MarkdownModule.js';
 import StatusBar from './StatusBar.js';
+import EmojiModule from './EmojiModule.js';
 
 /**
  * Built-in modules are registered through the same public plugin API that
@@ -26,6 +27,7 @@ const BUILTIN_MODULES = {
     media: MediaModule,
     markdown: MarkdownModule,
     statusBar: StatusBar,
+    emoji: EmojiModule,
 };
 
 Object.entries(BUILTIN_MODULES).forEach(([name, ModuleClass]) => {

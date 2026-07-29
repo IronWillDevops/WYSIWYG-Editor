@@ -1,7 +1,7 @@
 var B = Object.defineProperty;
-var I = (r, e, t) => e in r ? B(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var S = (r, e, t) => I(r, typeof e != "symbol" ? e + "" : e, t);
-class q {
+var I = (a, e, t) => e in a ? B(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var x = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
+class j {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class q {
     this.listeners.clear();
   }
 }
-class U {
+class q {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class U {
     this.root.focus(), this.restore();
   }
 }
-class O {
+class P {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -188,7 +188,7 @@ class O {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class P {
+class U {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -322,17 +322,17 @@ class P {
     if (!t) return;
     const i = this.selection.closest("li");
     if (i) {
-      const a = i.closest("ul, ol");
-      a && a.tagName.toLowerCase() === e ? this.unwrapList(a) : a && this.convertList(a, e);
+      const r = i.closest("ul, ol");
+      r && r.tagName.toLowerCase() === e ? this.unwrapList(r) : r && this.convertList(r, e);
       return;
     }
     const o = this.getBlocksInRange(t);
     if (!o.length) return;
     const n = document.createElement(e);
-    o.forEach((a) => {
+    o.forEach((r) => {
       const l = document.createElement("li");
-      l.innerHTML = a.innerHTML || "<br>", n.appendChild(l);
-    }), o[0].replaceWith(n), o.slice(1).forEach((a) => a.remove());
+      l.innerHTML = r.innerHTML || "<br>", n.appendChild(l);
+    }), o[0].replaceWith(n), o.slice(1).forEach((r) => r.remove());
     const s = document.createRange();
     s.selectNodeContents(n.lastElementChild), s.collapse(!1), this.selection.setRange(s);
   }
@@ -356,9 +356,9 @@ class P {
     const n = i(e.endContainer) ?? o;
     if (o === n) return [o];
     const s = [];
-    let a = o;
-    for (; a && (s.push(a), a !== n); )
-      a = a.nextElementSibling;
+    let r = o;
+    for (; r && (s.push(r), r !== n); )
+      r = r.nextElementSibling;
     return s.length ? s : [o];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -416,7 +416,7 @@ class P {
     this.editor.emitChange();
   }
 }
-const j = /* @__PURE__ */ new Set([
+const O = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -474,7 +474,7 @@ class K {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : j, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : O, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, i]) => [t, new Set(i)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
   }
   /**
    * @param {string} dirtyHtml
@@ -563,15 +563,15 @@ const G = {
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, M = /* @__PURE__ */ new Map();
-let y = class {
+}, z = /* @__PURE__ */ new Map();
+let w = class {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var i, o;
-    this.textarea = e, this.options = { ...G, ...t }, this.events = new q(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new U(this.root), this.commands = new P(this), this.history = new O({
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new j(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new q(this.root), this.commands = new U(this), this.history = new P({
       getContent: () => this.root.innerHTML,
       setContent: (n) => {
         this.root.innerHTML = n;
@@ -643,7 +643,7 @@ let y = class {
    */
   loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []);
-    M.forEach((t, i) => {
+    z.forEach((t, i) => {
       e.has(i) || this.plugins.set(i, t(this));
     });
   }
@@ -713,10 +713,10 @@ let y = class {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    M.set(e, t);
+    z.set(e, t);
   }
 };
-const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, h = {
+const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${a}</svg>`, h = {
   undo: c('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
   redo: c('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
   bold: c('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
@@ -756,8 +756,8 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
   charCount: c('<path d="M4 6h14v3h-2V8H6v8h4v2H4V6zm13 8h-2V9h2v5zm-2 2h2v2h-2v-2z"/>')
 }, J = {
-  undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
-  redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
+  undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (a) => a.undo() },
+  redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (a) => a.redo() },
   blockFormat: {
     label: "Paragraph style",
     type: "select",
@@ -772,7 +772,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["blockquote", "Blockquote"],
       ["pre", "Preformatted"]
     ],
-    onChange: (r, e) => r.commands.exec("blockFormat", e)
+    onChange: (a, e) => a.commands.exec("blockFormat", e)
   },
   fontFamily: {
     label: "Font family",
@@ -785,7 +785,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ['"Times New Roman", serif', "Times New Roman"],
       ["Verdana, sans-serif", "Verdana"]
     ],
-    onChange: (r, e) => r.commands.exec("fontName", e)
+    onChange: (a, e) => a.commands.exec("fontName", e)
   },
   fontSize: {
     label: "Font size",
@@ -799,7 +799,7 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
       ["32px", "32"],
       ["48px", "48"]
     ],
-    onChange: (r, e) => r.commands.exec("fontSize", e)
+    onChange: (a, e) => a.commands.exec("fontSize", e)
   },
   bold: { icon: h.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
   italic: { icon: h.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
@@ -825,60 +825,60 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     icon: h.checklist,
     label: "Checklist",
     type: "action",
-    action: (r) => r.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
+    action: (a) => a.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
   indent: { icon: h.indent, label: "Increase indent", type: "command", command: "indent" },
   outdent: { icon: h.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: h.link, label: "Insert/edit link", type: "action", action: (r) => r.module("link").open() },
+  link: { icon: h.link, label: "Insert/edit link", type: "action", action: (a) => a.module("link").open() },
   unlink: {
     icon: h.unlink,
     label: "Remove link",
     type: "action",
-    action: (r) => {
-      const e = r.selection.closest("a");
-      e && r.module("link").remove(e);
+    action: (a) => {
+      const e = a.selection.closest("a");
+      e && a.module("link").remove(e);
     }
   },
-  image: { icon: h.image, label: "Insert image", type: "action", action: (r) => r.module("image").open() },
-  video: { icon: h.videocam, label: "Insert video", type: "action", action: (r) => r.module("media").openVideo() },
-  audio: { icon: h.audiotrack, label: "Insert audio", type: "action", action: (r) => r.module("media").openAudio() },
-  table: { icon: h.table, label: "Insert table", type: "action", action: (r) => r.module("table").openInsertDialog() },
-  hr: { icon: h.hr, label: "Horizontal rule", type: "action", action: (r) => r.module("media").insertHorizontalRule() },
-  blockquote: { icon: h.blockquote, label: "Blockquote", type: "action", action: (r) => r.commands.exec("blockFormat", "blockquote") },
+  image: { icon: h.image, label: "Insert image", type: "action", action: (a) => a.module("image").open() },
+  video: { icon: h.videocam, label: "Insert video", type: "action", action: (a) => a.module("media").openVideo() },
+  audio: { icon: h.audiotrack, label: "Insert audio", type: "action", action: (a) => a.module("media").openAudio() },
+  table: { icon: h.table, label: "Insert table", type: "action", action: (a) => a.module("table").openInsertDialog() },
+  hr: { icon: h.hr, label: "Horizontal rule", type: "action", action: (a) => a.module("media").insertHorizontalRule() },
+  blockquote: { icon: h.blockquote, label: "Blockquote", type: "action", action: (a) => a.commands.exec("blockFormat", "blockquote") },
   codeInline: {
     icon: h.code,
     label: "Inline code",
     type: "action",
-    action: (r) => r.selection.wrap("code") && r.emitChange()
+    action: (a) => a.selection.wrap("code") && a.emitChange()
   },
-  codeBlock: { icon: h.codeBlock, label: "Code block", type: "action", action: (r) => r.commands.exec("blockFormat", "pre") },
-  note: { icon: h.note, label: "Insert note", type: "action", action: (r) => r.module("note").open() },
+  codeBlock: { icon: h.codeBlock, label: "Code block", type: "action", action: (a) => a.commands.exec("blockFormat", "pre") },
+  note: { icon: h.note, label: "Insert note", type: "action", action: (a) => a.module("note").open() },
   emoji: {
     icon: h.emoji,
     label: "Emoji",
     type: "action",
-    action: (r) => r.commands.insertHTML("😀")
+    action: (a) => a.module("emoji").open()
   },
   specialChars: {
     icon: h.specialChars,
     label: "Special characters",
     type: "action",
-    action: (r) => r.commands.insertHTML("&amp;copy;")
+    action: (a) => a.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: h.find, label: "Find & Replace", type: "action", action: (r) => r.module("find").open() },
+  find: { icon: h.find, label: "Find & Replace", type: "action", action: (a) => a.module("find").open() },
   sourceCode: {
     icon: h.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("codeView").toggle()
+    action: (a) => a.module("codeView").toggle()
   },
   fullscreen: {
     icon: h.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("fullscreen").toggle()
+    action: (a) => a.module("fullscreen").toggle()
   }
 }, Y = {
   undo: "Undo",
@@ -946,28 +946,28 @@ const c = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   sourceCode: "Исходный код",
   fullscreen: "Полноэкранный режим",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз."
-}, b = /* @__PURE__ */ new Map([
+}, v = /* @__PURE__ */ new Map([
   ["en", Y],
   ["uk", Q],
   ["ru", Z]
-]), x = {
+]), R = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
    */
-  register(r, e) {
-    b.set(r, e);
+  register(a, e) {
+    v.set(a, e);
   },
   /**
    * @param {string} locale
    * @param {string} key
    * @returns {string}
    */
-  t(r, e) {
-    return (b.get(r) ?? b.get("en"))[e] ?? b.get("en")[e] ?? e;
+  t(a, e) {
+    return (v.get(a) ?? v.get("en"))[e] ?? v.get("en")[e] ?? e;
   },
   available() {
-    return [...b.keys()];
+    return [...v.keys()];
   }
 }, ee = [
   ["undo", "redo"],
@@ -1005,7 +1005,7 @@ class te {
   }
   buildButton(e, t) {
     const i = this.editor.options.locale ?? "en";
-    let o = x.t(i, e) !== e ? x.t(i, e) : t.label;
+    let o = R.t(i, e) !== e ? R.t(i, e) : t.label;
     if (t.shortcut) {
       const s = t.shortcut.replace(/Ctrl/g, "⌘");
       o += ` (${t.shortcut} / ${s})`;
@@ -1073,7 +1073,7 @@ class te {
     this.el.remove();
   }
 }
-class g {
+class f {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1084,7 +1084,7 @@ class g {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    */
   constructor(e, { title: t, bodyHtml: i, confirmLabel: o = "OK", cancelLabel: n = "Cancel", onConfirm: s }) {
-    S(this, "handleEscape", (e) => {
+    x(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1099,14 +1099,14 @@ class g {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => l.stopPropagation());
-    }), this.overlay.querySelectorAll("button").forEach((a) => {
-      a.addEventListener("mousedown", (l) => l.preventDefault());
-    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
-      a.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), a.stopPropagation(), this.onConfirm(this.form), this.close();
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((r) => {
+      r.addEventListener("click", (l) => l.stopPropagation()), r.addEventListener("keydown", (l) => l.stopPropagation());
+    }), this.overlay.querySelectorAll("button").forEach((r) => {
+      r.addEventListener("mousedown", (l) => l.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (r) => {
+      r.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (r) => {
+      r.preventDefault(), r.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
@@ -1171,7 +1171,7 @@ class ie {
                 <label class="ife-field--inline"><input type="checkbox" name="noreferrer" ${e != null && e.rel.includes("noreferrer") ? "checked" : ""}> noreferrer</label>
             </fieldset>
         `;
-    if (this.dialog = new g(this.editor.wrapper, {
+    if (this.dialog = new f(this.editor.wrapper, {
       title: e ? "Edit link" : "Insert link",
       bodyHtml: i,
       confirmLabel: e ? "Update" : "Insert",
@@ -1184,13 +1184,13 @@ class ie {
     }
   }
   apply(e, t) {
-    const i = new FormData(e), o = ["nofollow", "noopener", "noreferrer"].filter((a) => i.get(a)).join(" "), n = t ?? document.createElement("a");
+    const i = new FormData(e), o = ["nofollow", "noopener", "noreferrer"].filter((r) => i.get(r)).join(" "), n = t ?? document.createElement("a");
     n.textContent = String(i.get("text"));
     const s = String(i.get("href"));
     if (n.setAttribute("href", this.editor.sanitizer.isSafeUrl(s) ? s : "#"), n.setAttribute("title", String(i.get("title") ?? "")), n.setAttribute("target", i.get("newTab") ? "_blank" : "_self"), o ? n.setAttribute("rel", o) : n.removeAttribute("rel"), this.editor.history.push(), !t) {
       this.editor.selection.restore();
-      const a = this.editor.selection.getRange();
-      a == null || a.deleteContents(), a == null || a.insertNode(n);
+      const r = this.editor.selection.getRange();
+      r == null || r.deleteContents(), r == null || r.insertNode(n);
     }
     this.editor.emitChange();
   }
@@ -1246,15 +1246,15 @@ class oe {
                 </label>
             </div>
         `;
-    if (this.dialog = new g(this.editor.wrapper, {
+    if (this.dialog = new f(this.editor.wrapper, {
       title: e ? "Edit image" : "Insert image",
       bodyHtml: n,
       confirmLabel: e ? "Update" : "Insert",
       onConfirm: (s) => this.handleSubmit(s, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
       const s = document.createElement("button");
-      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("mousedown", (a) => a.preventDefault()), s.addEventListener("click", (a) => {
-        a.stopPropagation(), this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
+      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("mousedown", (r) => r.preventDefault()), s.addEventListener("click", (r) => {
+        r.stopPropagation(), this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
       }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(s);
     }
   }
@@ -1304,8 +1304,8 @@ class oe {
     this.editor.history.push(), this.editor.selection.restore();
     const s = document.createElement("figure");
     s.className = `ife-image ife-image--${o}`;
-    const a = document.createElement("img");
-    if (this.editor.sanitizer.isSafeUrl(e) && (a.src = e), a.alt = t, n && (a.loading = "lazy"), s.appendChild(a), i) {
+    const r = document.createElement("img");
+    if (this.editor.sanitizer.isSafeUrl(e) && (r.src = e), r.alt = t, n && (r.loading = "lazy"), s.appendChild(r), i) {
       const d = document.createElement("figcaption");
       d.textContent = i, s.appendChild(d);
     }
@@ -1320,8 +1320,8 @@ class oe {
    */
   update(e, { src: t, alt: i, caption: o, align: n, lazy: s }) {
     this.editor.history.push(), e.className = `ife-image ife-image--${n}`;
-    const a = e.querySelector("img");
-    a && (this.editor.sanitizer.isSafeUrl(t) && (a.src = t), a.alt = i, s ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading"));
+    const r = e.querySelector("img");
+    r && (this.editor.sanitizer.isSafeUrl(t) && (r.src = t), r.alt = i, s ? r.setAttribute("loading", "lazy") : r.removeAttribute("loading"));
     let l = e.querySelector("figcaption");
     o ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = o) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
   }
@@ -1342,8 +1342,8 @@ class oe {
     const t = e.target.closest("figure.ife-image img");
     if (!t || !e.altKey) return;
     e.preventDefault();
-    const i = e.clientX, o = t.getBoundingClientRect().width, n = (a) => {
-      const l = a.clientX - i;
+    const i = e.clientX, o = t.getBoundingClientRect().width, n = (r) => {
+      const l = r.clientX - i;
       t.style.width = `${Math.max(40, o + l)}px`;
     }, s = () => {
       document.removeEventListener("mousemove", n), document.removeEventListener("mouseup", s), this.editor.emitChange();
@@ -1388,9 +1388,9 @@ class ne {
       ["Merge right", () => this.mergeRight()],
       ["Split cell", () => this.splitCell()],
       ["Delete table", () => this.deleteTable(), !0]
-    ].forEach(([n, s, a]) => {
+    ].forEach(([n, s, r]) => {
       const l = document.createElement("button");
-      l.type = "button", l.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${a ? " ife-table-toolbar__btn--danger" : ""}`, l.textContent = n, l.title = n, l.addEventListener("mousedown", (d) => d.preventDefault()), l.addEventListener("click", () => {
+      l.type = "button", l.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${r ? " ife-table-toolbar__btn--danger" : ""}`, l.textContent = n, l.title = n, l.addEventListener("mousedown", (d) => d.preventDefault()), l.addEventListener("click", () => {
         this.editor.selection.restore(), s(), this.syncContextToolbar();
       }), this.contextToolbar.appendChild(l);
     });
@@ -1402,8 +1402,8 @@ class ne {
     }), t.appendChild(i), this.contextToolbar.appendChild(t);
     const o = document.createElement("select");
     o.className = "ife-toolbar__select", o.setAttribute("aria-label", "Table alignment"), [["left", "Align left"], ["center", "Align center"], ["right", "Align right"]].forEach(([n, s]) => {
-      const a = document.createElement("option");
-      a.value = n, a.textContent = s, o.appendChild(a);
+      const r = document.createElement("option");
+      r.value = n, r.textContent = s, o.appendChild(r);
     }), o.addEventListener("mousedown", (n) => n.stopPropagation()), o.addEventListener("change", () => {
       this.editor.selection.restore(), this.setTableAlignment(o.value);
     }), this.contextToolbar.appendChild(o);
@@ -1423,7 +1423,7 @@ class ne {
                 <span>Include header row</span>
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert table",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1451,8 +1451,8 @@ class ne {
         m.innerHTML = "<br>";
       }
     }
-    const a = this.editor.selection.getRange();
-    a == null || a.deleteContents(), a == null || a.insertNode(o), this.editor.emitChange(), this.adjustTableHeight();
+    const r = this.editor.selection.getRange();
+    r == null || r.deleteContents(), r == null || r.insertNode(o), this.editor.emitChange(), this.adjustTableHeight();
   }
   getCurrentCell() {
     return this.editor.selection.closest("td, th");
@@ -1481,10 +1481,10 @@ class ne {
     if (!o) return;
     let n = [...o.children].indexOf(i);
     n < 0 || (this.editor.history.push(), t.querySelectorAll("tr").forEach((s) => {
-      const a = s.children[n];
-      if (!a) return;
-      const l = document.createElement(a.tagName.toLowerCase() === "th" ? "th" : "td");
-      l.innerHTML = "<br>", s.insertBefore(l, e ? a : a.nextSibling);
+      const r = s.children[n];
+      if (!r) return;
+      const l = document.createElement(r.tagName.toLowerCase() === "th" ? "th" : "td");
+      l.innerHTML = "<br>", s.insertBefore(l, e ? r : r.nextSibling);
     }), this.editor.emitChange());
   }
   deleteColumn() {
@@ -1535,22 +1535,22 @@ class ne {
   }
   /** Constrains table and content area height to fit within the viewport. */
   adjustTableHeight() {
-    var w, E, L;
-    if (!((w = this.editor.root) != null && w.isConnected)) return;
+    var k, L, T;
+    if (!((k = this.editor.root) != null && k.isConnected)) return;
     const e = this.editor.root.querySelectorAll("table.ife-table");
     if (!e.length) {
       this.editor.root.style.maxHeight = "";
       return;
     }
-    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((E = this.contextToolbar) == null ? void 0 : E.style.display) !== "none" && ((L = this.contextToolbar) == null ? void 0 : L.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), N = parseFloat(m.borderTopWidth) || 0, A = parseFloat(m.borderBottomWidth) || 0, $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, D = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16, C = i - o.top - N - s - l - u - A;
-    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(C))}px`, e.forEach((v) => {
-      let k = 0, f = v.previousElementSibling;
-      for (; f; ) {
-        const H = getComputedStyle(f);
-        k += f.offsetHeight + (parseFloat(H.marginTop) || 0) + (parseFloat(H.marginBottom) || 0), f = f.previousElementSibling;
+    const t = this.editor.wrapper, i = window.innerHeight, o = t.getBoundingClientRect(), n = t.querySelector(".ife-toolbar"), s = n ? n.offsetHeight : 0, l = ((L = this.contextToolbar) == null ? void 0 : L.style.display) !== "none" && ((T = this.contextToolbar) == null ? void 0 : T.offsetHeight) || 0, d = t.querySelector(".ife-statusbar"), u = d ? d.offsetHeight : 0, m = getComputedStyle(t), p = parseFloat(m.borderTopWidth) || 0, y = parseFloat(m.borderBottomWidth) || 0, $ = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, _ = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16, E = i - o.top - p - s - l - u - y;
+    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(E))}px`, e.forEach((C) => {
+      let H = 0, b = C.previousElementSibling;
+      for (; b; ) {
+        const M = getComputedStyle(b);
+        H += b.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), b = b.previousElementSibling;
       }
-      const T = getComputedStyle(v), _ = parseFloat(T.marginTop) || 0, F = parseFloat(T.marginBottom) || 0, V = C - $ - k - _ - F - D;
-      v.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
+      const S = getComputedStyle(C), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = E - $ - H - D - F - _;
+      C.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
     });
   }
   destroy() {
@@ -1582,8 +1582,8 @@ class se {
     return i.map((n) => {
       const s = /^<\//.test(n);
       s && (o = Math.max(o - 1, 0));
-      const a = `${"  ".repeat(o)}${n}`, l = /\/>$/.test(n) || /<(br|hr|img|input|source)[ >]/i.test(n);
-      return /^<[a-z]/i.test(n) && !s && !l && (o += 1), a;
+      const r = `${"  ".repeat(o)}${n}`, l = /\/>$/.test(n) || /<(br|hr|img|input|source)[ >]/i.test(n);
+      return /^<[a-z]/i.test(n) && !s && !l && (o += 1), r;
     }).join(`
 `);
   }
@@ -1638,7 +1638,7 @@ class ae {
             <label class="ife-field--inline"><input type="checkbox" name="caseSensitive"> Case sensitive</label>
             <label class="ife-field--inline"><input type="checkbox" name="useRegex"> Regular expression</label>
         `;
-    this.dialog = new g(this.editor.wrapper, {
+    this.dialog = new f(this.editor.wrapper, {
       title: "Find & Replace",
       bodyHtml: e,
       confirmLabel: "Replace all",
@@ -1664,17 +1664,17 @@ class ae {
     for (; n; )
       o.push(n), n = i.nextNode();
     o.forEach((s) => {
-      const a = s.textContent ?? "";
-      if (!t.test(a)) return;
+      const r = s.textContent ?? "";
+      if (!t.test(r)) return;
       t.lastIndex = 0;
       const l = document.createDocumentFragment();
-      let d = 0, u = t.exec(a);
+      let d = 0, u = t.exec(r);
       for (; u; ) {
-        l.appendChild(document.createTextNode(a.slice(d, u.index)));
+        l.appendChild(document.createTextNode(r.slice(d, u.index)));
         const m = document.createElement("mark");
-        m.className = "ife-search-highlight", m.textContent = u[0], l.appendChild(m), d = u.index + u[0].length, u = t.exec(a);
+        m.className = "ife-search-highlight", m.textContent = u[0], l.appendChild(m), d = u.index + u[0].length, u = t.exec(r);
       }
-      l.appendChild(document.createTextNode(a.slice(d))), s.replaceWith(l);
+      l.appendChild(document.createTextNode(r.slice(d))), s.replaceWith(l);
     });
   }
   clearHighlights() {
@@ -1688,9 +1688,9 @@ class ae {
     const o = String(t.get("replacement") ?? "");
     this.editor.history.push(), this.clearHighlights();
     const n = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null), s = [];
-    let a = n.nextNode();
-    for (; a; )
-      s.push(a), a = n.nextNode();
+    let r = n.nextNode();
+    for (; r; )
+      s.push(r), r = n.nextNode();
     s.forEach((l) => {
       l.textContent = (l.textContent ?? "").replace(i, o);
     }), this.editor.emitChange();
@@ -1716,7 +1716,7 @@ class ce {
                 <textarea name="text" rows="3">${this.editor.selection.getText()}</textarea>
             </label>
         `;
-    this.dialog = new g(this.editor.wrapper, {
+    this.dialog = new f(this.editor.wrapper, {
       title: "Insert note",
       bodyHtml: t,
       confirmLabel: "Insert",
@@ -1738,7 +1738,7 @@ class ce {
     (e = this.dialog) == null || e.close();
   }
 }
-const z = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, R = /vimeo\.com\/(\d+)/;
+const N = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, A = /vimeo\.com\/(\d+)/;
 class he {
   constructor(e) {
     this.editor = e;
@@ -1758,7 +1758,7 @@ class he {
                 <input type="number" name="height" value="360">
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert video",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1773,11 +1773,11 @@ class he {
     let n;
     if (o.startsWith("<iframe"))
       n = o;
-    else if (z.test(o)) {
-      const s = o.match(z)[1];
+    else if (N.test(o)) {
+      const s = o.match(N)[1];
       n = `<iframe width="${t}" height="${i}" src="https://www.youtube.com/embed/${s}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-    } else if (R.test(o)) {
-      const s = o.match(R)[1];
+    } else if (A.test(o)) {
+      const s = o.match(A)[1];
       n = `<iframe width="${t}" height="${i}" src="https://player.vimeo.com/video/${s}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
     } else
       n = `<video controls width="${t}" height="${i}"><source src="${o}"></video>`;
@@ -1790,7 +1790,7 @@ class he {
                 <input type="url" name="source" required>
             </label>
         `;
-    this.editor.selection.save(), new g(this.editor.wrapper, {
+    this.editor.selection.save(), new f(this.editor.wrapper, {
       title: "Insert audio",
       bodyHtml: e,
       confirmLabel: "Insert",
@@ -1921,11 +1921,11 @@ ${t()}
 `), i = [];
     let o = null;
     return t.forEach((n) => {
-      const s = n, a = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), u = s.match(/^>\s?(.*)$/);
-      if (a) {
+      const s = n, r = s.match(/^(#{1,6})\s+(.*)$/), l = s.match(/^[-*]\s+(.*)$/), d = s.match(/^\d+\.\s+(.*)$/), u = s.match(/^>\s?(.*)$/);
+      if (r) {
         this.closeList(i, o), o = null;
-        const m = a[1].length;
-        i.push(`<h${m}>${this.inlineMarkdown(a[2])}</h${m}>`);
+        const m = r[1].length;
+        i.push(`<h${m}>${this.inlineMarkdown(r[2])}</h${m}>`);
         return;
       }
       if (l) {
@@ -1976,7 +1976,321 @@ class ue {
     this.editor.root.removeEventListener("input", this.update), this.el.remove();
   }
 }
-const me = {
+class me {
+  constructor(e) {
+    this.editor = e, this.picker = null;
+  }
+  open() {
+    if (this.picker) {
+      this.picker.remove(), this.picker = null;
+      return;
+    }
+    this.editor.selection.save(), this.picker = document.createElement("div"), this.picker.className = "ife-emoji-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", "Emoji picker");
+    const e = document.createElement("div");
+    e.className = "ife-emoji-picker__header";
+    const t = document.createElement("span");
+    t.className = "ife-emoji-picker__title", t.textContent = "Emoji", e.appendChild(t);
+    const i = document.createElement("button");
+    i.type = "button", i.className = "ife-emoji-picker__close", i.innerHTML = "&times;", i.setAttribute("aria-label", "Close"), i.addEventListener("click", () => this.close()), e.appendChild(i), this.picker.appendChild(e);
+    const o = [
+      { name: "Smileys", emojis: [
+        "😀",
+        "😃",
+        "😄",
+        "😁",
+        "😆",
+        "😅",
+        "🤣",
+        "😂",
+        "🙂",
+        "😊",
+        "😇",
+        "🥰",
+        "😍",
+        "🤩",
+        "😘",
+        "😗",
+        "😚",
+        "😙",
+        "🥲",
+        "😋",
+        "😛",
+        "😜",
+        "🤪",
+        "😝",
+        "🤑",
+        "🤗",
+        "🤭",
+        "🫢",
+        "🫣",
+        "🤫",
+        "🤔",
+        "🫡",
+        "🤐",
+        "🤨",
+        "😐",
+        "😑",
+        "😶",
+        "🫥",
+        "😏",
+        "😒",
+        "🙄",
+        "😬",
+        "🤥",
+        "😌",
+        "😔",
+        "😪",
+        "🤤",
+        "😴",
+        "😷",
+        "🤒",
+        "🤕",
+        "🤢",
+        "🤮",
+        "🥴",
+        "😵",
+        "🤯",
+        "🥳",
+        "🥺",
+        "😢",
+        "😭",
+        "😤",
+        "😠",
+        "😡",
+        "🤬",
+        "💀",
+        "☠️",
+        "💩",
+        "🤡",
+        "👹",
+        "👺"
+      ] },
+      { name: "Gestures", emojis: [
+        "👋",
+        "🤚",
+        "🖐️",
+        "✋",
+        "🖖",
+        "🫱",
+        "🫲",
+        "🫳",
+        "🫴",
+        "👌",
+        "🤌",
+        "🤏",
+        "✌️",
+        "🤞",
+        "🫰",
+        "🤟",
+        "🤘",
+        "🤙",
+        "👈",
+        "👉",
+        "👆",
+        "🖕",
+        "👇",
+        "🫵",
+        "👍",
+        "👎",
+        "✊",
+        "👊",
+        "🤛",
+        "🤜",
+        "👏",
+        "🙌",
+        "🫶",
+        "👐",
+        "🤲",
+        "🤝",
+        "🙏",
+        "✍️",
+        "💅",
+        "🤳"
+      ] },
+      { name: "Nature", emojis: [
+        "🐶",
+        "🐱",
+        "🐭",
+        "🐹",
+        "🐰",
+        "🦊",
+        "🐻",
+        "🐼",
+        "🐨",
+        "🐯",
+        "🦁",
+        "🐮",
+        "🐷",
+        "🐸",
+        "🐵",
+        "🐔",
+        "🐧",
+        "🐦",
+        "🐤",
+        "🦆",
+        "🦅",
+        "🦉",
+        "🦇",
+        "🐺",
+        "🐗",
+        "🐴",
+        "🦄",
+        "🐝",
+        "🐛",
+        "🦋",
+        "🐌",
+        "🐞",
+        "🐜",
+        "🦟",
+        "🦗",
+        "🪳",
+        "🪰",
+        "🪱",
+        "🐢",
+        "🐍",
+        "🦎",
+        "🦖",
+        "🦕",
+        "🐙",
+        "🦑",
+        "🦐",
+        "🦞",
+        "🦀",
+        "🐡",
+        "🐠"
+      ] },
+      { name: "Food", emojis: [
+        "🍏",
+        "🍎",
+        "🍐",
+        "🍊",
+        "🍋",
+        "🍌",
+        "🍉",
+        "🍇",
+        "🍓",
+        "🫐",
+        "🍈",
+        "🍒",
+        "🍑",
+        "🥭",
+        "🍍",
+        "🥥",
+        "🥝",
+        "🍅",
+        "🍆",
+        "🥑",
+        "🥦",
+        "🥬",
+        "🥒",
+        "🌶️",
+        "🫑",
+        "🌽",
+        "🥕",
+        "🫒",
+        "🧄",
+        "🧅",
+        "🥔",
+        "🍠",
+        "🫓",
+        "🥐",
+        "🥖",
+        "🥨",
+        "🧀",
+        "🥚",
+        "🍳",
+        "🥞",
+        "🧇",
+        "🥓",
+        "🥩",
+        "🍗",
+        "🍖",
+        "🦴",
+        "🌭",
+        "🍔",
+        "🍟",
+        "🍕"
+      ] },
+      { name: "Symbols", emojis: [
+        "❤️",
+        "🧡",
+        "💛",
+        "💚",
+        "💙",
+        "💜",
+        "🖤",
+        "🤍",
+        "🤎",
+        "💔",
+        "❣️",
+        "💕",
+        "💞",
+        "💓",
+        "💗",
+        "💖",
+        "💘",
+        "💝",
+        "💟",
+        "☮️",
+        "✝️",
+        "☪️",
+        "🕉️",
+        "☸️",
+        "✡️",
+        "🔯",
+        "🕎",
+        "☯️",
+        "🪯",
+        "♈",
+        "♉",
+        "♊",
+        "♋",
+        "♌",
+        "♍",
+        "♎",
+        "♏",
+        "♐",
+        "♑",
+        "♒",
+        "♓",
+        "⛎",
+        "🔀",
+        "🔁",
+        "🔂",
+        "▶️",
+        "⏩",
+        "⏭️",
+        "⏯️",
+        "◀️"
+      ] }
+    ], n = document.createElement("div");
+    n.className = "ife-emoji-picker__body", o.forEach((r) => {
+      const l = document.createElement("div");
+      l.className = "ife-emoji-picker__group";
+      const d = document.createElement("div");
+      d.className = "ife-emoji-picker__group-label", d.textContent = r.name, l.appendChild(d);
+      const u = document.createElement("div");
+      u.className = "ife-emoji-picker__grid", r.emojis.forEach((m) => {
+        const p = document.createElement("button");
+        p.type = "button", p.className = "ife-emoji-picker__btn", p.textContent = m, p.setAttribute("aria-label", m), p.addEventListener("mousedown", (y) => y.preventDefault()), p.addEventListener("click", () => {
+          this.editor.selection.restore(), this.editor.commands.insertHTML(m), this.close();
+        }), u.appendChild(p);
+      }), l.appendChild(u), n.appendChild(l);
+    }), this.picker.appendChild(n);
+    const s = this.editor.wrapper;
+    s.appendChild(this.picker), this.picker.style.setProperty("--ife-bg", getComputedStyle(s).getPropertyValue("--ife-bg")), this.picker.style.setProperty("--ife-text", getComputedStyle(s).getPropertyValue("--ife-text")), this.picker.style.setProperty("--ife-border", getComputedStyle(s).getPropertyValue("--ife-border")), this.picker.style.setProperty("--ife-btn-hover", getComputedStyle(s).getPropertyValue("--ife-btn-hover")), this.picker.style.setProperty("--ife-btn-active", getComputedStyle(s).getPropertyValue("--ife-btn-active")), setTimeout(() => {
+      const r = this.picker.querySelector(".ife-emoji-picker__btn");
+      r && r.focus();
+    }, 50);
+  }
+  close() {
+    this.picker && (this.picker.remove(), this.picker = null);
+  }
+  destroy() {
+    this.close();
+  }
+}
+const pe = {
   link: ie,
   image: oe,
   table: ne,
@@ -1986,43 +2300,44 @@ const me = {
   note: ce,
   media: he,
   markdown: de,
-  statusBar: ue
+  statusBar: ue,
+  emoji: me
 };
-Object.entries(me).forEach(([r, e]) => {
-  y.registerPlugin(r, (t) => new e(t));
+Object.entries(pe).forEach(([a, e]) => {
+  w.registerPlugin(a, (t) => new e(t));
 });
-const p = /* @__PURE__ */ new Map(), fe = {
+const g = /* @__PURE__ */ new Map(), be = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
    * @returns {EditorCore}
    */
-  init(r, e = {}) {
-    const t = typeof r == "string" ? document.querySelector(r) : r;
+  init(a, e = {}) {
+    const t = typeof a == "string" ? document.querySelector(a) : a;
     if (!t)
-      throw new Error(`InkForge Editor: target "${r}" not found`);
+      throw new Error(`InkForge Editor: target "${a}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
-    if (p.has(t))
-      return p.get(t);
-    const i = new y(t, e), o = new te(i, e.toolbar);
-    return i.on("destroy", () => o.destroy()), p.set(t, i), i.on("destroy", () => p.delete(t)), i;
+    if (g.has(t))
+      return g.get(t);
+    const i = new w(t, e), o = new te(i, e.toolbar);
+    return i.on("destroy", () => o.destroy()), g.set(t, i), i.on("destroy", () => g.delete(t)), i;
   },
   /**
    * @param {string|HTMLTextAreaElement} target
    * @returns {EditorCore|undefined}
    */
-  get(r) {
-    const e = typeof r == "string" ? document.querySelector(r) : r;
-    return e ? p.get(e) : void 0;
+  get(a) {
+    const e = typeof a == "string" ? document.querySelector(a) : a;
+    return e ? g.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    p.forEach((r) => r.destroy()), p.clear();
+    g.forEach((a) => a.destroy()), g.clear();
   },
-  registerPlugin: y.registerPlugin
+  registerPlugin: w.registerPlugin
 };
 export {
-  fe as default
+  be as default
 };
 //# sourceMappingURL=inkforge-editor.esm.js.map

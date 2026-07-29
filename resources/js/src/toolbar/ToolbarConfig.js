@@ -123,7 +123,7 @@ const ToolbarConfig = {
         icon: Icons.emoji,
         label: 'Emoji',
         type: 'action',
-        action: (e) => e.commands.insertHTML('😀'),
+        action: (e) => e.module('emoji').open(),
     },
     specialChars: {
         icon: Icons.specialChars,
