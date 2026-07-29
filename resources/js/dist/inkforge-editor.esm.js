@@ -871,7 +871,7 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   },
   indent: { icon: h.indent, label: "Increase indent", type: "command", command: "indent" },
   outdent: { icon: h.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: h.link, label: "Insert/edit link", type: "action", action: (a) => a.module("link").open() },
+  link: { icon: h.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (a) => a.module("link").open() },
   unlink: {
     icon: h.unlink,
     label: "Remove link",
@@ -907,7 +907,7 @@ const c = (a) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
     type: "action",
     action: (a) => a.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: h.find, label: "Find & Replace", type: "action", action: (a) => a.module("find").open() },
+  find: { icon: h.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (a) => a.module("find").open() },
   sourceCode: {
     icon: h.sourceCode,
     label: "Source code",
