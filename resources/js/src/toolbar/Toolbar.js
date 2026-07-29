@@ -171,6 +171,22 @@ export default class Toolbar {
                 button.classList.toggle('is-active', activeAlign === id.replace('align', '').toLowerCase());
             }
         });
+
+        const blockquoteBtn = this.buttons.get('blockquote');
+        if (blockquoteBtn instanceof HTMLElement) {
+            let isBlockquote = false;
+            if (block) {
+                let el = block;
+                while (el && el !== this.editor.root) {
+                    if (el.tagName === 'BLOCKQUOTE') {
+                        isBlockquote = true;
+                        break;
+                    }
+                    el = el.parentElement;
+                }
+            }
+            blockquoteBtn.classList.toggle('is-active', isBlockquote);
+        }
     }
 
     setEnabled(id, enabled) {

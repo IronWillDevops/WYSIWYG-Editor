@@ -1,5 +1,5 @@
-var B = Object.defineProperty;
-var I = (a, e, t) => e in a ? B(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var V = Object.defineProperty;
+var I = (a, e, t) => e in a ? V(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
 var x = (a, e, t) => I(a, typeof e != "symbol" ? e + "" : e, t);
 class q {
   constructor() {
@@ -1078,26 +1078,41 @@ class te {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([o, n]) => {
-      const s = this.buttons.get(o);
-      s instanceof HTMLElement && s.classList.toggle("is-active", this.editor.commands.queryState(n));
+    }).forEach(([n, s]) => {
+      const r = this.buttons.get(n);
+      r instanceof HTMLElement && r.classList.toggle("is-active", this.editor.commands.queryState(s));
     });
     const t = this.editor.selection.getBlockElement();
     let i = "";
     if (t) {
-      let o = t;
-      for (; o && o !== this.editor.root; ) {
-        if (o.style.textAlign) {
-          i = o.style.textAlign;
+      let n = t;
+      for (; n && n !== this.editor.root; ) {
+        if (n.style.textAlign) {
+          i = n.style.textAlign;
           break;
         }
-        o = o.parentElement;
+        n = n.parentElement;
       }
     }
-    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((o) => {
-      const n = this.buttons.get(o);
-      n instanceof HTMLElement && n.classList.toggle("is-active", i === o.replace("align", "").toLowerCase());
+    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((n) => {
+      const s = this.buttons.get(n);
+      s instanceof HTMLElement && s.classList.toggle("is-active", i === n.replace("align", "").toLowerCase());
     });
+    const o = this.buttons.get("blockquote");
+    if (o instanceof HTMLElement) {
+      let n = !1;
+      if (t) {
+        let s = t;
+        for (; s && s !== this.editor.root; ) {
+          if (s.tagName === "BLOCKQUOTE") {
+            n = !0;
+            break;
+          }
+          s = s.parentElement;
+        }
+      }
+      o.classList.toggle("is-active", n);
+    }
   }
   setEnabled(e, t) {
     const i = this.buttons.get(e);
@@ -1582,8 +1597,8 @@ class ne {
         const M = getComputedStyle(v);
         H += v.offsetHeight + (parseFloat(M.marginTop) || 0) + (parseFloat(M.marginBottom) || 0), v = v.previousElementSibling;
       }
-      const S = getComputedStyle(w), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, V = p - A - H - D - F - $;
-      w.style.maxHeight = `${Math.max(200, Math.floor(V))}px`;
+      const S = getComputedStyle(w), D = parseFloat(S.marginTop) || 0, F = parseFloat(S.marginBottom) || 0, B = p - A - H - D - F - $;
+      w.style.maxHeight = `${Math.max(200, Math.floor(B))}px`;
     });
   }
   destroy() {

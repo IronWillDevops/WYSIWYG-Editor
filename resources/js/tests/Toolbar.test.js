@@ -124,4 +124,37 @@ describe('Toolbar', () => {
         const groups = toolbar.el.querySelectorAll('.ife-toolbar__group');
         expect(groups.length).toBe(0);
     });
+
+    it('activates blockquote button when cursor is inside a blockquote', () => {
+        const blockquote = document.createElement('blockquote');
+        blockquote.textContent = 'test';
+        editor.selection.getBlockElement = vi.fn(() => blockquote);
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('blockquote');
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('does not activate blockquote button when cursor is inside a paragraph', () => {
+        const p = document.createElement('p');
+        p.textContent = 'test';
+        editor.selection.getBlockElement = vi.fn(() => p);
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('blockquote');
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(false);
+    });
+
+    it('activates blockquote button when paragraph is nested inside blockquote', () => {
+        const blockquote = document.createElement('blockquote');
+        const p = document.createElement('p');
+        p.textContent = 'test';
+        blockquote.appendChild(p);
+        editor.root.appendChild(blockquote);
+        editor.selection.getBlockElement = vi.fn(() => p);
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('blockquote');
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(true);
+    });
 });
