@@ -18,6 +18,8 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        $app['config']->set('app.key', 'base64:'.base64_encode('abcdefghijklmnopqrstuvwxyz012345'));
+
         $app['config']->set('filesystems.disks.public', [
             'driver' => 'local',
             'root' => storage_path('app/public'),
