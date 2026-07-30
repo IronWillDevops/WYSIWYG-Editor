@@ -414,7 +414,6 @@ export default class TableModule {
 
         const table = target.closest('table');
         if (!table) return;
-        const rect = table.getBoundingClientRect();
         const startX = event.clientX;
         const colIndex = parseInt(target.dataset.col, 10);
         const startWidth = target.dataset.startWidth ? parseFloat(target.dataset.startWidth) : 0;

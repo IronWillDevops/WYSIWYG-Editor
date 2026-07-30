@@ -264,8 +264,7 @@ export default class Editor {
         tableModule.navigateToCell(backward ? 'prev' : 'next');
     }
 
-    /** @param {DragEvent} event */
-    handleDragOver(event) {
+    handleDragOver() {
         if (this.destroyed) return;
         const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
         if (!dropIndicator) {
