@@ -277,12 +277,16 @@ export default class Editor {
         const blockquote = block.closest('blockquote');
         const isPre = block.tagName === 'PRE' || !!block.closest('pre');
 
-        if (!blockquote && !isPre) return;
-
-        event.preventDefault();
-
         const range = this.selection.getRange();
         if (!range) return;
+
+        if (!blockquote && !isPre) {
+            let node = range.startContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!(node instanceof HTMLElement) || !node.closest('code')) return;
+        }
+
+        event.preventDefault();
 
         this.history.push();
 
@@ -304,45 +308,96 @@ export default class Editor {
             return;
         }
 
-        const isEmpty = !block.textContent.trim();
-        if (isEmpty) {
-            const p = document.createElement('p');
-            p.innerHTML = '<br>';
-            blockquote.parentNode.insertBefore(p, blockquote.nextSibling);
-            block.parentNode.removeChild(block);
-            if (!blockquote.textContent.trim() && !blockquote.children.length) {
-                blockquote.parentNode.removeChild(blockquote);
+        if (blockquote) {
+            const isEmpty = !block.textContent.trim();
+            if (isEmpty) {
+                const p = document.createElement('p');
+                p.innerHTML = '<br>';
+                blockquote.parentNode.insertBefore(p, blockquote.nextSibling);
+                block.parentNode.removeChild(block);
+                if (!blockquote.textContent.trim() && !blockquote.children.length) {
+                    blockquote.parentNode.removeChild(blockquote);
+                }
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+                this.emitChange();
+                return;
             }
+
+            const newP = document.createElement('p');
+            const { startContainer, startOffset } = range;
+
+            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
+                const text = startContainer.textContent;
+                const before = text.slice(0, startOffset);
+                const after = text.slice(startOffset);
+                startContainer.textContent = before;
+                if (after) newP.textContent = after;
+            }
+
+            if (!newP.textContent) newP.innerHTML = '<br>';
+
+            block.parentNode.insertBefore(newP, block.nextSibling);
+
             const newRange = document.createRange();
-            newRange.setStart(p, 0);
+            const targetNode = newP.firstChild || newP;
+            newRange.setStart(targetNode, 0);
             newRange.collapse(true);
             this.selection.setRange(newRange);
+
             this.emitChange();
             return;
         }
 
-        const newP = document.createElement('p');
-        const { startContainer, startOffset } = range;
+        const codeEl = (() => {
+            let node = range.startContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            return node instanceof HTMLElement ? node.closest('code') : null;
+        })();
 
-        if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
-            const text = startContainer.textContent;
-            const before = text.slice(0, startOffset);
-            const after = text.slice(startOffset);
-            startContainer.textContent = before;
-            if (after) newP.textContent = after;
+        if (codeEl) {
+            const { startContainer, startOffset } = range;
+
+            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
+                const text = startContainer.textContent;
+                const before = text.slice(0, startOffset);
+                const after = text.slice(startOffset);
+                startContainer.textContent = before;
+
+                const newP = document.createElement('p');
+                if (after) {
+                    newP.textContent = after;
+                } else {
+                    newP.innerHTML = '<br>';
+                }
+
+                block.parentNode.insertBefore(newP, block.nextSibling);
+
+                if (!codeEl.textContent.trim()) {
+                    const parent = codeEl.parentNode;
+                    const textNode = document.createTextNode('');
+                    parent.replaceChild(textNode, codeEl);
+                }
+
+                const newRange = document.createRange();
+                const targetNode = newP.firstChild || newP;
+                newRange.setStart(targetNode, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+            } else {
+                const newP = document.createElement('p');
+                newP.innerHTML = '<br>';
+                block.parentNode.insertBefore(newP, block.nextSibling);
+                const newRange = document.createRange();
+                newRange.setStart(newP, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+            }
+
+            this.emitChange();
         }
-
-        if (!newP.textContent) newP.innerHTML = '<br>';
-
-        block.parentNode.insertBefore(newP, block.nextSibling);
-
-        const newRange = document.createRange();
-        const targetNode = newP.firstChild || newP;
-        newRange.setStart(targetNode, 0);
-        newRange.collapse(true);
-        this.selection.setRange(newRange);
-
-        this.emitChange();
     }
 
     _insertBreakInPre(range) {

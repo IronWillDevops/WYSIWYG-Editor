@@ -455,7 +455,7 @@ describe('Editor', () => {
             resetActiveElement();
         });
 
-        it('does nothing when Enter is pressed outside a <pre> or blockquote', () => {
+        it('does nothing when Enter is pressed outside a <pre>, blockquote or <code>', () => {
             const editor = withActiveFocus(new Editor(textarea));
             editor.root.innerHTML = '<p>hello</p>';
 
@@ -468,6 +468,94 @@ describe('Editor', () => {
 
             editor.handleEnter(createEnterEvent());
             expect(editor.root.innerHTML).toBe('<p>hello</p>');
+            resetActiveElement();
+        });
+
+        it('splits paragraph and exits inline <code> on Enter at end of code', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code> more';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].innerHTML).toBe('text <code>code</code> more');
+            expect(ps[1].innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits text after inline <code> into new paragraph without code', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code> more';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 2);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].innerHTML).toBe('text <code>co</code> more');
+            expect(ps[1].textContent).toBe('de');
+            resetActiveElement();
+        });
+
+        it('removes empty <code> after split on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = '<code>code</code>';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].querySelector('code')).toBeNull();
+            expect(ps[1].textContent).toBe('code');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside inline <code>', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code>';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(1);
             resetActiveElement();
         });
     });
