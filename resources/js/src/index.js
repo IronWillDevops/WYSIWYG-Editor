@@ -3,18 +3,20 @@ import EditorCore from './core/Editor.js';
 import Toolbar from './toolbar/Toolbar.js';
 import './modules/register.js';
 
-/** @type {Map<HTMLElement, EditorCore>} */
-const instances = new Map();
+/** @type {WeakMap<HTMLElement, EditorCore>} */
+const instances = new WeakMap();
+/** @type {Set<EditorCore>} */
+const allInstances = new Set();
 
 /**
  * Public facade matching the TinyMCE-style bootstrap convention:
  *
- *   Editor.init('#editor', { theme: 'dark' });
+ *   InkForgeEditor.init('#editor', { theme: 'dark' });
  *
  * Resolves a selector or element to a <textarea>, mounts the contenteditable
  * surface + toolbar, and returns the underlying Editor instance.
  */
-const Editor = {
+const InkForgeEditor = {
     /**
      * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
      * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -38,7 +40,11 @@ const Editor = {
         editor.on('destroy', () => toolbar.destroy());
 
         instances.set(textarea, editor);
-        editor.on('destroy', () => instances.delete(textarea));
+        allInstances.add(editor);
+        editor.on('destroy', () => {
+            instances.delete(textarea);
+            allInstances.delete(editor);
+        });
 
         return editor;
     },
@@ -54,11 +60,11 @@ const Editor = {
 
     /** Destroys every editor instance currently mounted on the page. */
     destroyAll() {
-        instances.forEach((editor) => editor.destroy());
-        instances.clear();
+        allInstances.forEach((editor) => editor.destroy());
+        allInstances.clear();
     },
 
     registerPlugin: EditorCore.registerPlugin,
 };
 
-export default Editor;
+export default InkForgeEditor;

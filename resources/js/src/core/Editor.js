@@ -62,7 +62,10 @@ export default class Editor {
         this.bindEvents();
         this.applyTheme(this.options.theme);
 
-        this.loadPlugins();
+        this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300);
+        this.loadPlugins().catch((err) => {
+            console.error('InkForge Editor: plugin loading failed', err);
+        });
         this.setupAutosave();
 
         this.events.emit('init', this);
@@ -180,8 +183,16 @@ export default class Editor {
         return null;
     }
 
+    _debounce(fn, delay) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn(...args), delay);
+        };
+    }
+
     emitChange() {
-        this.syncTextarea();
+        this._debouncedSyncTextarea();
         this.events.emit('change', this.getHTML());
     }
 
@@ -291,12 +302,18 @@ export default class Editor {
      * built-in features (link, image, table, ...) equally pluggable while
      * still available out of the box without extra configuration.
      */
-    loadPlugins() {
+    async loadPlugins() {
         const disabled = new Set(this.options.disabledPlugins ?? []);
+        const promises = [];
         pluginRegistry.forEach((factory, name) => {
             if (disabled.has(name)) return;
-            this.plugins.set(name, factory(this));
+            promises.push(
+                Promise.resolve(factory(this)).then((instance) => {
+                    this.plugins.set(name, instance);
+                })
+            );
         });
+        await Promise.all(promises);
     }
 
     /**
