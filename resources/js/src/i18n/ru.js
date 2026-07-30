@@ -29,8 +29,6 @@ export default {
     note: 'Вставить заметку',
     emoji: 'Эмодзи',
     specialChars: 'Специальные символы',
-    blockFormat: 'Стиль абзаца',
-
     default: 'По умолчанию',
     insert: 'Вставить',
     update: 'Обновить',

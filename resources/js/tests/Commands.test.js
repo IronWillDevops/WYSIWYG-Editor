@@ -56,53 +56,6 @@ describe('Commands', () => {
         expect(blocks).toEqual([]);
     });
 
-    it('setBlockFormat replaces current block with new tag', () => {
-        const p = root.querySelector('p');
-        const range = document.createRange();
-        range.selectNodeContents(p.firstChild);
-        editor.selection.setRange(range);
-
-        commands.setBlockFormat('h2');
-        expect(root.querySelector('h2')).not.toBeNull();
-        expect(root.querySelector('h2').textContent).toBe('hello world');
-    });
-
-    it('setBlockFormat applies blockquote', () => {
-        const p = root.querySelector('p');
-        const range = document.createRange();
-        range.selectNodeContents(p.firstChild);
-        editor.selection.setRange(range);
-
-        commands.setBlockFormat('blockquote');
-        expect(root.querySelector('blockquote')).not.toBeNull();
-        expect(root.querySelector('blockquote').textContent).toBe('hello world');
-    });
-
-    it('setBlockFormat toggles blockquote back to paragraph', () => {
-        root.innerHTML = '<blockquote>quoted text</blockquote>';
-        const bq = root.querySelector('blockquote');
-        const range = document.createRange();
-        range.selectNodeContents(bq.firstChild);
-        editor.selection.setRange(range);
-
-        commands.setBlockFormat('blockquote');
-        expect(root.querySelector('blockquote')).toBeNull();
-        const p = root.querySelector('p');
-        expect(p).not.toBeNull();
-        expect(p.textContent).toBe('quoted text');
-    });
-
-    it('setBlockFormat uses formatBlock when no block element found', () => {
-        document.execCommand = vi.fn();
-        root.innerHTML = 'plain text';
-        const range = document.createRange();
-        range.selectNodeContents(root.firstChild);
-        editor.selection.setRange(range);
-
-        commands.setBlockFormat('h3');
-        expect(document.execCommand).toHaveBeenCalledWith('formatBlock', false, '<h3>');
-    });
-
     it('setInlineStyle applies style via wrapping span', () => {
         const textNode = root.querySelector('p').firstChild;
         const range = document.createRange();

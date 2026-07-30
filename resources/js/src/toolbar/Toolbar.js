@@ -3,7 +3,6 @@ import Localization from '../i18n/Localization.js';
 
 const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
-    ['blockFormat'],
     ['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'],
     ['forecolor', 'backcolor', 'removeFormat'],
     ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'],
@@ -103,7 +102,7 @@ export default class Toolbar {
         def.options.forEach(([value, text]) => {
             const option = document.createElement('option');
             option.value = value;
-            option.textContent = this._translateOption(locale, id, value, text);
+            option.textContent = text;
             select.appendChild(option);
         });
 
@@ -142,28 +141,6 @@ export default class Toolbar {
         wrapper.appendChild(input);
         this.buttons.set(id, wrapper);
         return wrapper;
-    }
-
-    _translateOption(locale, id, value, text) {
-        if (id === 'blockFormat') {
-            const keyMap = {
-                p: 'paragraph',
-                h1: 'heading1',
-                h2: 'heading2',
-                h3: 'heading3',
-                h4: 'heading4',
-                h5: 'heading5',
-                h6: 'heading6',
-                blockquote: 'blockquote',
-                pre: 'preformatted',
-            };
-            const key = keyMap[value];
-            if (key) {
-                const t = Localization.t(locale, key);
-                if (t !== key) return t;
-            }
-        }
-        return text;
     }
 
     /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
@@ -244,21 +221,6 @@ export default class Toolbar {
             }
             blockquoteBtn.classList.toggle('is-active', isBlockquote);
         }
-
-        this._syncBlockFormat(block);
-    }
-
-    _syncBlockFormat(block) {
-        const select = this.buttons.get('blockFormat');
-        if (!(select instanceof HTMLSelectElement)) return;
-        const tag = block ? block.tagName.toLowerCase() : 'p';
-        for (const [value] of ToolbarConfig.blockFormat.options) {
-            if (value === tag) {
-                select.value = value;
-                return;
-            }
-        }
-        select.value = 'p';
     }
 
     setEnabled(id, enabled) {

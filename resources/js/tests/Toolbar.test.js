@@ -50,13 +50,6 @@ describe('Toolbar', () => {
         expect(btn.tagName).toBe('BUTTON');
     });
 
-    it('renders a select for blockFormat', () => {
-        toolbar = new Toolbar(editor);
-        const select = toolbar.buttons.get('blockFormat');
-        expect(select).not.toBeNull();
-        expect(select.tagName).toBe('SELECT');
-    });
-
     it('renders a color picker for forecolor', () => {
         toolbar = new Toolbar(editor);
         const wrapper = toolbar.buttons.get('forecolor');
@@ -158,30 +151,6 @@ describe('Toolbar', () => {
         const btn = toolbar.buttons.get('blockquote');
         toolbar.syncActiveStates();
         expect(btn.classList.contains('is-active')).toBe(true);
-    });
-
-    it('syncs blockFormat select to h2 when cursor is inside an h2', () => {
-        const h2 = document.createElement('h2');
-        h2.textContent = 'heading';
-        editor.root.appendChild(h2);
-
-        editor.selection.getBlockElement = vi.fn(() => h2);
-        toolbar = new Toolbar(editor);
-        const select = toolbar.buttons.get('blockFormat');
-        toolbar.syncActiveStates();
-        expect(select.value).toBe('h2');
-    });
-
-    it('syncs blockFormat select to p when cursor is inside a paragraph', () => {
-        const p = document.createElement('p');
-        p.textContent = 'text';
-        editor.root.appendChild(p);
-
-        editor.selection.getBlockElement = vi.fn(() => p);
-        toolbar = new Toolbar(editor);
-        const select = toolbar.buttons.get('blockFormat');
-        toolbar.syncActiveStates();
-        expect(select.value).toBe('p');
     });
 
 });

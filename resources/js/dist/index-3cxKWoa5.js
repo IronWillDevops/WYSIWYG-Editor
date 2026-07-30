@@ -1,7 +1,7 @@
-var w = Object.defineProperty;
-var L = (s, e, t) => e in s ? w(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var b = (s, e, t) => L(s, typeof e != "symbol" ? e + "" : e, t);
-class H {
+var k = Object.defineProperty;
+var w = (s, e, t) => e in s ? k(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
+var b = (s, e, t) => w(s, typeof e != "symbol" ? e + "" : e, t);
+class L {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class H {
     this.listeners.clear();
   }
 }
-class S {
+class H {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class S {
     this.root.focus(), this.restore();
   }
 }
-class C {
+class S {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -151,9 +151,9 @@ class C {
    * @param {(bookmark: object) => void} [options.restoreBookmark]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: o = 1e3, debounceMs: n = 300, saveBookmark: i, restoreBookmark: r, onChange: h }) {
+  constructor({ getContent: e, setContent: t, maxSteps: o = 1e3, debounceMs: n = 300, saveBookmark: i, restoreBookmark: r, onChange: d }) {
     this.getContent = e, this.setContent = t, this.maxSteps = o, this.debounceMs = n, this.saveBookmark = i ?? (() => null), this.restoreBookmark = r ?? (() => {
-    }), this.onChange = h ?? (() => {
+    }), this.onChange = d ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push({ html: this.getContent(), bookmark: null });
   }
   /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -250,9 +250,6 @@ class M {
       case "backColor":
         t ? document.execCommand("hiliteColor", !1, t) : this.clearColor("backgroundColor");
         break;
-      case "blockFormat":
-        this.setBlockFormat(t);
-        break;
       case "lineHeight":
         this.setInlineStyle("lineHeight", t, !0);
         break;
@@ -273,29 +270,6 @@ class M {
     } catch {
       return !1;
     }
-  }
-  /**
-   * Replaces the current block element's tag (p, h1-h6, blockquote, pre).
-   * If the block is already the target tag, toggles back to <p>.
-   * @param {string} tagName
-   */
-  setBlockFormat(e) {
-    const t = this.selection.getBlockElement();
-    if (!t || t === this.root) {
-      document.execCommand("formatBlock", !1, `<${e}>`);
-      return;
-    }
-    if (t.tagName === e.toUpperCase()) {
-      const i = document.createElement("p");
-      i.innerHTML = t.innerHTML, t.replaceWith(i);
-      const r = document.createRange();
-      r.selectNodeContents(i), r.collapse(!1), this.selection.setRange(r);
-      return;
-    }
-    const o = document.createElement(e);
-    o.innerHTML = t.innerHTML, t.replaceWith(o);
-    const n = document.createRange();
-    n.selectNodeContents(o), n.collapse(!1), this.selection.setRange(n);
   }
   /**
    * Sets the text direction (ltr/rtl) on the current block element.
@@ -346,17 +320,17 @@ class M {
     if (!t) return;
     const o = this.selection.closest("li");
     if (o) {
-      const h = o.closest("ul, ol");
-      h && h.tagName.toLowerCase() === e ? this.unwrapList(h) : h && this.convertList(h, e);
+      const d = o.closest("ul, ol");
+      d && d.tagName.toLowerCase() === e ? this.unwrapList(d) : d && this.convertList(d, e);
       return;
     }
     const n = this.getBlocksInRange(t);
     if (!n.length) return;
     const i = document.createElement(e);
-    n.forEach((h) => {
+    n.forEach((d) => {
       const c = document.createElement("li");
-      c.innerHTML = h.innerHTML || "<br>", i.appendChild(c);
-    }), n[0].replaceWith(i), n.slice(1).forEach((h) => h.remove());
+      c.innerHTML = d.innerHTML || "<br>", i.appendChild(c);
+    }), n[0].replaceWith(i), n.slice(1).forEach((d) => d.remove());
     const r = document.createRange();
     r.selectNodeContents(i.lastElementChild), r.collapse(!1), this.selection.setRange(r);
   }
@@ -368,11 +342,11 @@ class M {
    */
   getBlocksInRange(e) {
     const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), o = (c) => {
-      let d = c.nodeType === Node.TEXT_NODE ? c.parentElement : c;
-      for (; d && d !== this.root; ) {
-        if (d instanceof HTMLElement && d.parentElement === this.root && t.has(d.tagName))
-          return d;
-        d = d.parentElement;
+      let h = c.nodeType === Node.TEXT_NODE ? c.parentElement : c;
+      for (; h && h !== this.root; ) {
+        if (h instanceof HTMLElement && h.parentElement === this.root && t.has(h.tagName))
+          return h;
+        h = h.parentElement;
       }
       return null;
     }, n = o(e.startContainer);
@@ -380,9 +354,9 @@ class M {
     const i = o(e.endContainer) ?? n;
     if (n === i) return [n];
     const r = [];
-    let h = n;
-    for (; h && (r.push(h), h !== i); )
-      h = h.nextElementSibling;
+    let d = n;
+    for (; d && (r.push(d), d !== i); )
+      d = d.nextElementSibling;
     return r.length ? r : [n];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -418,13 +392,13 @@ class M {
     let o = t.commonAncestorContainer;
     if (o.nodeType === Node.TEXT_NODE && (o = o.parentElement), !(o instanceof HTMLElement)) return;
     ((i = o.style) != null && i.length ? [o, ...o.querySelectorAll("*")] : [...o.querySelectorAll("*")]).forEach((r) => {
-      var h;
+      var d;
       try {
         if (!t.intersectsNode(r)) return;
       } catch {
         return;
       }
-      if ((h = r.style) != null && h[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
+      if ((d = r.style) != null && d[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
         const c = r.parentNode;
         if (!c) return;
         for (; r.firstChild; ) c.insertBefore(r.firstChild, r);
@@ -466,7 +440,7 @@ class M {
     this.editor.emitChange();
   }
 }
-const z = /* @__PURE__ */ new Set([
+const C = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -567,8 +541,8 @@ const z = /* @__PURE__ */ new Set([
   mask: /* @__PURE__ */ new Set(["id"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, T = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class x {
+}, z = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class T {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -576,7 +550,7 @@ class x {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : z, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, o]) => [t, new Set(o)])) : E, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : T;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : C, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, o]) => [t, new Set(o)])) : E, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : z;
   }
   /**
    * @param {string} dirtyHtml
@@ -663,7 +637,7 @@ class x {
     }
   }
 }
-const R = {
+const x = {
   theme: "auto",
   locale: "en",
   height: 420,
@@ -677,7 +651,7 @@ class v {
    */
   constructor(e, t = {}) {
     var o, n;
-    this.textarea = e, this.options = { ...R, ...t }, this.events = new H(), this.sanitizer = new x(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new S(this.root), this.commands = new M(this), this.history = new C({
+    this.textarea = e, this.options = { ...x, ...t }, this.events = new L(), this.sanitizer = new T(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new H(this.root), this.commands = new M(this), this.history = new S({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -735,8 +709,8 @@ class v {
     if (!n || !i) return;
     const r = document.createRange();
     r.setStart(n.node, Math.min(n.offset, (n.node.textContent || "").length)), r.setEnd(i.node, Math.min(i.offset, (i.node.textContent || "").length));
-    const h = window.getSelection();
-    h && (h.removeAllRanges(), h.addRange(r));
+    const d = window.getSelection();
+    d && (d.removeAllRanges(), d.addRange(r));
   }
   /** Find text node and offset at a given character position from root start. */
   nodeAtOffset(e) {
@@ -962,7 +936,7 @@ const a = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   anchor: a('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
   listProps: a('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
 };
-class A {
+class R {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -973,11 +947,11 @@ class A {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    * @param {() => void} [config.onClose]
    */
-  constructor(e, { title: t, bodyHtml: o, confirmLabel: n = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: h }) {
+  constructor(e, { title: t, bodyHtml: o, confirmLabel: n = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: d }) {
     b(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
-    this.container = e, this.onConfirm = r, this.onClose = h, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
+    this.container = e, this.onConfirm = r, this.onClose = d, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
             <form class="ife-dialog" role="dialog" aria-modal="true" aria-label="${t}">
                 <header class="ife-dialog__header">
                     <h2>${t}</h2>
@@ -990,11 +964,11 @@ class A {
                 </footer>
             </form>
         `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((c) => {
-      c.addEventListener("click", (d) => d.stopPropagation()), c.addEventListener("keydown", (d) => {
-        d.key !== "Escape" && d.stopPropagation();
+      c.addEventListener("click", (h) => h.stopPropagation()), c.addEventListener("keydown", (h) => {
+        h.key !== "Escape" && h.stopPropagation();
       });
     }), this.overlay.querySelectorAll("button").forEach((c) => {
-      c.addEventListener("mousedown", (d) => d.preventDefault());
+      c.addEventListener("mousedown", (h) => h.preventDefault());
     }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (c) => {
       c.target === this.overlay && this.close();
     }), this.form.addEventListener("submit", (c) => {
@@ -1025,25 +999,9 @@ class A {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const k = {
+const A = {
   undo: { icon: l.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
   redo: { icon: l.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
-  blockFormat: {
-    label: "Paragraph style",
-    type: "select",
-    options: [
-      ["p", "Paragraph"],
-      ["h1", "Heading 1"],
-      ["h2", "Heading 2"],
-      ["h3", "Heading 3"],
-      ["h4", "Heading 4"],
-      ["h5", "Heading 5"],
-      ["h6", "Heading 6"],
-      ["blockquote", "Blockquote"],
-      ["pre", "Preformatted"]
-    ],
-    onChange: (s, e) => s.commands.exec("blockFormat", e)
-  },
   bold: { icon: l.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
   italic: { icon: l.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
   underline: { icon: l.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
@@ -1087,14 +1045,38 @@ const k = {
   audio: { icon: l.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
   table: { icon: l.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
   hr: { icon: l.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
-  blockquote: { icon: l.blockquote, label: "Blockquote", type: "action", action: (s) => s.commands.exec("blockFormat", "blockquote") },
+  blockquote: { icon: l.blockquote, label: "Blockquote", type: "action", action: (s) => {
+    const e = s.selection.getBlockElement();
+    if (e && e !== s.root) {
+      if (e.tagName === "BLOCKQUOTE") {
+        const t = document.createElement("p");
+        t.innerHTML = e.innerHTML, e.replaceWith(t);
+      } else {
+        const t = document.createElement("blockquote");
+        t.innerHTML = e.innerHTML, e.replaceWith(t);
+      }
+      s.emitChange();
+    }
+  } },
   codeInline: {
     icon: l.code,
     label: "Inline code",
     type: "action",
     action: (s) => s.selection.wrap("code") && s.emitChange()
   },
-  codeBlock: { icon: l.codeBlock, label: "Code block", type: "action", action: (s) => s.commands.exec("blockFormat", "pre") },
+  codeBlock: { icon: l.codeBlock, label: "Code block", type: "action", action: (s) => {
+    const e = s.selection.getBlockElement();
+    if (e && e !== s.root) {
+      if (e.tagName === "PRE") {
+        const t = document.createElement("p");
+        t.innerHTML = e.innerHTML, e.replaceWith(t);
+      } else {
+        const t = document.createElement("pre");
+        t.innerHTML = e.innerHTML, e.replaceWith(t);
+      }
+      s.emitChange();
+    }
+  } },
   note: { icon: l.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
     icon: l.emoji,
@@ -1217,13 +1199,13 @@ const k = {
                         <option value="upper-roman" ${n === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, r = new A(s.wrapper, {
+            `, r = new R(s.wrapper, {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
-        onConfirm: (h) => {
-          const c = new FormData(h), d = c.get("start"), u = c.get("type");
-          s.history.push(), d ? t.setAttribute("start", String(d)) : t.removeAttribute("start"), u ? t.style.listStyleType = u : t.style.listStyleType = "", s.emitChange();
+        onConfirm: (d) => {
+          const c = new FormData(d), h = c.get("start"), u = c.get("type");
+          s.history.push(), h ? t.setAttribute("start", String(h)) : t.removeAttribute("start"), u ? t.style.listStyleType = u : t.style.listStyleType = "", s.emitChange();
         }
       });
       s.selection.save(), r.open();
@@ -1260,7 +1242,6 @@ const k = {
   note: "Insert note",
   emoji: "Emoji",
   specialChars: "Special characters",
-  blockFormat: "Paragraph style",
   default: "Default",
   insert: "Insert",
   update: "Update",
@@ -1325,7 +1306,6 @@ const k = {
   note: "Вставити нотатку",
   emoji: "Емодзі",
   specialChars: "Спеціальні символи",
-  blockFormat: "Стиль абзацу",
   default: "За замовчуванням",
   insert: "Вставити",
   update: "Оновити",
@@ -1390,7 +1370,6 @@ const k = {
   note: "Вставить заметку",
   emoji: "Эмодзи",
   specialChars: "Специальные символы",
-  blockFormat: "Стиль абзаца",
   default: "По умолчанию",
   insert: "Вставить",
   update: "Обновить",
@@ -1449,7 +1428,6 @@ const k = {
   }
 }, I = [
   ["undo", "redo"],
-  ["blockFormat"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
   ["forecolor", "backcolor", "removeFormat"],
   ["alignLeft", "alignCenter", "alignRight", "alignJustify"],
@@ -1474,7 +1452,7 @@ class D {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((o) => {
-        const n = k[o];
+        const n = A[o];
         if (!n) return;
         const i = this.buildControl(o, n);
         i && t.appendChild(i);
@@ -1500,8 +1478,8 @@ class D {
   buildSelect(e, t) {
     const o = this.editor.options.locale ?? "en", n = document.createElement("select");
     return n.className = "ife-toolbar__select", n.setAttribute("aria-label", m.t(o, e) !== e ? m.t(o, e) : t.label), t.options.forEach(([i, r]) => {
-      const h = document.createElement("option");
-      h.value = i, h.textContent = this._translateOption(o, e, i, r), n.appendChild(h);
+      const d = document.createElement("option");
+      d.value = i, d.textContent = r, n.appendChild(d);
     }), n.addEventListener("pointerdown", () => {
       this.editor.selection.save();
     }), n.addEventListener("mousedown", () => {
@@ -1518,26 +1496,6 @@ class D {
       this.editor.selection.restore(), this.editor.commands.exec(t.command, r.value);
     }), i.appendChild(r), this.buttons.set(e, i), i;
   }
-  _translateOption(e, t, o, n) {
-    if (t === "blockFormat") {
-      const r = {
-        p: "paragraph",
-        h1: "heading1",
-        h2: "heading2",
-        h3: "heading3",
-        h4: "heading4",
-        h5: "heading5",
-        h6: "heading6",
-        blockquote: "blockquote",
-        pre: "preformatted"
-      }[o];
-      if (r) {
-        const h = m.t(e, r);
-        if (h !== r) return h;
-      }
-    }
-    return n;
-  }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
   syncActiveStates() {
     Object.entries({
@@ -1549,9 +1507,9 @@ class D {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([c, d]) => {
+    }).forEach(([c, h]) => {
       const u = this.buttons.get(c);
-      u instanceof HTMLElement && u.classList.toggle("is-active", this.editor.commands.queryState(d));
+      u instanceof HTMLElement && u.classList.toggle("is-active", this.editor.commands.queryState(h));
     });
     const t = this.editor.selection.getBlockElement();
     let o = "";
@@ -1566,53 +1524,41 @@ class D {
       }
     }
     ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((c) => {
-      const d = this.buttons.get(c);
-      d instanceof HTMLElement && d.classList.toggle("is-active", o === c.replace("align", "").toLowerCase());
+      const h = this.buttons.get(c);
+      h instanceof HTMLElement && h.classList.toggle("is-active", o === c.replace("align", "").toLowerCase());
     });
     const n = this.buttons.get("ltr"), i = this.buttons.get("rtl");
     if (n instanceof HTMLElement && i instanceof HTMLElement) {
       let c = "";
       if (t) {
-        let d = t;
-        for (; d && d !== this.editor.root; ) {
-          if (d.dir) {
-            c = d.dir;
+        let h = t;
+        for (; h && h !== this.editor.root; ) {
+          if (h.dir) {
+            c = h.dir;
             break;
           }
-          d = d.parentElement;
+          h = h.parentElement;
         }
       }
       n.classList.toggle("is-active", c === "ltr"), i.classList.toggle("is-active", c === "rtl");
     }
     const r = this.buttons.get("markdown");
     r instanceof HTMLElement && r.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
-    const h = this.buttons.get("blockquote");
-    if (h instanceof HTMLElement) {
+    const d = this.buttons.get("blockquote");
+    if (d instanceof HTMLElement) {
       let c = !1;
       if (t) {
-        let d = t;
-        for (; d && d !== this.editor.root; ) {
-          if (d.tagName === "BLOCKQUOTE") {
+        let h = t;
+        for (; h && h !== this.editor.root; ) {
+          if (h.tagName === "BLOCKQUOTE") {
             c = !0;
             break;
           }
-          d = d.parentElement;
+          h = h.parentElement;
         }
       }
-      h.classList.toggle("is-active", c);
+      d.classList.toggle("is-active", c);
     }
-    this._syncBlockFormat(t);
-  }
-  _syncBlockFormat(e) {
-    const t = this.buttons.get("blockFormat");
-    if (!(t instanceof HTMLSelectElement)) return;
-    const o = e ? e.tagName.toLowerCase() : "p";
-    for (const [n] of k.blockFormat.options)
-      if (n === o) {
-        t.value = n;
-        return;
-      }
-    t.value = "p";
   }
   setEnabled(e, t) {
     const o = this.buttons.get(e);
@@ -1622,28 +1568,28 @@ class D {
     this.el.remove();
   }
 }
-const F = {
-  link: () => import("./LinkModule-BeBWWjrU.js"),
-  image: () => import("./ImageModule-Df0CN2hN.js"),
-  table: () => import("./TableModule-UouiVkM_.js"),
+const O = {
+  link: () => import("./LinkModule-DZWI16De.js"),
+  image: () => import("./ImageModule-DIKxSnbL.js"),
+  table: () => import("./TableModule-BL9go6dt.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-Da6KDFxM.js"),
-  note: () => import("./NoteModule-aPlFYiYp.js"),
-  media: () => import("./MediaModule-D8kcEQqI.js"),
+  find: () => import("./FindModule-DO6___pS.js"),
+  note: () => import("./NoteModule-D104O_Y2.js"),
+  media: () => import("./MediaModule-6SAR6Iwz.js"),
   markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-DcA8YzXz.js"),
+  statusBar: () => import("./StatusBar-r0KYtkD2.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-Dp7cAM1x.js")
+  templates: () => import("./TemplateModule-C9Nv521y.js")
 };
-Object.entries(F).forEach(([s, e]) => {
+Object.entries(O).forEach(([s, e]) => {
   v.registerPlugin(s, async (t) => {
     const { default: o } = await e();
     return new o(t);
   });
 });
-const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), O = {
+const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), F = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1677,9 +1623,9 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), O = {
   registerPlugin: v.registerPlugin
 };
 export {
-  A as D,
+  R as D,
   l as I,
   m as L,
-  O as a
+  F as a
 };
-//# sourceMappingURL=index-DW6YpM5I.js.map
+//# sourceMappingURL=index-3cxKWoa5.js.map

@@ -29,8 +29,6 @@ export default {
     note: 'Insert note',
     emoji: 'Emoji',
     specialChars: 'Special characters',
-    blockFormat: 'Paragraph style',
-
     default: 'Default',
     insert: 'Insert',
     update: 'Update',

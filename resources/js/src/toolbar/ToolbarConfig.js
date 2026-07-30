@@ -20,24 +20,6 @@ const ToolbarConfig = {
     undo: { icon: Icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', type: 'action', action: (e) => e.undo() },
     redo: { icon: Icons.redo, label: 'Redo', shortcut: 'Ctrl+Y', type: 'action', action: (e) => e.redo() },
 
-    blockFormat: {
-        label: 'Paragraph style',
-        type: 'select',
-        options: [
-            ['p', 'Paragraph'],
-            ['h1', 'Heading 1'],
-            ['h2', 'Heading 2'],
-            ['h3', 'Heading 3'],
-            ['h4', 'Heading 4'],
-            ['h5', 'Heading 5'],
-            ['h6', 'Heading 6'],
-            ['blockquote', 'Blockquote'],
-            ['pre', 'Preformatted'],
-        ],
-        onChange: (editor, value) => editor.commands.exec('blockFormat', value),
-    },
-
-
     bold: { icon: Icons.bold, label: 'Bold', shortcut: 'Ctrl+B', type: 'command', command: 'bold' },
     italic: { icon: Icons.italic, label: 'Italic', shortcut: 'Ctrl+I', type: 'command', command: 'italic' },
     underline: { icon: Icons.underline, label: 'Underline', shortcut: 'Ctrl+U', type: 'command', command: 'underline' },
@@ -87,14 +69,42 @@ const ToolbarConfig = {
     table: { icon: Icons.table, label: 'Insert table', type: 'action', action: (e) => e.module('table').openInsertDialog() },
     hr: { icon: Icons.hr, label: 'Horizontal rule', type: 'action', action: (e) => e.module('media').insertHorizontalRule() },
 
-    blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => e.commands.exec('blockFormat', 'blockquote') },
+    blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => {
+        const block = e.selection.getBlockElement();
+        if (block && block !== e.root) {
+            if (block.tagName === 'BLOCKQUOTE') {
+                const p = document.createElement('p');
+                p.innerHTML = block.innerHTML;
+                block.replaceWith(p);
+            } else {
+                const bq = document.createElement('blockquote');
+                bq.innerHTML = block.innerHTML;
+                block.replaceWith(bq);
+            }
+            e.emitChange();
+        }
+    } },
     codeInline: {
         icon: Icons.code,
         label: 'Inline code',
         type: 'action',
         action: (e) => e.selection.wrap('code') && e.emitChange(),
     },
-    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => e.commands.exec('blockFormat', 'pre') },
+    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => {
+        const block = e.selection.getBlockElement();
+        if (block && block !== e.root) {
+            if (block.tagName === 'PRE') {
+                const p = document.createElement('p');
+                p.innerHTML = block.innerHTML;
+                block.replaceWith(p);
+            } else {
+                const pre = document.createElement('pre');
+                pre.innerHTML = block.innerHTML;
+                block.replaceWith(pre);
+            }
+            e.emitChange();
+        }
+    } },
     note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note').open() },
 
     emoji: {
