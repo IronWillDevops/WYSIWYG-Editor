@@ -35,7 +35,7 @@ describe('MarkdownModule', () => {
     });
 
     it('parses markdown lists back into HTML', () => {
-        expect(module.markdownToHtml('- one\n- two')).toBe('<ul>\n<li>one</li>\n<li>two</li>\n</ul>');
+        expect(module.markdownToHtml('- one\n- two')).toBe('<ul><li>one</li><li>two</li></ul>');
     });
 
     it('round-trips bold/italic inline syntax', () => {

@@ -130,7 +130,7 @@ export default class MarkdownModule {
         });
 
         this.closeList(htmlLines, inList);
-        return htmlLines.join('\n');
+        return htmlLines.join('');
     }
 
     closeList(htmlLines, inList) {
