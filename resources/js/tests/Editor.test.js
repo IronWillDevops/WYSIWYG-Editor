@@ -41,14 +41,14 @@ describe('Editor', () => {
         const keydownAdds = document.addEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownAdds).toHaveLength(2);
+        expect(keydownAdds).toHaveLength(3);
 
         editor.destroy();
 
         const keydownRemoves = document.removeEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownRemoves).toHaveLength(2);
+        expect(keydownRemoves).toHaveLength(3);
         expect(keydownRemoves[0][1]).toBe(keydownAdds[0][1]);
         expect(keydownRemoves[1][1]).toBe(keydownAdds[1][1]);
     });
@@ -220,6 +220,125 @@ describe('Editor', () => {
             vi.spyOn(editor.commands, 'exec');
             editor.handleShortcut(createShortcutEvent({ key: 'b' }));
             expect(editor.commands.exec).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleEnter', () => {
+        function withActiveFocus(ed) {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => ed.root,
+            });
+            return ed;
+        }
+
+        function resetActiveElement() {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => document.body,
+            });
+        }
+
+        function createEnterEvent(overrides) {
+            return { preventDefault: vi.fn(), key: 'Enter', shiftKey: false, ...overrides };
+        }
+
+        it('does nothing when Enter is pressed outside a blockquote', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>hello</p>';
+            const range = document.createRange();
+            range.selectNodeContents(editor.root.firstChild);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<p>hello</p>');
+            resetActiveElement();
+        });
+
+        it('inserts a new paragraph inside blockquote on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 5);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('blockquote')).not.toBeNull();
+            const ps = editor.root.querySelectorAll('blockquote p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].textContent).toBe('hello');
+            expect(ps[1].innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits text at cursor position inside blockquote on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello world';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('blockquote p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].textContent).toBe('hello ');
+            expect(ps[1].textContent).toBe('world');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside blockquote', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 5);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('blockquote p').length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('does nothing when editor is destroyed', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.destroy();
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent());
+            expect(editor.history.push).not.toHaveBeenCalled();
+            resetActiveElement();
         });
     });
 

@@ -57,6 +57,7 @@ export default class Editor {
 
         this.handleShortcut = this.handleShortcut.bind(this);
         this.handleTableTab = this.handleTableTab.bind(this);
+        this.handleEnter = this.handleEnter.bind(this);
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
@@ -114,6 +115,7 @@ export default class Editor {
 
         document.addEventListener('keydown', this.handleShortcut);
         document.addEventListener('keydown', this.handleTableTab);
+        document.addEventListener('keydown', this.handleEnter);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -264,6 +266,48 @@ export default class Editor {
         tableModule.navigateToCell(backward ? 'prev' : 'next');
     }
 
+    /** @param {KeyboardEvent} event */
+    handleEnter(event) {
+        if (event.key !== 'Enter' || event.shiftKey) return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const block = this.selection.getBlockElement();
+        if (!block) return;
+
+        const blockquote = block.closest('blockquote');
+        if (!blockquote) return;
+
+        event.preventDefault();
+
+        const range = this.selection.getRange();
+        if (!range) return;
+
+        this.history.push();
+
+        const newP = document.createElement('p');
+        const { startContainer, startOffset } = range;
+
+        if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
+            const text = startContainer.textContent;
+            const before = text.slice(0, startOffset);
+            const after = text.slice(startOffset);
+            startContainer.textContent = before;
+            if (after) newP.textContent = after;
+        }
+
+        if (!newP.textContent) newP.innerHTML = '<br>';
+
+        block.parentNode.insertBefore(newP, block.nextSibling);
+
+        const newRange = document.createRange();
+        const targetNode = newP.firstChild || newP;
+        newRange.setStart(targetNode, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+
+        this.emitChange();
+    }
+
     handleDragOver() {
         if (this.destroyed) return;
         const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
@@ -390,6 +434,7 @@ export default class Editor {
         clearInterval(this.autosaveTimer);
         document.removeEventListener('keydown', this.handleShortcut);
         document.removeEventListener('keydown', this.handleTableTab);
+        document.removeEventListener('keydown', this.handleEnter);
         this.root.removeEventListener('dragover', this.handleDragOver);
         this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();

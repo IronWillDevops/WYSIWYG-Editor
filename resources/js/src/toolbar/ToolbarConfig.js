@@ -71,18 +71,24 @@ const ToolbarConfig = {
 
     blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => {
         const block = e.selection.getBlockElement();
-        if (block && block !== e.root) {
-            if (block.tagName === 'BLOCKQUOTE') {
-                const p = document.createElement('p');
-                p.innerHTML = block.innerHTML;
-                block.replaceWith(p);
-            } else {
-                const bq = document.createElement('blockquote');
-                bq.innerHTML = block.innerHTML;
-                block.replaceWith(bq);
-            }
-            e.emitChange();
+        if (!block || block === e.root) return;
+
+        const insideBq = block.tagName === 'BLOCKQUOTE' || block.closest('blockquote');
+        if (insideBq) {
+            // Unwrap: replace the outer blockquote with a plain <p>
+            const bq = block.tagName === 'BLOCKQUOTE' ? block : block.closest('blockquote');
+            e.history.push();
+            const p = document.createElement('p');
+            p.innerHTML = bq.innerHTML;
+            bq.replaceWith(p);
+        } else {
+            // Wrap: keep the block wrapper so Enter stays inside the blockquote
+            e.history.push();
+            const bq = document.createElement('blockquote');
+            bq.innerHTML = block.outerHTML;
+            block.replaceWith(bq);
         }
+        e.emitChange();
     } },
     codeInline: {
         icon: Icons.code,
