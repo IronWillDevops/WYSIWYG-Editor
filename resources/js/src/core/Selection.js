@@ -41,6 +41,7 @@ export default class Selection {
 
     restore() {
         if (this.savedRange) {
+            this.root.focus({preventScroll: true});
             this.setRange(this.savedRange);
         }
     }

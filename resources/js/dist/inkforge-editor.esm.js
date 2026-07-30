@@ -1,4 +1,4 @@
-import { a as f } from "./index-Cq8Mug0c.js";
+import { a as f } from "./index-wqXN1Tam.js";
 export {
   f as default
 };

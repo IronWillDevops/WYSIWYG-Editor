@@ -1,4 +1,4 @@
-import { D as s } from "./index-Cq8Mug0c.js";
+import { D as s } from "./index-wqXN1Tam.js";
 const i = {
   blank: {
     label: "Blank page",
@@ -56,4 +56,4 @@ class h {
 export {
   h as default
 };
-//# sourceMappingURL=TemplateModule-C1-_VjOW.js.map
+//# sourceMappingURL=TemplateModule-CLKxBs6L.js.map

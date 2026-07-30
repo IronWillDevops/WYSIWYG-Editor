@@ -122,6 +122,44 @@ describe('Font flow — save → restore → exec → verify', () => {
         expect(span.style.fontSize).toBe('24px');
     });
 
+    it('toolbar-style flow: mousedown saves, change restores and exec applies font-size', () => {
+        const textNode = root.querySelector('p').firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 6);
+        range.setEnd(textNode, 11);
+        sel.setRange(range);
+        expect(sel.getText()).toBe('world');
+
+        sel.save();
+        sel.setRange(document.createRange());
+        sel.restore();
+        commands.exec('fontSize', '24px');
+
+        const span = root.querySelector('span');
+        expect(span).not.toBeNull();
+        expect(span.textContent).toBe('world');
+        expect(span.style.fontSize).toBe('24px');
+    });
+
+    it('toolbar-style flow: font-family via pointerdown->change->exec', () => {
+        const textNode = root.querySelector('p').firstChild;
+        const range = document.createRange();
+        range.setStart(textNode, 0);
+        range.setEnd(textNode, 5);
+        sel.setRange(range);
+        expect(sel.getText()).toBe('hello');
+
+        sel.save();
+        sel.setRange(document.createRange());
+        sel.restore();
+        commands.exec('fontName', 'Georgia, serif');
+
+        const span = root.querySelector('span');
+        expect(span).not.toBeNull();
+        expect(span.textContent).toBe('hello');
+        expect(span.style.fontFamily).toBe('Georgia, serif');
+    });
+
     it('exec with fontName then fontSize applies both styles', () => {
         const textNode = root.querySelector('p').firstChild;
         const range = document.createRange();

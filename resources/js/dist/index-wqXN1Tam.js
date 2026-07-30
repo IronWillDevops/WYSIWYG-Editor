@@ -72,7 +72,7 @@ class C {
     return this.savedRange = e ? e.cloneRange() : null, this.savedRange;
   }
   restore() {
-    this.savedRange && this.setRange(this.savedRange);
+    this.savedRange && (this.root.focus({ preventScroll: !0 }), this.setRange(this.savedRange));
   }
   collapseToEnd() {
     const e = document.createRange();
@@ -360,8 +360,8 @@ class z {
     if (!i.length) return;
     const n = document.createElement(e);
     i.forEach((h) => {
-      const a = document.createElement("li");
-      a.innerHTML = h.innerHTML || "<br>", n.appendChild(a);
+      const c = document.createElement("li");
+      c.innerHTML = h.innerHTML || "<br>", n.appendChild(c);
     }), i[0].replaceWith(n), i.slice(1).forEach((h) => h.remove());
     const r = document.createRange();
     r.selectNodeContents(n.lastElementChild), r.collapse(!1), this.selection.setRange(r);
@@ -373,8 +373,8 @@ class z {
    * @returns {HTMLElement[]}
    */
   getBlocksInRange(e) {
-    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), o = (a) => {
-      let d = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
+    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), o = (c) => {
+      let d = c.nodeType === Node.TEXT_NODE ? c.parentElement : c;
       for (; d && d !== this.root; ) {
         if (d instanceof HTMLElement && d.parentElement === this.root && t.has(d.tagName))
           return d;
@@ -431,10 +431,10 @@ class z {
         return;
       }
       if ((h = r.style) != null && h[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
-        const a = r.parentNode;
-        if (!a) return;
-        for (; r.firstChild; ) a.insertBefore(r.firstChild, r);
-        a.removeChild(r);
+        const c = r.parentNode;
+        if (!c) return;
+        for (; r.firstChild; ) c.insertBefore(r.firstChild, r);
+        c.removeChild(r);
       }
     });
   }
@@ -921,52 +921,52 @@ class y {
     k.set(e, t);
   }
 }
-const l = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, c = {
-  undo: l('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
-  redo: l('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
-  bold: l('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
-  italic: l('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
-  underline: l('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
-  strikeThrough: l('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
-  superscript: l('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  subscript: l('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  formatColorText: l('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
-  clearFormat: l('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
-  formatColorFill: l('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
-  alignLeft: l('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
-  alignCenter: l('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
-  alignRight: l('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
-  alignJustify: l('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
-  listBulleted: l('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  listNumbered: l('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
-  checklist: l('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
-  link: l('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
-  unlink: l('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
-  image: l('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
-  videocam: l('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
-  audiotrack: l('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
-  table: l('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
-  hr: l('<path d="M2 11h20v2H2z"/>'),
-  blockquote: l('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
-  code: l('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
-  codeBlock: l('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
-  note: l('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
-  emoji: l('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
-  specialChars: l('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
-  find: l('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
-  sourceCode: l('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
-  fullscreen: l('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
-  indent: l('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: l('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  wordCount: l('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
-  ltr: l('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
-  rtl: l('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
-  markdown: l('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
-  date: l('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
-  time: l('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
-  template: l('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
-  anchor: l('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
-  listProps: l('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
+const a = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, l = {
+  undo: a('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
+  redo: a('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
+  bold: a('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
+  italic: a('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
+  underline: a('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
+  strikeThrough: a('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
+  superscript: a('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  subscript: a('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  formatColorText: a('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
+  clearFormat: a('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
+  formatColorFill: a('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
+  alignLeft: a('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
+  alignCenter: a('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
+  alignRight: a('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
+  alignJustify: a('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
+  listBulleted: a('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  listNumbered: a('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
+  checklist: a('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
+  link: a('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
+  unlink: a('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
+  image: a('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
+  videocam: a('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
+  audiotrack: a('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
+  table: a('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
+  hr: a('<path d="M2 11h20v2H2z"/>'),
+  blockquote: a('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
+  code: a('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
+  codeBlock: a('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
+  note: a('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
+  emoji: a('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
+  specialChars: a('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
+  find: a('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
+  sourceCode: a('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
+  fullscreen: a('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
+  indent: a('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  outdent: a('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: a('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  ltr: a('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
+  rtl: a('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
+  markdown: a('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
+  date: a('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
+  time: a('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
+  template: a('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
+  anchor: a('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
+  listProps: a('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
 };
 class R {
   /**
@@ -995,16 +995,16 @@ class R {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${i}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("click", (d) => d.stopPropagation()), a.addEventListener("keydown", (d) => {
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((c) => {
+      c.addEventListener("click", (d) => d.stopPropagation()), c.addEventListener("keydown", (d) => {
         d.key !== "Escape" && d.stopPropagation();
       });
-    }), this.overlay.querySelectorAll("button").forEach((a) => {
-      a.addEventListener("mousedown", (d) => d.preventDefault());
-    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
-      a.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), a.stopPropagation(), this.onConfirm(this.form), this.close();
+    }), this.overlay.querySelectorAll("button").forEach((c) => {
+      c.addEventListener("mousedown", (d) => d.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (c) => {
+      c.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (c) => {
+      c.preventDefault(), c.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
@@ -1032,8 +1032,8 @@ class R {
   }
 }
 const v = {
-  undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
-  redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
+  undo: { icon: l.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
+  redo: { icon: l.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
   blockFormat: {
     label: "Paragraph style",
     type: "select",
@@ -1077,37 +1077,37 @@ const v = {
     ],
     onChange: (s, e) => s.commands.exec("fontSize", e)
   },
-  bold: { icon: c.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: c.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: c.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: c.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: c.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: c.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: c.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: c.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+  bold: { icon: l.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: l.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: l.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: l.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: l.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: l.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: l.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: l.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: c.clearFormat,
+    icon: l.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: c.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: c.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: c.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: c.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: c.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: c.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: l.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: l.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: l.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: l.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: l.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: l.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: c.checklist,
+    icon: l.checklist,
     label: "Checklist",
     type: "action",
     action: (s) => s.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: c.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: c.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: c.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
+  indent: { icon: l.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: l.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: l.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
   unlink: {
-    icon: c.unlink,
+    icon: l.unlink,
     label: "Remove link",
     type: "action",
     action: (s) => {
@@ -1115,63 +1115,63 @@ const v = {
       e && s.module("link").remove(e);
     }
   },
-  image: { icon: c.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
-  video: { icon: c.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
-  audio: { icon: c.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
-  table: { icon: c.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
-  hr: { icon: c.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
-  blockquote: { icon: c.blockquote, label: "Blockquote", type: "action", action: (s) => s.commands.exec("blockFormat", "blockquote") },
+  image: { icon: l.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
+  video: { icon: l.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
+  audio: { icon: l.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
+  table: { icon: l.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
+  hr: { icon: l.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
+  blockquote: { icon: l.blockquote, label: "Blockquote", type: "action", action: (s) => s.commands.exec("blockFormat", "blockquote") },
   codeInline: {
-    icon: c.code,
+    icon: l.code,
     label: "Inline code",
     type: "action",
     action: (s) => s.selection.wrap("code") && s.emitChange()
   },
-  codeBlock: { icon: c.codeBlock, label: "Code block", type: "action", action: (s) => s.commands.exec("blockFormat", "pre") },
-  note: { icon: c.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
+  codeBlock: { icon: l.codeBlock, label: "Code block", type: "action", action: (s) => s.commands.exec("blockFormat", "pre") },
+  note: { icon: l.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
-    icon: c.emoji,
+    icon: l.emoji,
     label: "Emoji",
     type: "action",
     action: (s, e) => s.module("emoji").open(e)
   },
   specialChars: {
-    icon: c.specialChars,
+    icon: l.specialChars,
     label: "Special characters",
     type: "action",
     action: (s) => s.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: c.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
+  find: { icon: l.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
   sourceCode: {
-    icon: c.sourceCode,
+    icon: l.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
     action: (s) => s.module("codeView").toggle()
   },
   fullscreen: {
-    icon: c.fullscreen,
+    icon: l.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
     action: (s) => s.module("fullscreen").toggle()
   },
   ltr: {
-    icon: c.ltr,
+    icon: l.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: c.rtl,
+    icon: l.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: c.markdown,
+    icon: l.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
@@ -1187,7 +1187,7 @@ const v = {
     }
   },
   date: {
-    icon: c.date,
+    icon: l.date,
     label: "Insert date",
     type: "action",
     action: (s) => {
@@ -1196,7 +1196,7 @@ const v = {
     }
   },
   time: {
-    icon: c.time,
+    icon: l.time,
     label: "Insert time",
     type: "action",
     action: (s) => {
@@ -1205,7 +1205,7 @@ const v = {
     }
   },
   anchor: {
-    icon: c.anchor,
+    icon: l.anchor,
     label: "Insert anchor",
     type: "action",
     action: (s) => {
@@ -1219,7 +1219,7 @@ const v = {
     }
   },
   templates: {
-    icon: c.template,
+    icon: l.template,
     label: "Content templates",
     type: "action",
     action: (s) => {
@@ -1228,7 +1228,7 @@ const v = {
     }
   },
   listProps: {
-    icon: c.listProps,
+    icon: l.listProps,
     label: "List properties",
     type: "action",
     action: (s) => {
@@ -1255,7 +1255,7 @@ const v = {
         bodyHtml: n,
         confirmLabel: "Apply",
         onConfirm: (h) => {
-          const a = new FormData(h), d = a.get("start"), u = a.get("type");
+          const c = new FormData(h), d = c.get("start"), u = c.get("type");
           s.history.push(), d ? t.setAttribute("start", String(d)) : t.removeAttribute("start"), u ? t.style.listStyleType = u : t.style.listStyleType = "", s.emitChange();
         }
       });
@@ -1538,14 +1538,14 @@ class I {
   }
   buildSelect(e, t) {
     const o = this.editor.options.locale ?? "en", i = document.createElement("select");
-    i.className = "ife-toolbar__select", i.setAttribute("aria-label", m.t(o, e) !== e ? m.t(o, e) : t.label), t.options.forEach(([r, h]) => {
-      const a = document.createElement("option");
-      a.value = r, a.textContent = this._translateOption(o, e, r, h), i.appendChild(a);
-    });
-    const n = () => this.editor.selection.save();
-    return i.addEventListener("mousedown", (r) => {
-      r.stopPropagation(), n();
-    }), i.addEventListener("focus", n), i.addEventListener("change", () => {
+    return i.className = "ife-toolbar__select", i.setAttribute("aria-label", m.t(o, e) !== e ? m.t(o, e) : t.label), t.options.forEach(([n, r]) => {
+      const h = document.createElement("option");
+      h.value = n, h.textContent = this._translateOption(o, e, n, r), i.appendChild(h);
+    }), i.addEventListener("pointerdown", () => {
+      this.editor.selection.save();
+    }), i.addEventListener("mousedown", () => {
+      this.editor.selection.save();
+    }), i.addEventListener("change", () => {
       this.editor.selection.restore(), t.onChange(this.editor, i.value), this.syncActiveStates();
     }), this.buttons.set(e, i), i;
   }
@@ -1591,57 +1591,57 @@ class I {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([a, d]) => {
-      const u = this.buttons.get(a);
+    }).forEach(([c, d]) => {
+      const u = this.buttons.get(c);
       u instanceof HTMLElement && u.classList.toggle("is-active", this.editor.commands.queryState(d));
     });
     const t = this.editor.selection.getBlockElement();
     let o = "";
     if (t) {
-      let a = t;
-      for (; a && a !== this.editor.root; ) {
-        if (a.style.textAlign) {
-          o = a.style.textAlign;
+      let c = t;
+      for (; c && c !== this.editor.root; ) {
+        if (c.style.textAlign) {
+          o = c.style.textAlign;
           break;
         }
-        a = a.parentElement;
+        c = c.parentElement;
       }
     }
-    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((a) => {
-      const d = this.buttons.get(a);
-      d instanceof HTMLElement && d.classList.toggle("is-active", o === a.replace("align", "").toLowerCase());
+    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((c) => {
+      const d = this.buttons.get(c);
+      d instanceof HTMLElement && d.classList.toggle("is-active", o === c.replace("align", "").toLowerCase());
     });
     const i = this.buttons.get("ltr"), n = this.buttons.get("rtl");
     if (i instanceof HTMLElement && n instanceof HTMLElement) {
-      let a = "";
+      let c = "";
       if (t) {
         let d = t;
         for (; d && d !== this.editor.root; ) {
           if (d.dir) {
-            a = d.dir;
+            c = d.dir;
             break;
           }
           d = d.parentElement;
         }
       }
-      i.classList.toggle("is-active", a === "ltr"), n.classList.toggle("is-active", a === "rtl");
+      i.classList.toggle("is-active", c === "ltr"), n.classList.toggle("is-active", c === "rtl");
     }
     const r = this.buttons.get("markdown");
     r instanceof HTMLElement && r.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
     const h = this.buttons.get("blockquote");
     if (h instanceof HTMLElement) {
-      let a = !1;
+      let c = !1;
       if (t) {
         let d = t;
         for (; d && d !== this.editor.root; ) {
           if (d.tagName === "BLOCKQUOTE") {
-            a = !0;
+            c = !0;
             break;
           }
           d = d.parentElement;
         }
       }
-      h.classList.toggle("is-active", a);
+      h.classList.toggle("is-active", c);
     }
     this._syncSelectValue("fontFamily", this._getComputedFontFamily()), this._syncSelectValue("fontSize", this._getComputedFontSize()), this._syncBlockFormat(t);
   }
@@ -1710,19 +1710,19 @@ class I {
   }
 }
 const _ = {
-  link: () => import("./LinkModule-CNxemWRT.js"),
-  image: () => import("./ImageModule-CyUTEWJx.js"),
-  table: () => import("./TableModule-CuvmEsVk.js"),
+  link: () => import("./LinkModule-B302Zk6r.js"),
+  image: () => import("./ImageModule-CM91JzbV.js"),
+  table: () => import("./TableModule-BKLLpUMs.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-CzOErplc.js"),
-  note: () => import("./NoteModule-BVevCZwW.js"),
-  media: () => import("./MediaModule-BddpL7RX.js"),
+  find: () => import("./FindModule-BO1dm5Ev.js"),
+  note: () => import("./NoteModule-CWox2_bE.js"),
+  media: () => import("./MediaModule-4-MmGX7o.js"),
   markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-Ds0H-FBg.js"),
+  statusBar: () => import("./StatusBar-D-W3xFi5.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-C1-_VjOW.js")
+  templates: () => import("./TemplateModule-CLKxBs6L.js")
 };
 Object.entries(_).forEach(([s, e]) => {
   y.registerPlugin(s, async (t) => {
@@ -1765,8 +1765,8 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), O = {
 };
 export {
   R as D,
-  c as I,
+  l as I,
   m as L,
   O as a
 };
-//# sourceMappingURL=index-Cq8Mug0c.js.map
+//# sourceMappingURL=index-wqXN1Tam.js.map

@@ -249,11 +249,11 @@ describe('Toolbar', () => {
         expect(select.value).toBe('p');
     });
 
-    it('saves selection on select focus as fallback', () => {
+    it('saves selection on select mousedown', () => {
         toolbar = new Toolbar(editor);
         const select = toolbar.buttons.get('fontFamily');
         expect(select).toBeInstanceOf(HTMLSelectElement);
-        select.dispatchEvent(new Event('focus'));
+        select.dispatchEvent(new Event('mousedown'));
         expect(editor.selection.save).toHaveBeenCalled();
     });
 

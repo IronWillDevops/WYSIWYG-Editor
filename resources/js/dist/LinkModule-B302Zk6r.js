@@ -1,4 +1,4 @@
-import { D as s } from "./index-Cq8Mug0c.js";
+import { D as s } from "./index-wqXN1Tam.js";
 class d {
   constructor(e) {
     this.editor = e, this.handleDblClick = this.handleDblClick.bind(this), e.root.addEventListener("dblclick", this.handleDblClick);
@@ -77,4 +77,4 @@ class d {
 export {
   d as default
 };
-//# sourceMappingURL=LinkModule-CNxemWRT.js.map
+//# sourceMappingURL=LinkModule-B302Zk6r.js.map
