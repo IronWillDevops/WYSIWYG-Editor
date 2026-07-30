@@ -96,13 +96,14 @@ export default class Toolbar {
     }
 
     buildSelect(id, def) {
+        const locale = this.editor.options.locale ?? 'en';
         const select = document.createElement('select');
         select.className = 'ife-toolbar__select';
-        select.setAttribute('aria-label', def.label);
-        def.options.forEach(([value, label]) => {
+        select.setAttribute('aria-label', Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label);
+        def.options.forEach(([value, text]) => {
             const option = document.createElement('option');
             option.value = value;
-            option.textContent = label;
+            option.textContent = this._translateOption(locale, id, value, text);
             select.appendChild(option);
         });
 
@@ -121,14 +122,16 @@ export default class Toolbar {
     }
 
     buildColorPicker(id, def) {
+        const locale = this.editor.options.locale ?? 'en';
+        const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
         const wrapper = document.createElement('label');
         wrapper.className = 'ife-toolbar__color';
-        wrapper.title = def.label;
+        wrapper.title = label;
         wrapper.innerHTML = def.icon;
 
         const input = document.createElement('input');
         input.type = 'color';
-        input.setAttribute('aria-label', def.label);
+        input.setAttribute('aria-label', label);
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
@@ -137,6 +140,31 @@ export default class Toolbar {
         wrapper.appendChild(input);
         this.buttons.set(id, wrapper);
         return wrapper;
+    }
+
+    _translateOption(locale, id, value, text) {
+        if (id === 'blockFormat') {
+            const keyMap = {
+                p: 'paragraph',
+                h1: 'heading1',
+                h2: 'heading2',
+                h3: 'heading3',
+                h4: 'heading4',
+                h5: 'heading5',
+                h6: 'heading6',
+                blockquote: 'blockquote',
+                pre: 'preformatted',
+            };
+            const key = keyMap[value];
+            if (key) {
+                const t = Localization.t(locale, key);
+                if (t !== key) return t;
+            }
+        } else if (id === 'fontFamily' && value === '') {
+            const t = Localization.t(locale, 'default');
+            if (t !== 'default') return t;
+        }
+        return text;
     }
 
     /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */

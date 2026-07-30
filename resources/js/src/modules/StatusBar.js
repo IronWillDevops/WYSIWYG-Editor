@@ -49,9 +49,10 @@ export default class StatusBar {
         this.left.appendChild(this.wordsEl);
         this.left.appendChild(this.charsEl);
 
+        const locale = this.editor.options.locale ?? 'en';
         this.right = document.createElement('span');
         this.right.className = 'ife-statusbar__right';
-        this.right.textContent = 'Made by ITkha';
+        this.right.textContent = Localization.t(locale, 'madeBy');
 
         this.el.appendChild(this.left);
         this.el.appendChild(this.right);
