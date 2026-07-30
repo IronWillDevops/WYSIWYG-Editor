@@ -85,7 +85,7 @@ export default class Editor {
         this.root.contentEditable = 'true';
         this.root.spellcheck = true;
         this.root.style.minHeight = `${this.options.height}px`;
-        this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '');
+        this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
 
@@ -565,7 +565,7 @@ export default class Editor {
     }
 
     clear() {
-        this.setHTML('');
+        this.setHTML('<div><br></div>');
         this.history.clear();
         if (this.options.autosave?.enabled) {
             try {

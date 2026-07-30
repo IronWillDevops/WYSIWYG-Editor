@@ -648,7 +648,7 @@ describe('Editor', () => {
             const editor = new Editor(textarea);
             editor.setHTML('<p>content</p>');
             editor.clear();
-            expect(editor.root.innerHTML).toBe('');
+            expect(editor.root.innerHTML).toBe('<div><br></div>');
         });
 
         it('clears history after clearing', () => {
