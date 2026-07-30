@@ -54,10 +54,6 @@ export default class Toolbar {
             if (groupEl.children.length) this.el.appendChild(groupEl);
         });
 
-        const brand = document.createElement('span');
-        brand.className = 'ife-toolbar__brand';
-        brand.textContent = 'Made by ITkha';
-        this.el.appendChild(brand);
     }
 
     buildControl(id, def) {
