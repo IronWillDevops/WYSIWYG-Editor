@@ -1061,12 +1061,15 @@ const v = {
       ['"Times New Roman", serif', "Times New Roman"],
       ["Verdana, sans-serif", "Verdana"]
     ],
-    onChange: (s, e) => s.commands.exec("fontName", e)
+    onChange: (s, e) => {
+      e && (s.commands.prepare(), s.history.push(), document.execCommand("fontName", !1, e), s.emitChange(), s.events.emit("selectionchange", s));
+    }
   },
   fontSize: {
     label: "Font size",
     type: "select",
     options: [
+      ["", "Default"],
       ["12px", "12"],
       ["14px", "14"],
       ["16px", "16"],
@@ -1075,7 +1078,20 @@ const v = {
       ["32px", "32"],
       ["48px", "48"]
     ],
-    onChange: (s, e) => s.commands.exec("fontSize", e)
+    onChange: (s, e) => {
+      if (!e) return;
+      s.commands.prepare(), s.history.push();
+      const t = { "12px": "1", "14px": "2", "16px": "3", "18px": "4", "24px": "5", "32px": "6", "48px": "7" };
+      document.execCommand("fontSize", !1, t[e] || "3");
+      const o = window.getSelection();
+      if (o && o.rangeCount > 0) {
+        let n = o.getRangeAt(0).commonAncestorContainer;
+        n.nodeType === Node.TEXT_NODE && (n = n.parentElement);
+        const r = n && s.root.contains(n) ? n.closest("span") : null;
+        r && s.root.contains(r) && (r.style.fontSize = e);
+      }
+      s.emitChange(), s.events.emit("selectionchange", s);
+    }
   },
   bold: { icon: l.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
   italic: { icon: l.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
@@ -1710,19 +1726,19 @@ class I {
   }
 }
 const _ = {
-  link: () => import("./LinkModule-B302Zk6r.js"),
-  image: () => import("./ImageModule-CM91JzbV.js"),
-  table: () => import("./TableModule-BKLLpUMs.js"),
+  link: () => import("./LinkModule-CU2boiYM.js"),
+  image: () => import("./ImageModule-BwhCRFx0.js"),
+  table: () => import("./TableModule-Bn7DPJ7X.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-BO1dm5Ev.js"),
-  note: () => import("./NoteModule-CWox2_bE.js"),
-  media: () => import("./MediaModule-4-MmGX7o.js"),
+  find: () => import("./FindModule-CY5_P4MN.js"),
+  note: () => import("./NoteModule-CdPorDTK.js"),
+  media: () => import("./MediaModule-C4uKrzzN.js"),
   markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-D-W3xFi5.js"),
+  statusBar: () => import("./StatusBar-CznJBWyM.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CLKxBs6L.js")
+  templates: () => import("./TemplateModule-BtevYyyR.js")
 };
 Object.entries(_).forEach(([s, e]) => {
   y.registerPlugin(s, async (t) => {
@@ -1769,4 +1785,4 @@ export {
   m as L,
   O as a
 };
-//# sourceMappingURL=index-wqXN1Tam.js.map
+//# sourceMappingURL=index-B2YD1vrE.js.map
