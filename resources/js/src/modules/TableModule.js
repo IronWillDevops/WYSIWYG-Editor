@@ -169,20 +169,39 @@ export default class TableModule {
         const row = cell?.closest('tr');
         if (!row) return;
 
+        this.editor.selection.save();
         this.editor.history.push();
         const newRow = row.cloneNode(true);
         [...newRow.children].forEach((td) => {
             td.innerHTML = '<br>';
         });
         row.parentNode.insertBefore(newRow, before ? row : row.nextSibling);
+        this.editor.selection.restore();
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
     deleteRow() {
         const row = this.getCurrentCell()?.closest('tr');
         if (!row) return;
+        const table = row.closest('table');
+        const nextRow = row.nextElementSibling;
+        const prevRow = row.previousElementSibling;
         this.editor.history.push();
         row.remove();
+        if (table && table.isConnected) {
+            const targetRow = nextRow || prevRow;
+            if (targetRow) {
+                const firstCell = targetRow.querySelector('td, th');
+                if (firstCell) {
+                    const range = document.createRange();
+                    range.setStart(firstCell, 0);
+                    range.collapse(true);
+                    this.editor.selection.setRange(range);
+                }
+            }
+        }
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
@@ -195,6 +214,7 @@ export default class TableModule {
         let index = [...cellRow.children].indexOf(cell);
         if (index < 0) return;
 
+        this.editor.selection.save();
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => {
             const reference = row.children[index];
@@ -203,6 +223,8 @@ export default class TableModule {
             newCell.innerHTML = '<br>';
             row.insertBefore(newCell, before ? reference : reference.nextSibling);
         });
+        this.editor.selection.restore();
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
@@ -217,6 +239,19 @@ export default class TableModule {
 
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => row.children[index]?.remove());
+        if (table.isConnected) {
+            const firstRow = table.querySelector('tr');
+            if (firstRow) {
+                const firstCell = firstRow.querySelector('td, th');
+                if (firstCell) {
+                    const range = document.createRange();
+                    range.setStart(firstCell, 0);
+                    range.collapse(true);
+                    this.editor.selection.setRange(range);
+                }
+            }
+        }
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 

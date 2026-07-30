@@ -116,7 +116,7 @@ return [
         'disk' => env('INKFORGE_EDITOR_UPLOAD_DISK', 'public'),
         'path' => 'inkforge-editor/uploads',
         'max_size_kb' => 5120,
-        'allowed_mimes' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'],
+        'allowed_mimes' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     ],
 
 ];

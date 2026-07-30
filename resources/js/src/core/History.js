@@ -9,24 +9,27 @@ export default class History {
      * @param {(html: string) => void} options.setContent
      * @param {number} [options.maxSteps]
      * @param {number} [options.debounceMs]
+     * @param {() => void} [options.saveBookmark]
+     * @param {(bookmark: object) => void} [options.restoreBookmark]
      * @param {(event: string) => void} [options.onChange]
      */
-    constructor({ getContent, setContent, maxSteps = 1000, debounceMs = 300, onChange }) {
+    constructor({ getContent, setContent, maxSteps = 1000, debounceMs = 300, saveBookmark, restoreBookmark, onChange }) {
         this.getContent = getContent;
         this.setContent = setContent;
         this.maxSteps = maxSteps;
         this.debounceMs = debounceMs;
+        this.saveBookmark = saveBookmark ?? (() => null);
+        this.restoreBookmark = restoreBookmark ?? (() => {});
         this.onChange = onChange ?? (() => {});
 
-        /** @type {string[]} */
+        /** @type {{ html: string, bookmark: object|null }[]} */
         this.undoStack = [];
-        /** @type {string[]} */
+        /** @type {{ html: string, bookmark: object|null }[]} */
         this.redoStack = [];
         this.timer = null;
         this.isRestoring = false;
 
-        // Seed with the initial content so the very first edit is undoable.
-        this.undoStack.push(this.getContent());
+        this.undoStack.push({ html: this.getContent(), bookmark: null });
     }
 
     /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -41,9 +44,9 @@ export default class History {
         if (this.isRestoring) return;
         const snapshot = this.getContent();
         const last = this.undoStack[this.undoStack.length - 1];
-        if (snapshot === last) return;
+        if (snapshot === last.html) return;
 
-        this.undoStack.push(snapshot);
+        this.undoStack.push({ html: snapshot, bookmark: this.saveBookmark() });
         if (this.undoStack.length > this.maxSteps) {
             this.undoStack.shift();
         }
@@ -67,7 +70,8 @@ export default class History {
         const previous = this.undoStack[this.undoStack.length - 1];
 
         this.isRestoring = true;
-        this.setContent(previous);
+        this.setContent(previous.html);
+        this.restoreBookmark(previous.bookmark);
         this.isRestoring = false;
         this.onChange('undo');
     }
@@ -79,14 +83,15 @@ export default class History {
         this.undoStack.push(next);
 
         this.isRestoring = true;
-        this.setContent(next);
+        this.setContent(next.html);
+        this.restoreBookmark(next.bookmark);
         this.isRestoring = false;
         this.onChange('redo');
     }
 
     clear() {
         clearTimeout(this.timer);
-        this.undoStack = [this.getContent()];
+        this.undoStack = [{ html: this.getContent(), bookmark: null }];
         this.redoStack = [];
     }
 

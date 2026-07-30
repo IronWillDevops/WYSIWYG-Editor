@@ -82,7 +82,7 @@ export default class StatusBar {
         const sel = this.editor.selection;
         if (!sel) return 'paragraph';
 
-        if (sel.closest?.('a')) return 'link';
+        if (sel.closest?.('a')) return 'linkLabel';
         if (sel.closest?.('code')) return 'code';
 
         const block = sel.getBlockElement?.();

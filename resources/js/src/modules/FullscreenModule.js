@@ -20,15 +20,15 @@ export default class FullscreenModule {
     }
 
     async enter() {
-        this.editor.wrapper.classList.add('ife-fullscreen');
         try {
             if (this.editor.wrapper.requestFullscreen) {
                 await this.editor.wrapper.requestFullscreen();
             }
+            this.editor.wrapper.classList.add('ife-fullscreen');
+            this.active = true;
         } catch {
-            // Fullscreen API unavailable/blocked — the CSS class fallback still applies.
+            return;
         }
-        this.active = true;
     }
 
     async exit() {

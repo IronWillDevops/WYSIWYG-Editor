@@ -80,7 +80,7 @@ describe('History', () => {
 
         vi.runAllTimers();
 
-        expect(history.undoStack.at(-1)).toBe('<p>ab</p>');
+        expect(history.undoStack.at(-1).html).toBe('<p>ab</p>');
         vi.useRealTimers();
     });
 });

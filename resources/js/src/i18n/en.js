@@ -5,7 +5,7 @@ export default {
     italic: 'Italic',
     underline: 'Underline',
     strike: 'Strikethrough',
-    link: 'Insert/edit link',
+    linkEdit: 'Insert/edit link',
     unlink: 'Remove link',
     image: 'Insert image',
     video: 'Insert video',
@@ -32,6 +32,6 @@ export default {
     listItem: 'List item',
     orderedList: 'Ordered list',
     bulletList: 'Bullet list',
-    link: 'Link',
+    linkLabel: 'Link',
     code: 'Code',
 };

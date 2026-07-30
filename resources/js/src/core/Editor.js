@@ -48,6 +48,8 @@ export default class Editor {
             setContent: (html) => {
                 this.root.innerHTML = html;
             },
+            saveBookmark: () => this.saveSelectionBookmark(),
+            restoreBookmark: (bookmark) => this.restoreSelectionBookmark(bookmark),
             maxSteps: this.options.history?.max_steps ?? 1000,
             debounceMs: this.options.history?.debounce_ms ?? 300,
             onChange: (type) => this.events.emit(type),
@@ -116,6 +118,60 @@ export default class Editor {
 
     syncTextarea() {
         this.textarea.value = this.getHTML();
+    }
+
+    /** Serialize caret position as text offsets for undo/redo. */
+    saveSelectionBookmark() {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return null;
+        const range = sel.getRangeAt(0);
+        if (!this.root.contains(range.commonAncestorContainer)) return null;
+        return {
+            start: this.textOffset(range.startContainer, range.startOffset),
+            end: this.textOffset(range.endContainer, range.endOffset),
+        };
+    }
+
+    /** Calculate character offset from root start to a given node+offset. */
+    textOffset(node, offset) {
+        const walker = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
+        let pos = 0;
+        let current;
+        while ((current = walker.nextNode())) {
+            if (current === node) return pos + offset;
+            pos += (current.textContent || '').length;
+        }
+        return pos;
+    }
+
+    /** Restore caret from a previously saved bookmark. */
+    restoreSelectionBookmark(bookmark) {
+        if (!bookmark) return;
+        const { start, end } = bookmark;
+        const startNode = this.nodeAtOffset(start);
+        const endNode = this.nodeAtOffset(end);
+        if (!startNode || !endNode) return;
+        const range = document.createRange();
+        range.setStart(startNode.node, Math.min(startNode.offset, (startNode.node.textContent || '').length));
+        range.setEnd(endNode.node, Math.min(endNode.offset, (endNode.node.textContent || '').length));
+        const sel = window.getSelection();
+        if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+
+    /** Find text node and offset at a given character position from root start. */
+    nodeAtOffset(target) {
+        const walker = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
+        let pos = 0;
+        let current;
+        while ((current = walker.nextNode())) {
+            const len = (current.textContent || '').length;
+            if (pos + len >= target) return { node: current, offset: target - pos };
+            pos += len;
+        }
+        return null;
     }
 
     emitChange() {
