@@ -106,20 +106,12 @@ export default class Commands {
                 }
                 break;
 
-            case 'blockFormat':
-                this.setBlockFormat(value);
-                break;
-
-            case 'fontName':
-                this.setInlineStyle('fontFamily', value);
-                break;
-
-            case 'fontSize':
-                this.setInlineStyle('fontSize', value);
-                break;
-
             case 'lineHeight':
                 this.setInlineStyle('lineHeight', value, true);
+                break;
+
+            case 'direction':
+                this.setDirection(value);
                 break;
 
             case 'removeFormat':
@@ -138,6 +130,7 @@ export default class Commands {
         }
 
         this.editor.emitChange();
+        this.editor.events.emit('selectionchange', this.editor);
     }
 
     queryState(name) {
@@ -149,37 +142,15 @@ export default class Commands {
     }
 
     /**
-     * Replaces the current block element's tag (p, h1-h6, blockquote, pre).
-     * If the block is already the target tag, toggles back to <p>.
-     * @param {string} tagName
+     * Sets the text direction (ltr/rtl) on the current block element.
+     * @param {'ltr'|'rtl'} dir
      */
-    setBlockFormat(tagName) {
+    setDirection(dir) {
         const block = this.selection.getBlockElement();
-        if (!block || block === this.root) {
-            document.execCommand('formatBlock', false, `<${tagName}>`);
+        if (block) {
+            block.dir = dir;
             return;
         }
-
-        if (block.tagName === tagName.toUpperCase()) {
-            const replacement = document.createElement('p');
-            replacement.innerHTML = block.innerHTML;
-            block.replaceWith(replacement);
-
-            const range = document.createRange();
-            range.selectNodeContents(replacement);
-            range.collapse(false);
-            this.selection.setRange(range);
-            return;
-        }
-
-        const replacement = document.createElement(tagName);
-        replacement.innerHTML = block.innerHTML;
-        block.replaceWith(replacement);
-
-        const range = document.createRange();
-        range.selectNodeContents(replacement);
-        range.collapse(false);
-        this.selection.setRange(range);
     }
 
     /**
@@ -195,6 +166,12 @@ export default class Commands {
                 block.style[cssProperty] = value;
                 return;
             }
+        }
+
+        const existing = this.selection.closest('span');
+        if (existing) {
+            existing.style[cssProperty] = value;
+            return;
         }
 
         const span = this.selection.wrap('span');

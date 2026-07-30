@@ -3,11 +3,14 @@ const DEFAULT_ALLOWED_TAGS = new Set([
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
     'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
+    'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'text', 'stop', 'defs', 'linearGradient',
+    'ellipse', 'clipPath', 'filter', 'feGaussianBlur', 'feOffset', 'feMerge',
+    'feMergeNode', 'feColorMatrix', 'feBlend', 'use', 'tspan', 'symbol', 'mask',
 ]);
 
 const DEFAULT_ALLOWED_ATTRS = {
-    '*': new Set(['class', 'style', 'id']),
-    a: new Set(['href', 'target', 'rel', 'title']),
+    '*': new Set(['class', 'style', 'id', 'dir']),
+    a: new Set(['href', 'target', 'rel', 'title', 'name']),
     img: new Set(['src', 'alt', 'title', 'width', 'height', 'loading']),
     iframe: new Set(['src', 'width', 'height', 'allow', 'allowfullscreen', 'frameborder']),
     video: new Set(['src', 'controls', 'width', 'height', 'poster']),
@@ -15,6 +18,33 @@ const DEFAULT_ALLOWED_ATTRS = {
     source: new Set(['src', 'type']),
     td: new Set(['colspan', 'rowspan']),
     th: new Set(['colspan', 'rowspan', 'scope']),
+    svg: new Set(['viewBox', 'width', 'height', 'fill', 'xmlns', 'stroke', 'strokeWidth', 'stroke-linecap', 'stroke-linejoin']),
+    path: new Set(['d', 'fill', 'stroke', 'strokeWidth', 'stroke-width', 'opacity']),
+    circle: new Set(['cx', 'cy', 'r', 'fill', 'stroke', 'strokeWidth']),
+    rect: new Set(['x', 'y', 'width', 'height', 'fill', 'rx', 'stroke', 'strokeWidth']),
+    line: new Set(['x1', 'y1', 'x2', 'y2', 'stroke', 'strokeWidth']),
+    polyline: new Set(['points', 'fill', 'stroke']),
+    polygon: new Set(['points', 'fill', 'stroke']),
+    g: new Set(['fill', 'stroke', 'opacity']),
+    text: new Set(['x', 'y', 'fontSize', 'font-family', 'fill', 'textAnchor', 'text-anchor']),
+    stop: new Set(['offset', 'stopColor', 'stop-color']),
+    defs: new Set([]),
+    linearGradient: new Set(['x1', 'y1', 'x2', 'y2', 'gradientUnits']),
+    ellipse: new Set(['cx', 'cy', 'rx', 'ry', 'fill', 'stroke']),
+    clipPath: new Set(['id']),
+    filter: new Set(['id', 'x', 'y', 'width', 'height']),
+    feGaussianBlur: new Set(['in', 'stdDeviation']),
+    feOffset: new Set(['in', 'dx', 'dy']),
+    feMerge: new Set([]),
+    feMergeNode: new Set(['in']),
+    feColorMatrix: new Set(['in', 'type', 'values']),
+    feBlend: new Set(['in', 'in2', 'mode']),
+    use: new Set(['href', 'x', 'y']),
+    tspan: new Set(['x', 'dy', 'textAnchor']),
+    symbol: new Set(['id', 'viewBox', 'width', 'height']),
+    mask: new Set(['id']),
+    ol: new Set(['start', 'type', 'reversed', 'class', 'style']),
+    ul: new Set(['class', 'style']),
 };
 
 const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:', '']);
@@ -47,10 +77,32 @@ export default class Sanitizer {
      * @returns {string} sanitized HTML
      */
     sanitize(dirtyHtml) {
+        const cleaned = this.stripWordMso(dirtyHtml);
         const template = document.createElement('template');
-        template.innerHTML = dirtyHtml;
+        template.innerHTML = cleaned;
         this.cleanNode(template.content);
         return template.innerHTML;
+    }
+
+    /** Strips Microsoft Word/Copilot mso-* junk, XML wrappers, and empty elements. */
+    stripWordMso(html) {
+        return html
+            .replace(/<!--\[if[^>]*>.*?<!\[endif\]-->/gs, '')
+            .replace(/<!--[^>]*-->/g, '')
+            .replace(/<(\w+)[^>]*\s(?:class|style)=["'][^"']*?mso-[^"']*["'][^>]*>/gi, (match) => {
+                return match.replace(/\s(?:class|style)=["'][^"']*?mso-[^"']*["']/gi, '');
+            })
+            .replace(/<o:p>[^<]*<\/o:p>/gi, '')
+            .replace(/<w:[^>]+>[^<]*<\/w:[^>]+>/gi, '')
+            .replace(/<\\?\?(xml|mso)[^>]*>/gi, '')
+            .replace(/style=["'][^"']*mso-[^"']*["']/gi, '')
+            .replace(/class=["'][^"']*Mso[^"']*["']/gi, '')
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<meta[^>]*>/gi, '')
+            .replace(/<link[^>]*>/gi, '')
+            .replace(/<span[^>]*>\s*<\/span>/gi, '')
+            .replace(/<p[^>]*>\s*<\/p>/gi, '')
+            .replace(/&nbsp;/gi, ' ');
     }
 
     /** @param {Node} root */

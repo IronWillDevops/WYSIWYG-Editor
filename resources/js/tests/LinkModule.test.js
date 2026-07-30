@@ -20,6 +20,8 @@ describe('LinkModule', () => {
         return form;
     }
 
+    let savedRange = null;
+
     beforeEach(() => {
         const root = document.createElement('div');
         root.contentEditable = 'true';
@@ -29,6 +31,8 @@ describe('LinkModule', () => {
         document.body.innerHTML = '';
         document.body.appendChild(wrapper);
 
+        savedRange = null;
+
         editor = {
             root,
             wrapper,
@@ -37,7 +41,28 @@ describe('LinkModule', () => {
             selection: {
                 save: () => {},
                 restore: () => {},
-                getRange: () => null,
+                getRange: () => {
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) return sel.getRangeAt(0);
+                    return null;
+                },
+                getText: () => window.getSelection()?.toString() ?? '',
+                closest: (selector) => {
+                    const sel = window.getSelection();
+                    if (!sel || sel.rangeCount === 0) return null;
+                    let node = sel.getRangeAt(0).commonAncestorContainer;
+                    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                    while (node && node !== wrapper) {
+                        if (node instanceof HTMLElement && node.matches(selector)) return node;
+                        node = node.parentElement;
+                    }
+                    return null;
+                },
+                setRange: (r) => {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(r);
+                },
             },
             commands: {},
             events: { emit: () => {} },
@@ -119,5 +144,151 @@ describe('LinkModule', () => {
         module.apply(form, anchor);
 
         expect(anchor.textContent).toBe('custom text');
+    });
+
+    describe('open', () => {
+        it('creates dialog with link fields', () => {
+            const module = new LinkModule(editor);
+            module.open();
+            const overlay = document.body.querySelector('.ife-dialog-overlay');
+            expect(overlay).not.toBeNull();
+            expect(overlay.querySelector('input[name="href"]')).not.toBeNull();
+            expect(overlay.querySelector('input[name="text"]')).not.toBeNull();
+        });
+
+        it('pre-fills existing link data', () => {
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'example link';
+            anchor.target = '_blank';
+            anchor.rel = 'nofollow noopener';
+            editor.root.appendChild(anchor);
+
+            const range = document.createRange();
+            range.selectNodeContents(anchor);
+            editor.selection.setRange(range);
+
+            const module = new LinkModule(editor);
+            module.open();
+
+            const hrefInput = document.body.querySelector('input[name="href"]');
+            expect(hrefInput.value).toBe('https://example.com');
+            const textInput = document.body.querySelector('input[name="text"]');
+            expect(textInput.value).toBe('example link');
+            const newTabCheckbox = document.body.querySelector('input[name="newTab"]');
+            expect(newTabCheckbox.checked).toBe(true);
+        });
+
+        it('adds remove button for existing link', () => {
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'link';
+            editor.root.appendChild(anchor);
+
+            const range = document.createRange();
+            range.selectNodeContents(anchor);
+            editor.selection.setRange(range);
+
+            const module = new LinkModule(editor);
+            module.open();
+
+            const removeBtn = document.body.querySelector('.ife-btn--danger');
+            expect(removeBtn).not.toBeNull();
+            expect(removeBtn.textContent).toBe('Remove link');
+        });
+
+        it('saves selection before opening', () => {
+            const saveSpy = vi.spyOn(editor.selection, 'save');
+            const module = new LinkModule(editor);
+            module.open();
+            expect(saveSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('handleDblClick', () => {
+        it('opens edit dialog when double-clicking an anchor', () => {
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'clickable';
+            editor.root.appendChild(anchor);
+
+            const setRangeSpy = vi.spyOn(editor.selection, 'setRange');
+
+            const module = new LinkModule(editor);
+            const openSpy = vi.spyOn(module, 'open');
+
+            const dblClickEvent = new MouseEvent('dblclick', { bubbles: true });
+            anchor.dispatchEvent(dblClickEvent);
+
+            expect(openSpy).toHaveBeenCalled();
+            expect(setRangeSpy).toHaveBeenCalled();
+        });
+
+        it('ignores double-click on non-anchor elements', () => {
+            const p = editor.root.querySelector('p');
+            const module = new LinkModule(editor);
+            const openSpy = vi.spyOn(module, 'open');
+
+            p.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+            expect(openSpy).not.toHaveBeenCalled();
+        });
+
+        it('ignores double-click when anchor is outside editor root', () => {
+            const outside = document.createElement('div');
+            document.body.appendChild(outside);
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'outside';
+            outside.appendChild(anchor);
+
+            const module = new LinkModule(editor);
+            const openSpy = vi.spyOn(module, 'open');
+
+            anchor.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+            expect(openSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('remove', () => {
+        it('unwraps anchor but preserves text content', () => {
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'link text';
+            editor.root.appendChild(anchor);
+
+            const module = new LinkModule(editor);
+            module.remove(anchor);
+
+            expect(editor.root.querySelector('a')).toBeNull();
+            expect(editor.root.textContent).toContain('link text');
+        });
+
+        it('pushes history before removing', () => {
+            const pushSpy = vi.spyOn(editor.history, 'push');
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'text';
+            editor.root.appendChild(anchor);
+
+            const module = new LinkModule(editor);
+            module.remove(anchor);
+
+            expect(pushSpy).toHaveBeenCalled();
+        });
+
+        it('emits change after removal', () => {
+            const emitSpy = vi.spyOn(editor, 'emitChange');
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'text';
+            editor.root.appendChild(anchor);
+
+            const module = new LinkModule(editor);
+            module.remove(anchor);
+
+            expect(emitSpy).toHaveBeenCalled();
+        });
     });
 });

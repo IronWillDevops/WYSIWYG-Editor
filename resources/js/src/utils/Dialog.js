@@ -11,10 +11,12 @@ export default class Dialog {
      * @param {string} [config.confirmLabel]
      * @param {string} [config.cancelLabel]
      * @param {(form: HTMLFormElement) => void} config.onConfirm
+     * @param {() => void} [config.onClose]
      */
-    constructor(container, { title, bodyHtml, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm }) {
+    constructor(container, { title, bodyHtml, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm, onClose }) {
         this.container = container;
         this.onConfirm = onConfirm;
+        this.onClose = onClose;
 
         this.overlay = document.createElement('div');
         this.overlay.className = 'ife-dialog-overlay';
@@ -36,7 +38,9 @@ export default class Dialog {
 
         this.overlay.querySelectorAll('button, input, select, textarea').forEach((el) => {
             el.addEventListener('click', (e) => e.stopPropagation());
-            el.addEventListener('keydown', (e) => e.stopPropagation());
+            el.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') e.stopPropagation();
+            });
         });
         this.overlay.querySelectorAll('button').forEach((el) => {
             el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -92,5 +96,6 @@ export default class Dialog {
         this.container.scrollTop = this.containerScrollTop ?? 0;
         document.removeEventListener('keydown', this.handleEscape);
         this.overlay.remove();
+        if (this.onClose) this.onClose();
     }
 }

@@ -3,8 +3,9 @@ export default class EmojiModule {
         this.editor = editor;
         this.picker = null;
         this._triggerEl = null;
-        this._boundOnScroll = null;
         this._boundOnResize = null;
+        this._boundOnScroll = null;
+        this._boundOnClickOutside = null;
     }
 
     open(triggerEl) {
@@ -125,13 +126,20 @@ export default class EmojiModule {
 
         this.positionPicker();
 
-        this._boundOnScroll = (e) => {
-            if (this.picker && this.picker.contains(e.target)) return;
+        this._boundOnResize = () => this.positionPicker();
+        this._boundOnScroll = () => {
+            if (!this.picker) return;
+            this.positionPicker();
+        };
+        this._boundOnClickOutside = (e) => {
+            if (!this.picker) return;
+            if (this.picker.contains(e.target)) return;
+            if (this._triggerEl && this._triggerEl.contains(e.target)) return;
             this.close();
         };
-        this._boundOnResize = () => this.positionPicker();
-        document.addEventListener('scroll', this._boundOnScroll, { capture: true });
         window.addEventListener('resize', this._boundOnResize);
+        window.addEventListener('scroll', this._boundOnScroll, { passive: true });
+        document.addEventListener('click', this._boundOnClickOutside);
 
         setTimeout(() => {
             if (!this.picker) return;
@@ -179,13 +187,17 @@ export default class EmojiModule {
     }
 
     _removeListeners() {
-        if (this._boundOnScroll) {
-            document.removeEventListener('scroll', this._boundOnScroll, { capture: true });
-            this._boundOnScroll = null;
-        }
         if (this._boundOnResize) {
             window.removeEventListener('resize', this._boundOnResize);
             this._boundOnResize = null;
+        }
+        if (this._boundOnScroll) {
+            window.removeEventListener('scroll', this._boundOnScroll);
+            this._boundOnScroll = null;
+        }
+        if (this._boundOnClickOutside) {
+            document.removeEventListener('click', this._boundOnClickOutside);
+            this._boundOnClickOutside = null;
         }
     }
 

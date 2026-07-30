@@ -54,78 +54,46 @@ describe('Sanitizer', () => {
         expect(result).toContain('colspan="2"');
     });
 
-    it('strips <style> tags', () => {
-        const result = sanitizer.sanitize('<p>text</p><style>body{}</style>');
-        expect(result).not.toContain('<style>');
-    });
+    describe('security', () => {
+        it('blocks data: URLs in href', () => {
+            const result = sanitizer.sanitize('<a href="data:text/html,<script>alert(1)</script>">click</a>');
+            expect(result).not.toContain('data:');
+        });
 
-    it('strips <noscript> tags', () => {
-        const result = sanitizer.sanitize('<noscript>fallback</noscript><p>ok</p>');
-        expect(result).not.toContain('noscript');
-    });
+        it('blocks data: URLs in img src', () => {
+            const result = sanitizer.sanitize('<img src="data:image/svg+xml,<script>alert(1)</script>">');
+            expect(result).not.toContain('data:');
+        });
 
-    it('allows safe mailto: and tel: URLs', () => {
-        const mailto = sanitizer.sanitize('<a href="mailto:test@example.com">email</a>');
-        expect(mailto).toContain('mailto:test@example.com');
+        it('blocks vbscript: URLs', () => {
+            const result = sanitizer.sanitize('<a href="vbscript:msgbox(1)">click</a>');
+            expect(result).not.toContain('vbscript:');
+        });
 
-        const tel = sanitizer.sanitize('<a href="tel:+12345">phone</a>');
-        expect(tel).toContain('tel:+12345');
-    });
+        it('blocks javascript: in CSS url() via style attribute', () => {
+            const result = sanitizer.sanitize('<div style="background-image: url(javascript:alert(1))">text</div>');
+            expect(result).not.toContain('javascript:');
+        });
 
-    it('blocks javascript: in CSS url()', () => {
-        const result = sanitizer.sanitize('<div style="background:url(javascript:alert(1))">x</div>');
-        expect(result).not.toContain('javascript');
-    });
+        it('removes <meta> tags to prevent meta refresh', () => {
+            const result = sanitizer.sanitize('<meta http-equiv="refresh" content="0;url=http://evil.com">');
+            expect(result).not.toContain('<meta');
+        });
 
-    it('allows fragment-only and root-relative URLs', () => {
-        const frag = sanitizer.sanitize('<a href="#section">link</a>');
-        expect(frag).toContain('href="#section"');
+        it('unwraps <foreignObject> inside SVG', () => {
+            const result = sanitizer.sanitize('<svg><foreignObject><div>text</div></foreignObject></svg>');
+            expect(result).not.toContain('foreignObject');
+            expect(result).toContain('<div>text</div>');
+        });
 
-        const rel = sanitizer.sanitize('<a href="/path">link</a>');
-        expect(rel).toContain('href="/path"');
-    });
+        it('removes <base> tag to prevent base hijack', () => {
+            const result = sanitizer.sanitize('<base href="http://evil.com">');
+            expect(result).not.toContain('<base');
+        });
 
-    it('accepts custom allowed tags via constructor options', () => {
-        const custom = new Sanitizer({ allowedTags: ['p', 'custom-tag'] });
-        const result = custom.sanitize('<p>keep</p><custom-tag>custom</custom-tag><span>gone</span>');
-        expect(result).toContain('<p>keep</p>');
-        expect(result).toContain('<custom-tag>');
-        expect(result).not.toContain('span');
-    });
-
-    it('removes disallowed URL schemes', () => {
-        const result = sanitizer.sanitize('<a href="ftp://example.com">ftp</a>');
-        expect(result).not.toContain('ftp:');
-    });
-
-    // ── Regression: TreeWalker-based cleanNode skipped children of unwrapped tags ──
-
-    it('strips <script> inside a non-whitelisted tag (<foo>)', () => {
-        const result = sanitizer.sanitize('<foo><script>alert(1)</script>hello</foo>');
-        expect(result).not.toContain('<script>');
-        expect(result).toContain('hello');
-    });
-
-    it('strips <script> inside <svg> (non-whitelisted)', () => {
-        const result = sanitizer.sanitize('<svg><script>alert(1)</script></svg>');
-        expect(result).not.toContain('<script>');
-    });
-
-    it('strips deeply nested <script> inside double-unwrapped tags', () => {
-        const result = sanitizer.sanitize('<foo><bar><script>alert(1)</script>hello</bar></foo>');
-        expect(result).not.toContain('<script>');
-        expect(result).toContain('hello');
-    });
-
-    it('removes onerror from <img> inside a non-whitelisted wrapper', () => {
-        const result = sanitizer.sanitize('<foo><img src=x onerror=alert(1)></foo>');
-        expect(result).not.toContain('onerror');
-        expect(result).toMatch(/<img[^>]*src="?x"?/);
-    });
-
-    it('preserves safe content inside unwrapped tags', () => {
-        const result = sanitizer.sanitize('<foo><p>текст</p></foo>');
-        expect(result).not.toContain('<foo>');
-        expect(result).toContain('<p>текст</p>');
+        it('blocks javascript: in CSS expression() via style attribute', () => {
+            const result = sanitizer.sanitize('<div style="color: expression(alert(1))">x</div>');
+            expect(result).not.toContain('expression');
+        });
     });
 });

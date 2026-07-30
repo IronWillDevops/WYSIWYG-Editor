@@ -15,7 +15,7 @@ final class UploadController extends Controller
     public function image(Request $request): JsonResponse
     {
         $maxSizeKb = (int) config('inkforge-editor.upload.max_size_kb', 5120);
-        $allowedMimes = implode(',', config('inkforge-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']));
+        $allowedMimes = implode(',', config('inkforge-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp']));
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'image', "mimes:{$allowedMimes}", "max:{$maxSizeKb}"],
@@ -31,7 +31,7 @@ final class UploadController extends Controller
             '%s-%s.%s',
             now()->format('Ymd-His'),
             Str::random(12),
-            $file->getClientOriginalExtension() ?: $file->extension()
+            $file->guessExtension()
         );
 
         $path = $file->storeAs($directory, $filename, $disk);

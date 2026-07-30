@@ -3,14 +3,16 @@ import Localization from '../i18n/Localization.js';
 
 const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
-    ['blockFormat', 'fontFamily', 'fontSize'],
     ['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'],
     ['forecolor', 'backcolor', 'removeFormat'],
     ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'],
-    ['bulletList', 'orderedList', 'checklist', 'indent', 'outdent'],
+    ['ltr', 'rtl'],
+    ['bulletList', 'orderedList', 'checklist', 'indent', 'outdent', 'listProps'],
     ['link', 'unlink', 'image', 'video', 'audio', 'table', 'hr'],
     ['blockquote', 'codeInline', 'codeBlock', 'note'],
     ['emoji', 'specialChars'],
+    ['date', 'time', 'anchor', 'templates'],
+    ['markdown'],
     ['find', 'sourceCode', 'fullscreen'],
 ];
 
@@ -51,6 +53,7 @@ export default class Toolbar {
 
             if (groupEl.children.length) this.el.appendChild(groupEl);
         });
+
     }
 
     buildControl(id, def) {
@@ -93,20 +96,27 @@ export default class Toolbar {
     }
 
     buildSelect(id, def) {
+        const locale = this.editor.options.locale ?? 'en';
         const select = document.createElement('select');
         select.className = 'ife-toolbar__select';
-        select.setAttribute('aria-label', def.label);
-        def.options.forEach(([value, label]) => {
+        select.setAttribute('aria-label', Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label);
+        def.options.forEach(([value, text]) => {
             const option = document.createElement('option');
             option.value = value;
-            option.textContent = label;
+            option.textContent = text;
             select.appendChild(option);
         });
 
-        select.addEventListener('mousedown', (event) => event.stopPropagation());
+        select.addEventListener('pointerdown', () => {
+            this.editor.selection.save();
+        });
+        select.addEventListener('mousedown', () => {
+            this.editor.selection.save();
+        });
         select.addEventListener('change', () => {
             this.editor.selection.restore();
             def.onChange(this.editor, select.value);
+            this.syncActiveStates();
         });
 
         this.buttons.set(id, select);
@@ -114,14 +124,16 @@ export default class Toolbar {
     }
 
     buildColorPicker(id, def) {
+        const locale = this.editor.options.locale ?? 'en';
+        const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
         const wrapper = document.createElement('label');
         wrapper.className = 'ife-toolbar__color';
-        wrapper.title = def.label;
+        wrapper.title = label;
         wrapper.innerHTML = def.icon;
 
         const input = document.createElement('input');
         input.type = 'color';
-        input.setAttribute('aria-label', def.label);
+        input.setAttribute('aria-label', label);
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
@@ -171,6 +183,29 @@ export default class Toolbar {
                 button.classList.toggle('is-active', activeAlign === id.replace('align', '').toLowerCase());
             }
         });
+
+        const dirBtnLtr = this.buttons.get('ltr');
+        const dirBtnRtl = this.buttons.get('rtl');
+        if (dirBtnLtr instanceof HTMLElement && dirBtnRtl instanceof HTMLElement) {
+            let activeDir = '';
+            if (block) {
+                let el = block;
+                while (el && el !== this.editor.root) {
+                    if (el.dir) {
+                        activeDir = el.dir;
+                        break;
+                    }
+                    el = el.parentElement;
+                }
+            }
+            dirBtnLtr.classList.toggle('is-active', activeDir === 'ltr');
+            dirBtnRtl.classList.toggle('is-active', activeDir === 'rtl');
+        }
+
+        const markdownBtn = this.buttons.get('markdown');
+        if (markdownBtn instanceof HTMLElement) {
+            markdownBtn.classList.toggle('is-active', this.editor.root.dataset.markdownMode === 'true');
+        }
 
         const blockquoteBtn = this.buttons.get('blockquote');
         if (blockquoteBtn instanceof HTMLElement) {

@@ -14,9 +14,13 @@ export default class TableModule {
         this.editor.on('selectionchange', () => this.syncContextToolbar());
 
         this.adjustTableHeight = this.adjustTableHeight.bind(this);
+        this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this);
         window.addEventListener('resize', this.adjustTableHeight);
         this.editor.on('init', () => setTimeout(this.adjustTableHeight, 0));
         this.editor.on('change', this.adjustTableHeight);
+
+        this.editor.root.addEventListener('mousedown', (e) => this.handleColumnResizeStart(e));
+        this.editor.on('paste', () => this.addColumnResizeHandles());
     }
 
     /**
@@ -62,7 +66,7 @@ export default class TableModule {
         const colorLabel = document.createElement('label');
         colorLabel.className = 'ife-table-toolbar__color';
         colorLabel.title = 'Cell background color';
-        colorLabel.textContent = 'Cell';
+        colorLabel.textContent = 'Bg';
         const colorInput = document.createElement('input');
         colorInput.type = 'color';
         colorInput.setAttribute('aria-label', 'Cell background color');
@@ -73,6 +77,37 @@ export default class TableModule {
         });
         colorLabel.appendChild(colorInput);
         this.contextToolbar.appendChild(colorLabel);
+
+        const borderLabel = document.createElement('label');
+        borderLabel.className = 'ife-table-toolbar__color';
+        borderLabel.title = 'Cell border color';
+        borderLabel.textContent = 'Bd';
+        const borderInput = document.createElement('input');
+        borderInput.type = 'color';
+        borderInput.setAttribute('aria-label', 'Cell border color');
+        borderInput.addEventListener('mousedown', (event) => event.stopPropagation());
+        borderInput.addEventListener('input', () => {
+            this.editor.selection.restore();
+            this.setCellBorderColor(borderInput.value);
+        });
+        borderLabel.appendChild(borderInput);
+        this.contextToolbar.appendChild(borderLabel);
+
+        const borderWidthSelect = document.createElement('select');
+        borderWidthSelect.className = 'ife-toolbar__select';
+        borderWidthSelect.setAttribute('aria-label', 'Cell border width');
+        [['', 'Bd W'], ['1px', '1px'], ['2px', '2px'], ['3px', '3px'], ['4px', '4px']].forEach(([value, label]) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            borderWidthSelect.appendChild(option);
+        });
+        borderWidthSelect.addEventListener('mousedown', (event) => event.stopPropagation());
+        borderWidthSelect.addEventListener('change', () => {
+            this.editor.selection.restore();
+            this.setCellBorderWidth(borderWidthSelect.value);
+        });
+        this.contextToolbar.appendChild(borderWidthSelect);
 
         const alignSelect = document.createElement('select');
         alignSelect.className = 'ife-toolbar__select';
@@ -169,20 +204,39 @@ export default class TableModule {
         const row = cell?.closest('tr');
         if (!row) return;
 
+        this.editor.selection.save();
         this.editor.history.push();
         const newRow = row.cloneNode(true);
         [...newRow.children].forEach((td) => {
             td.innerHTML = '<br>';
         });
         row.parentNode.insertBefore(newRow, before ? row : row.nextSibling);
+        this.editor.selection.restore();
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
     deleteRow() {
         const row = this.getCurrentCell()?.closest('tr');
         if (!row) return;
+        const table = row.closest('table');
+        const nextRow = row.nextElementSibling;
+        const prevRow = row.previousElementSibling;
         this.editor.history.push();
         row.remove();
+        if (table && table.isConnected) {
+            const targetRow = nextRow || prevRow;
+            if (targetRow) {
+                const firstCell = targetRow.querySelector('td, th');
+                if (firstCell) {
+                    const range = document.createRange();
+                    range.setStart(firstCell, 0);
+                    range.collapse(true);
+                    this.editor.selection.setRange(range);
+                }
+            }
+        }
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
@@ -195,6 +249,7 @@ export default class TableModule {
         let index = [...cellRow.children].indexOf(cell);
         if (index < 0) return;
 
+        this.editor.selection.save();
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => {
             const reference = row.children[index];
@@ -203,6 +258,8 @@ export default class TableModule {
             newCell.innerHTML = '<br>';
             row.insertBefore(newCell, before ? reference : reference.nextSibling);
         });
+        this.editor.selection.restore();
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
@@ -217,6 +274,19 @@ export default class TableModule {
 
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => row.children[index]?.remove());
+        if (table.isConnected) {
+            const firstRow = table.querySelector('tr');
+            if (firstRow) {
+                const firstCell = firstRow.querySelector('td, th');
+                if (firstCell) {
+                    const range = document.createRange();
+                    range.setStart(firstCell, 0);
+                    range.collapse(true);
+                    this.editor.selection.setRange(range);
+                }
+            }
+        }
+        this.editor.selection.focus();
         this.editor.emitChange();
     }
 
@@ -262,6 +332,128 @@ export default class TableModule {
         this.editor.history.push();
         cell.style.backgroundColor = color;
         this.editor.emitChange();
+    }
+
+    setCellBorderColor(color) {
+        const cell = this.getCurrentCell();
+        if (!cell) return;
+        this.editor.history.push();
+        cell.style.borderColor = color;
+        this.editor.emitChange();
+    }
+
+    setCellBorderWidth(width) {
+        if (!width) return;
+        const cell = this.getCurrentCell();
+        if (!cell) return;
+        this.editor.history.push();
+        cell.style.borderWidth = width;
+        this.editor.emitChange();
+    }
+
+    /** @param {'next'|'prev'} direction */
+    navigateToCell(direction) {
+        const cell = this.getCurrentCell();
+        if (!cell) return;
+        const row = cell.closest('tr');
+        if (!row) return;
+        const table = row.closest('table');
+        if (!table) return;
+        const allRows = [...table.querySelectorAll('tr')];
+        const currentRowIndex = allRows.indexOf(row);
+        const cells = [...row.children];
+        const currentIndex = cells.indexOf(cell);
+
+        let nextRow, nextCells, nextIndex;
+
+        if (direction === 'next') {
+            if (currentIndex < cells.length - 1) {
+                nextIndex = currentIndex + 1;
+                nextCells = cells;
+                nextRow = row;
+            } else if (currentRowIndex < allRows.length - 1) {
+                nextRow = allRows[currentRowIndex + 1];
+                nextCells = [...nextRow.children];
+                nextIndex = Math.min(currentIndex, nextCells.length - 1);
+            } else {
+                this.addRow(false);
+                nextRow = row.nextElementSibling;
+                if (nextRow) {
+                    nextCells = [...nextRow.children];
+                    nextIndex = 0;
+                } else return;
+            }
+        } else {
+            if (currentIndex > 0) {
+                nextIndex = currentIndex - 1;
+                nextCells = cells;
+                nextRow = row;
+            } else if (currentRowIndex > 0) {
+                nextRow = allRows[currentRowIndex - 1];
+                nextCells = [...nextRow.children];
+                nextIndex = nextCells.length - 1;
+            } else return;
+        }
+
+        if (!nextRow || !nextCells) return;
+        const target = nextCells[nextIndex];
+        if (!target) return;
+
+        const range = document.createRange();
+        range.setStart(target, 0);
+        range.collapse(true);
+        this.editor.selection.setRange(range);
+        this.editor.selection.focus();
+    }
+
+    handleColumnResizeStart(event) {
+        const target = event.target;
+        if (!target.classList.contains('ife-col-resize-handle')) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const table = target.closest('table');
+        if (!table) return;
+        const startX = event.clientX;
+        const colIndex = parseInt(target.dataset.col, 10);
+        const startWidth = target.dataset.startWidth ? parseFloat(target.dataset.startWidth) : 0;
+
+        const onMove = (moveEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const newWidth = Math.max(20, startWidth + dx);
+            table.querySelectorAll('tr').forEach((row) => {
+                const cell = row.children[colIndex];
+                if (cell) cell.style.width = `${newWidth}px`;
+            });
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            this.addColumnResizeHandles();
+            this.editor.emitChange();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
+
+    addColumnResizeHandles() {
+        this.editor.root.querySelectorAll('.ife-col-resize-handle').forEach((el) => el.remove());
+        const tables = this.editor.root.querySelectorAll('table.ife-table');
+        tables.forEach((table) => {
+            const firstRow = table.querySelector('tr');
+            if (!firstRow) return;
+            [...firstRow.children].forEach((cell, index) => {
+                const handle = document.createElement('div');
+                handle.className = 'ife-col-resize-handle';
+                handle.dataset.col = index;
+                handle.dataset.startWidth = cell.getBoundingClientRect().width;
+                handle.style.left = `${cell.offsetLeft + cell.offsetWidth - 3}px`;
+                const row = firstRow;
+                row.style.position = 'relative';
+                handle.style.top = '0';
+                table.appendChild(handle);
+            });
+        });
     }
 
     setTableAlignment(align) {

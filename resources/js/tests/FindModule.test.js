@@ -144,4 +144,30 @@ describe('FindModule', () => {
         module.destroy();
         expect(editor.root.querySelectorAll('mark.ife-search-highlight').length).toBe(0);
     });
+
+    it('buildRegex throws on invalid regex pattern', () => {
+        const form = new FormData();
+        form.set('query', '[invalid');
+        form.set('caseSensitive', '');
+        form.set('useRegex', 'on');
+        expect(() => module.buildRegex(form)).toThrow();
+    });
+
+    it('does not highlight anything when regex is empty after trim', () => {
+        const form = new FormData();
+        form.set('query', '   ');
+        form.set('caseSensitive', '');
+        form.set('useRegex', 'on');
+        module.highlightAll(form);
+        expect(editor.root.querySelectorAll('mark.ife-search-highlight').length).toBe(0);
+    });
+
+    it('buildRegex returns null for empty query', () => {
+        const form = new FormData();
+        form.set('query', '');
+        form.set('caseSensitive', '');
+        form.set('useRegex', '');
+        const regex = module.buildRegex(form);
+        expect(regex).toBeNull();
+    });
 });

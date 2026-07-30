@@ -35,21 +35,22 @@ describe('Editor', () => {
         expect(removeCall[1]).toBe(handler);
     });
 
-    it('calls removeEventListener with the exact function passed to addEventListener', () => {
+    it('calls removeEventListener with the exact functions passed to addEventListener', () => {
         const editor = new Editor(textarea);
 
         const keydownAdds = document.addEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownAdds).toHaveLength(1);
+        expect(keydownAdds).toHaveLength(3);
 
         editor.destroy();
 
         const keydownRemoves = document.removeEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownRemoves).toHaveLength(1);
+        expect(keydownRemoves).toHaveLength(3);
         expect(keydownRemoves[0][1]).toBe(keydownAdds[0][1]);
+        expect(keydownRemoves[1][1]).toBe(keydownAdds[1][1]);
     });
 
     it('calls history.destroy() on editor destroy', () => {
@@ -68,5 +69,625 @@ describe('Editor', () => {
         editor.destroy();
 
         expect(clearTimeout).toHaveBeenCalled();
+    });
+
+    describe('handlePaste', () => {
+        it('sanitizes HTML paste and inserts via commands', () => {
+            const editor = new Editor(textarea);
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const sanitizeSpy = vi.spyOn(editor.sanitizer, 'sanitize').mockReturnValue('<p>clean</p>');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => type === 'text/html' ? '<script>alert(1)</script><p>hello</p>' : '' } };
+            editor.handlePaste(event);
+            expect(sanitizeSpy).toHaveBeenCalledWith('<script>alert(1)</script><p>hello</p>');
+            expect(spy).toHaveBeenCalledWith('<p>clean</p>');
+        });
+
+        it('escapes plain text paste when no HTML is available', () => {
+            const editor = new Editor(textarea);
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => (type === 'text/html' ? '' : type === 'text/plain' ? 'hello <world>\nline2' : '') } };
+            editor.handlePaste(event);
+            expect(spy).toHaveBeenCalledWith('hello &lt;world&gt;<br>line2');
+        });
+
+        it('auto-links URLs in plain text paste (escaped)', () => {
+            const editor = new Editor(textarea);
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => type === 'text/plain' ? 'visit https://example.com today' : '' } };
+            editor.handlePaste(event);
+            expect(spy).toHaveBeenCalledWith(expect.stringContaining('&lt;a href='));
+        });
+
+        it('emits paste event after insertion', () => {
+            const editor = new Editor(textarea);
+            const emitSpy = vi.spyOn(editor.events, 'emit');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => (type === 'text/html' ? undefined : type === 'text/plain' ? 'text' : '') } };
+            editor.handlePaste(event);
+            expect(emitSpy).toHaveBeenCalledWith('paste', { html: undefined, text: 'text' });
+        });
+
+        it('does nothing when editor is destroyed', () => {
+            const editor = new Editor(textarea);
+            editor.destroy();
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: () => '<p>test</p>' } };
+            editor.handlePaste(event);
+            expect(spy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleShortcut', () => {
+        let origActiveElementDescriptor;
+
+        beforeEach(() => {
+            document.execCommand = vi.fn();
+        });
+
+        function createShortcutEvent(overrides) {
+            return { preventDefault: vi.fn(), key: 'b', ctrlKey: true, metaKey: false, shiftKey: false, ...overrides };
+        }
+
+        function withActiveFocus(editor) {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => editor.root,
+            });
+            return editor;
+        }
+
+        afterEach(() => {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => document.body,
+            });
+        });
+
+        it('executes bold on Ctrl+B', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.commands, 'exec');
+            editor.handleShortcut(createShortcutEvent({ key: 'b' }));
+            expect(editor.commands.exec).toHaveBeenCalledWith('bold');
+        });
+
+        it('executes italic on Ctrl+I', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.commands, 'exec');
+            editor.handleShortcut(createShortcutEvent({ key: 'i' }));
+            expect(editor.commands.exec).toHaveBeenCalledWith('italic');
+        });
+
+        it('executes underline on Ctrl+U', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.commands, 'exec');
+            editor.handleShortcut(createShortcutEvent({ key: 'u' }));
+            expect(editor.commands.exec).toHaveBeenCalledWith('underline');
+        });
+
+        it('undoes on Ctrl+Z', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.history, 'undo');
+            editor.handleShortcut(createShortcutEvent({ key: 'z' }));
+            expect(editor.history.undo).toHaveBeenCalled();
+        });
+
+        it('redoes on Ctrl+Shift+Z', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.history, 'redo');
+            editor.handleShortcut(createShortcutEvent({ key: 'z', shiftKey: true }));
+            expect(editor.history.redo).toHaveBeenCalled();
+        });
+
+        it('redoes on Ctrl+Y', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            vi.spyOn(editor.history, 'redo');
+            editor.handleShortcut(createShortcutEvent({ key: 'y' }));
+            expect(editor.history.redo).toHaveBeenCalled();
+        });
+
+        it('opens link module on Ctrl+K', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const linkMock = { open: vi.fn() };
+            vi.spyOn(editor, 'module').mockReturnValue(linkMock);
+            editor.handleShortcut(createShortcutEvent({ key: 'k' }));
+            expect(linkMock.open).toHaveBeenCalled();
+        });
+
+        it('opens find module on Ctrl+F', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const findMock = { open: vi.fn() };
+            vi.spyOn(editor, 'module').mockReturnValue(findMock);
+            editor.handleShortcut(createShortcutEvent({ key: 'f' }));
+            expect(findMock.open).toHaveBeenCalled();
+        });
+
+        it('emits save event on Ctrl+S', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const emitSpy = vi.spyOn(editor.events, 'emit');
+            editor.handleShortcut(createShortcutEvent({ key: 's' }));
+            expect(emitSpy).toHaveBeenCalledWith('save', expect.any(String));
+        });
+
+        it('does nothing when editor is destroyed', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.destroy();
+            vi.spyOn(editor.commands, 'exec');
+            editor.handleShortcut(createShortcutEvent({ key: 'b' }));
+            expect(editor.commands.exec).not.toHaveBeenCalled();
+        });
+
+        it('does nothing when root does not contain active element', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.commands, 'exec');
+            editor.handleShortcut(createShortcutEvent({ key: 'b' }));
+            expect(editor.commands.exec).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleEnter', () => {
+        function withActiveFocus(ed) {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => ed.root,
+            });
+            return ed;
+        }
+
+        function resetActiveElement() {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => document.body,
+            });
+        }
+
+        function createEnterEvent(overrides) {
+            return { preventDefault: vi.fn(), key: 'Enter', shiftKey: false, ...overrides };
+        }
+
+        it('inserts a new paragraph inside blockquote on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 5);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('blockquote')).not.toBeNull();
+            const ps = editor.root.querySelectorAll('blockquote p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].textContent).toBe('hello');
+            expect(ps[1].innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits text at cursor position inside blockquote on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello world';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('blockquote p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].textContent).toBe('hello ');
+            expect(ps[1].textContent).toBe('world');
+            resetActiveElement();
+        });
+
+        it('exits blockquote when current paragraph is empty on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('blockquote')).toBeNull();
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(1);
+            expect(ps[0].innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('exits blockquote from empty paragraph at end of editor', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p1 = document.createElement('p');
+            p1.textContent = 'text';
+            const p2 = document.createElement('p');
+            p2.innerHTML = '<br>';
+            blockquote.appendChild(p1);
+            blockquote.appendChild(p2);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p2, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const blockquotes = editor.root.querySelectorAll('blockquote');
+            expect(blockquotes.length).toBe(1);
+            expect(blockquotes[0].querySelectorAll('p').length).toBe(1);
+            const allP = editor.root.querySelectorAll(':scope > p');
+            expect(allP.length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('exits <pre> when empty on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.innerHTML = '<br>';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('pre')).toBeNull();
+            const p = editor.root.querySelector('p');
+            expect(p).not.toBeNull();
+            expect(p.innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside blockquote', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+
+            const range = document.createRange();
+            range.setStart(p.firstChild, 5);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('blockquote p').length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('does nothing when editor is destroyed', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.destroy();
+            const blockquote = document.createElement('blockquote');
+            const p = document.createElement('p');
+            p.textContent = 'hello';
+            blockquote.appendChild(p);
+            editor.root.appendChild(blockquote);
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent());
+            expect(editor.history.push).not.toHaveBeenCalled();
+            resetActiveElement();
+        });
+
+        it('inserts a line break inside <pre> on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'code';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('pre')).not.toBeNull();
+            expect(pre.querySelector('br')).not.toBeNull();
+            resetActiveElement();
+        });
+
+        it('splits text at cursor inside <pre> on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'hello world';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(pre.textContent).toBe('hello world');
+            expect(pre.querySelectorAll('br').length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside <pre>', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'code';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(pre.querySelector('br')).toBeNull();
+            resetActiveElement();
+        });
+
+        it('does nothing when Enter is pressed outside a <pre>, blockquote or <code>', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>hello</p>';
+
+            const range = document.createRange();
+            range.selectNodeContents(editor.root.firstChild);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<p>hello</p>');
+            resetActiveElement();
+        });
+
+        it('splits paragraph and exits inline <code> on Enter at end of code', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code> more';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].innerHTML).toBe('text <code>code</code> more');
+            expect(ps[1].innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits text after inline <code> into new paragraph without code', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code> more';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 2);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].innerHTML).toBe('text <code>co</code> more');
+            expect(ps[1].textContent).toBe('de');
+            resetActiveElement();
+        });
+
+        it('removes empty <code> after split on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = '<code>code</code>';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(2);
+            expect(ps[0].querySelector('code')).toBeNull();
+            expect(ps[1].textContent).toBe('code');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside inline <code>', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const p = document.createElement('p');
+            p.innerHTML = 'text <code>code</code>';
+            editor.root.appendChild(p);
+
+            const codeEl = p.querySelector('code');
+            const range = document.createRange();
+            range.setStart(codeEl.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            const ps = editor.root.querySelectorAll('p');
+            expect(ps.length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('exits empty note on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-info';
+            note.innerHTML = '<br>';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.setStart(note, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('.note')).toBeNull();
+            const p = editor.root.querySelector('p');
+            expect(p).not.toBeNull();
+            expect(p.innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits note content on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-tip';
+            note.textContent = 'hello world';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.setStart(note.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('.note')).not.toBeNull();
+            expect(editor.root.querySelector('.note').textContent).toBe('hello ');
+            const p = editor.root.querySelector(':scope > p');
+            expect(p).not.toBeNull();
+            expect(p.textContent).toBe('world');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside a note', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-warning';
+            note.textContent = 'text';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.selectNodeContents(note);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('.note').length).toBe(1);
+            resetActiveElement();
+        });
+    });
+
+    describe('setHTML', () => {
+        it('sets sanitized HTML content', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.sanitizer, 'sanitize').mockReturnValue('<p>sanitized</p>');
+            editor.setHTML('<p>raw</p>');
+            expect(editor.sanitizer.sanitize).toHaveBeenCalledWith('<p>raw</p>');
+            expect(editor.root.innerHTML).toBe('<p>sanitized</p>');
+        });
+
+        it('pushes history after setting content', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.history, 'push');
+            editor.setHTML('<p>test</p>');
+            expect(editor.history.push).toHaveBeenCalled();
+        });
+    });
+
+    describe('clear', () => {
+        it('clears editor content', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>content</p>');
+            editor.clear();
+            expect(editor.root.innerHTML).toBe('<div><br></div>');
+        });
+
+        it('clears history after clearing', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.history, 'clear');
+            editor.clear();
+            expect(editor.history.clear).toHaveBeenCalled();
+        });
+    });
+
+    describe('getText', () => {
+        it('returns text content of the editor', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>hello <strong>world</strong></p>');
+            expect(editor.getText()).toBe('hello world');
+        });
+
+        it('returns empty string for empty editor', () => {
+            const editor = new Editor(textarea);
+            editor.clear();
+            expect(editor.getText()).toBe('');
+        });
+    });
+
+    describe('focus', () => {
+        it('focuses the editor root', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.root, 'focus');
+            editor.focus();
+            expect(editor.root.focus).toHaveBeenCalled();
+        });
+    });
+
+    describe('getHTML', () => {
+        it('returns sanitized HTML', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor.sanitizer, 'sanitize').mockReturnValue('<p>clean</p>');
+            const result = editor.getHTML();
+            expect(result).toBe('<p>clean</p>');
+        });
     });
 });

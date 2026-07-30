@@ -2,14 +2,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import CodeViewModule from '../src/modules/CodeViewModule.js';
 
 function createMockEditor() {
+    const root = document.createElement('div');
+    const wrapper = document.createElement('div');
     return {
-        root: document.createElement('div'),
-        wrapper: document.createElement('div'),
+        root,
+        wrapper,
         history: { push: () => {} },
         events: { on: () => {}, emit: () => {} },
         sanitizer: { sanitize: (h) => h },
-        getHTML: () => '<p>hello</p>',
-        setHTML: () => {},
+        getHTML: () => root.innerHTML,
+        setHTML: (html) => { root.innerHTML = html; },
     };
 }
 
@@ -59,14 +61,46 @@ describe('CodeViewModule', () => {
     });
 
     it('entering code view records history', () => {
-        const pushSpy = editor.history.push = () => {};
+        const pushSpy = vi.spyOn(editor.history, 'push');
         module.toggle();
         expect(module.active).toBe(true);
+        expect(pushSpy).toHaveBeenCalled();
     });
 
     it('destroy removes source textarea', () => {
         module.toggle();
         module.destroy();
         expect(editor.wrapper.querySelector('textarea.ife-source-view')).toBeNull();
+    });
+
+    describe('round-trip', () => {
+        it('exiting code view sets sanitized HTML and restores WYSIWYG', () => {
+            module.toggle();
+            const textarea = editor.wrapper.querySelector('textarea.ife-source-view');
+            textarea.value = '<p>modified content</p>';
+
+            module.toggle();
+
+            expect(module.active).toBe(false);
+            expect(editor.root.style.display).toBe('');
+            expect(editor.wrapper.querySelector('textarea.ife-source-view')).toBeNull();
+            expect(editor.root.innerHTML).toBe('<p>modified content</p>');
+        });
+
+        it('code view round-trip passes through sanitizer', () => {
+            const sanitizeSpy = vi.spyOn(editor.sanitizer, 'sanitize').mockImplementation((h) => h);
+            module.toggle();
+            const textarea = editor.wrapper.querySelector('textarea.ife-source-view');
+            textarea.value = '<p>source</p>';
+            module.toggle();
+            expect(sanitizeSpy).toHaveBeenCalledWith('<p>source</p>');
+        });
+
+        it('restores editor root display after round-trip', () => {
+            module.toggle();
+            expect(editor.root.style.display).toBe('none');
+            module.toggle();
+            expect(editor.root.style.display).toBe('');
+        });
     });
 });

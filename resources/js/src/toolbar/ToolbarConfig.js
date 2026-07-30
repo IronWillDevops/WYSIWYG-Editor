@@ -1,4 +1,5 @@
 import Icons from '../icons/Icons.js';
+import Dialog from '../utils/Dialog.js';
 
 /**
  * Declarative button registry. `command` buttons call editor.commands.exec()
@@ -18,47 +19,6 @@ import Icons from '../icons/Icons.js';
 const ToolbarConfig = {
     undo: { icon: Icons.undo, label: 'Undo', shortcut: 'Ctrl+Z', type: 'action', action: (e) => e.undo() },
     redo: { icon: Icons.redo, label: 'Redo', shortcut: 'Ctrl+Y', type: 'action', action: (e) => e.redo() },
-
-    blockFormat: {
-        label: 'Paragraph style',
-        type: 'select',
-        options: [
-            ['p', 'Paragraph'],
-            ['h1', 'Heading 1'],
-            ['h2', 'Heading 2'],
-            ['h3', 'Heading 3'],
-            ['h4', 'Heading 4'],
-            ['h5', 'Heading 5'],
-            ['h6', 'Heading 6'],
-            ['blockquote', 'Blockquote'],
-            ['pre', 'Preformatted'],
-        ],
-        onChange: (editor, value) => editor.commands.exec('blockFormat', value),
-    },
-
-    fontFamily: {
-        label: 'Font family',
-        type: 'select',
-        options: [
-            ['', 'Default'],
-            ['Arial, sans-serif', 'Arial'],
-            ['Georgia, serif', 'Georgia'],
-            ['"Courier New", monospace', 'Courier New'],
-            ['"Times New Roman", serif', 'Times New Roman'],
-            ['Verdana, sans-serif', 'Verdana'],
-        ],
-        onChange: (editor, value) => editor.commands.exec('fontName', value),
-    },
-
-    fontSize: {
-        label: 'Font size',
-        type: 'select',
-        options: [
-            ['12px', '12'], ['14px', '14'], ['16px', '16'], ['18px', '18'],
-            ['24px', '24'], ['32px', '32'], ['48px', '48'],
-        ],
-        onChange: (editor, value) => editor.commands.exec('fontSize', value),
-    },
 
     bold: { icon: Icons.bold, label: 'Bold', shortcut: 'Ctrl+B', type: 'command', command: 'bold' },
     italic: { icon: Icons.italic, label: 'Italic', shortcut: 'Ctrl+I', type: 'command', command: 'italic' },
@@ -109,14 +69,52 @@ const ToolbarConfig = {
     table: { icon: Icons.table, label: 'Insert table', type: 'action', action: (e) => e.module('table').openInsertDialog() },
     hr: { icon: Icons.hr, label: 'Horizontal rule', type: 'action', action: (e) => e.module('media').insertHorizontalRule() },
 
-    blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => e.commands.exec('blockFormat', 'blockquote') },
+    blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => {
+        const block = e.selection.getBlockElement();
+        if (!block || block === e.root) return;
+
+        const insideBq = block.tagName === 'BLOCKQUOTE' || block.closest('blockquote');
+        if (insideBq) {
+            // Unwrap: replace the outer blockquote with a plain <p>
+            const bq = block.tagName === 'BLOCKQUOTE' ? block : block.closest('blockquote');
+            e.history.push();
+            const p = document.createElement('p');
+            p.innerHTML = bq.innerHTML;
+            bq.replaceWith(p);
+        } else {
+            // Wrap: keep the block wrapper so Enter stays inside the blockquote
+            e.history.push();
+            const bq = document.createElement('blockquote');
+            bq.innerHTML = block.outerHTML;
+            block.replaceWith(bq);
+        }
+        e.emitChange();
+    } },
     codeInline: {
         icon: Icons.code,
         label: 'Inline code',
         type: 'action',
         action: (e) => e.selection.wrap('code') && e.emitChange(),
     },
-    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => e.commands.exec('blockFormat', 'pre') },
+    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => {
+        const block = e.selection.getBlockElement();
+        if (!block || block === e.root) return;
+
+        const insidePre = block.tagName === 'PRE' || block.closest('pre');
+        e.history.push();
+
+        if (insidePre) {
+            const pre = block.tagName === 'PRE' ? block : block.closest('pre');
+            const p = document.createElement('p');
+            p.innerHTML = pre.innerHTML;
+            pre.replaceWith(p);
+        } else {
+            const pre = document.createElement('pre');
+            pre.innerHTML = block.innerHTML;
+            block.replaceWith(pre);
+        }
+        e.emitChange();
+    } },
     note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note').open() },
 
     emoji: {
@@ -146,6 +144,137 @@ const ToolbarConfig = {
         type: 'action',
         toggle: true,
         action: (e) => e.module('fullscreen').toggle(),
+    },
+
+    ltr: {
+        icon: Icons.ltr,
+        label: 'Left-to-right',
+        type: 'action',
+        toggle: true,
+        action: (e) => e.commands.exec('direction', 'ltr'),
+    },
+    rtl: {
+        icon: Icons.rtl,
+        label: 'Right-to-left',
+        type: 'action',
+        toggle: true,
+        action: (e) => e.commands.exec('direction', 'rtl'),
+    },
+
+    markdown: {
+        icon: Icons.markdown,
+        label: 'Markdown',
+        type: 'action',
+        toggle: true,
+        action: (e) => {
+            const md = e.module('markdown');
+            if (!md) return;
+            if (e.root.dataset.markdownMode === 'true') {
+                e.root.dataset.markdownMode = 'false';
+                const currentHtml = e.getHTML();
+                const freshMd = md.htmlToMarkdown(currentHtml);
+                e.setHTML(md.markdownToHtml(freshMd));
+            } else {
+                e._mdSource = md.export();
+                md.import(e._mdSource);
+                e.root.dataset.markdownMode = 'true';
+            }
+        },
+    },
+
+    date: {
+        icon: Icons.date,
+        label: 'Insert date',
+        type: 'action',
+        action: (e) => {
+            const now = new Date();
+            const formatted = now.toLocaleDateString(e.options.locale ?? 'en', { year: 'numeric', month: 'long', day: 'numeric' });
+            e.commands.insertHTML(formatted);
+        },
+    },
+    time: {
+        icon: Icons.time,
+        label: 'Insert time',
+        type: 'action',
+        action: (e) => {
+            const now = new Date();
+            const formatted = now.toLocaleTimeString(e.options.locale ?? 'en', { hour: '2-digit', minute: '2-digit' });
+            e.commands.insertHTML(formatted);
+        },
+    },
+
+    anchor: {
+        icon: Icons.anchor,
+        label: 'Insert anchor',
+        type: 'action',
+        action: (e) => {
+            const name = prompt('Anchor name:');
+            if (!name) return;
+            e.history.push();
+            const a = document.createElement('a');
+            a.name = name.trim();
+            const range = e.selection.getRange();
+            if (range) {
+                range.deleteContents();
+                range.insertNode(a);
+            }
+            e.emitChange();
+        },
+    },
+
+    templates: {
+        icon: Icons.template,
+        label: 'Content templates',
+        type: 'action',
+        action: (e) => e.module('templates')?.open(),
+    },
+
+    listProps: {
+        icon: Icons.listProps,
+        label: 'List properties',
+        type: 'action',
+        action: (e) => {
+            const li = e.selection.closest('li');
+            const list = li?.closest('ol, ul');
+            if (!list || list.tagName !== 'OL') return;
+            const currentStart = list.getAttribute('start') || '';
+            const currentType = list.style.listStyleType || '';
+            const body = `
+                <label class="ife-field">
+                    <span>Start number</span>
+                    <input type="number" name="start" min="1" value="${currentStart || '1'}">
+                </label>
+                <label class="ife-field">
+                    <span>List style type</span>
+                    <select name="type">
+                        <option value="" ${!currentType ? 'selected' : ''}>Default (decimal)</option>
+                        <option value="decimal" ${currentType === 'decimal' ? 'selected' : ''}>Decimal</option>
+                        <option value="lower-alpha" ${currentType === 'lower-alpha' ? 'selected' : ''}>Lower alpha</option>
+                        <option value="upper-alpha" ${currentType === 'upper-alpha' ? 'selected' : ''}>Upper alpha</option>
+                        <option value="lower-roman" ${currentType === 'lower-roman' ? 'selected' : ''}>Lower roman</option>
+                        <option value="upper-roman" ${currentType === 'upper-roman' ? 'selected' : ''}>Upper roman</option>
+                    </select>
+                </label>
+            `;
+            const dialog = new Dialog(e.wrapper, {
+                title: 'List properties',
+                bodyHtml: body,
+                confirmLabel: 'Apply',
+                onConfirm: (form) => {
+                    const data = new FormData(form);
+                    const start = data.get('start');
+                    const type = data.get('type');
+                    e.history.push();
+                    if (start) list.setAttribute('start', String(start));
+                    else list.removeAttribute('start');
+                    if (type) list.style.listStyleType = type;
+                    else list.style.listStyleType = '';
+                    e.emitChange();
+                },
+            });
+            e.selection.save();
+            dialog.open();
+        },
     },
 };
 

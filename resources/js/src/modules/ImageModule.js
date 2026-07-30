@@ -12,6 +12,7 @@ export default class ImageModule {
         this.handleClick = this.handleClick.bind(this);
         this.handleDblClick = this.handleDblClick.bind(this);
         this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleResizeStart = this.handleResizeStart.bind(this);
 
         // Delegated on the root (rather than attached per-<img>) so this also
         // covers images that were already present in content loaded via
@@ -185,6 +186,11 @@ export default class ImageModule {
         range?.deleteContents();
         range?.insertNode(figure);
 
+        const newRange = document.createRange();
+        newRange.setStartAfter(figure);
+        newRange.collapse(true);
+        this.editor.selection.setRange(newRange);
+
         this.editor.emitChange();
     }
 
@@ -209,15 +215,11 @@ export default class ImageModule {
             else img.removeAttribute('loading');
         }
 
-        let figcaption = figure.querySelector('figcaption');
+        figure.querySelectorAll('figcaption').forEach((fc) => fc.remove());
         if (caption) {
-            if (!figcaption) {
-                figcaption = document.createElement('figcaption');
-                figure.appendChild(figcaption);
-            }
+            const figcaption = document.createElement('figcaption');
             figcaption.textContent = caption;
-        } else if (figcaption) {
-            figcaption.remove();
+            figure.appendChild(figcaption);
         }
 
         figure.classList.remove('ife-image--selected');
@@ -228,7 +230,64 @@ export default class ImageModule {
     handleClick(event) {
         const img = event.target.closest('figure.ife-image img');
         this.editor.root.querySelectorAll('.ife-image--selected').forEach((el) => el.classList.remove('ife-image--selected'));
-        if (img) img.closest('figure')?.classList.add('ife-image--selected');
+        if (img) {
+            img.closest('figure')?.classList.add('ife-image--selected');
+            this.showResizeHandles(img);
+        } else {
+            this.hideResizeHandles();
+        }
+    }
+
+    /** Adds visible resize handles around a selected image. */
+    showResizeHandles(img) {
+        this.hideResizeHandles();
+        const container = document.createElement('div');
+        container.className = 'ife-image-resize-handles';
+        const positions = ['nw', 'ne', 'sw', 'se'];
+        positions.forEach((pos) => {
+            const handle = document.createElement('div');
+            handle.className = `ife-image-resize-handle ife-image-resize-handle--${pos}`;
+            handle.addEventListener('mousedown', (e) => this.handleResizeStart(e, img));
+            container.appendChild(handle);
+        });
+        if (img.parentElement) img.parentElement.appendChild(container);
+    }
+
+    /** Removes visible resize handles. */
+    hideResizeHandles() {
+        this.editor.root.querySelectorAll('.ife-image-resize-handles').forEach((el) => el.remove());
+    }
+
+    /** Drag-start for visible resize handles. */
+    handleResizeStart(event, img) {
+        event.preventDefault();
+        event.stopPropagation();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startWidth = img.getBoundingClientRect().width;
+        const startHeight = img.getBoundingClientRect().height;
+
+        const onMove = (moveEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+            const ratio = startWidth / startHeight;
+            let newW = Math.max(40, startWidth + dx);
+            let newH = Math.max(40, startHeight + dy);
+            if (Math.abs(dx) > Math.abs(dy)) {
+                newH = newW / ratio;
+            } else {
+                newW = newH * ratio;
+            }
+            img.style.width = `${Math.round(newW)}px`;
+            img.style.height = `${Math.round(newH)}px`;
+        };
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            this.editor.emitChange();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
     }
 
     /** Double-clicking an image opens the edit dialog directly. */
@@ -290,5 +349,6 @@ export default class ImageModule {
         this.editor.root.removeEventListener('click', this.handleClick);
         this.editor.root.removeEventListener('dblclick', this.handleDblClick);
         this.editor.root.removeEventListener('mousedown', this.handleMouseDown);
+        this.hideResizeHandles();
     }
 }

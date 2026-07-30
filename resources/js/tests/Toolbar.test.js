@@ -14,6 +14,8 @@ function createMockEditor() {
             save: vi.fn(),
             restore: vi.fn(),
             getBlockElement: vi.fn(() => null),
+            getNativeSelection: vi.fn(() => null),
+            getRange: vi.fn(() => null),
         },
         commands: { queryState: vi.fn(() => false), exec: vi.fn() },
         on: vi.fn(),
@@ -46,13 +48,6 @@ describe('Toolbar', () => {
         const btn = toolbar.el.querySelector('[data-command="bold"]');
         expect(btn).not.toBeNull();
         expect(btn.tagName).toBe('BUTTON');
-    });
-
-    it('renders a select for blockFormat', () => {
-        toolbar = new Toolbar(editor);
-        const select = toolbar.buttons.get('blockFormat');
-        expect(select).not.toBeNull();
-        expect(select.tagName).toBe('SELECT');
     });
 
     it('renders a color picker for forecolor', () => {
@@ -157,4 +152,5 @@ describe('Toolbar', () => {
         toolbar.syncActiveStates();
         expect(btn.classList.contains('is-active')).toBe(true);
     });
+
 });
