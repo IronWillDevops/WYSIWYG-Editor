@@ -10,6 +10,8 @@ import MediaModule from './MediaModule.js';
 import MarkdownModule from './MarkdownModule.js';
 import StatusBar from './StatusBar.js';
 import EmojiModule from './EmojiModule.js';
+import ContextMenu from './ContextMenu.js';
+import TemplateModule from './TemplateModule.js';
 
 /**
  * Built-in modules are registered through the same public plugin API that
@@ -28,6 +30,8 @@ const BUILTIN_MODULES = {
     markdown: MarkdownModule,
     statusBar: StatusBar,
     emoji: EmojiModule,
+    contextMenu: ContextMenu,
+    templates: TemplateModule,
 };
 
 Object.entries(BUILTIN_MODULES).forEach(([name, ModuleClass]) => {

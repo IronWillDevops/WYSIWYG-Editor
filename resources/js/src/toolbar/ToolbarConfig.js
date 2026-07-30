@@ -1,4 +1,5 @@
 import Icons from '../icons/Icons.js';
+import Dialog from '../utils/Dialog.js';
 
 /**
  * Declarative button registry. `command` buttons call editor.commands.exec()
@@ -146,6 +147,135 @@ const ToolbarConfig = {
         type: 'action',
         toggle: true,
         action: (e) => e.module('fullscreen').toggle(),
+    },
+
+    ltr: {
+        icon: Icons.ltr,
+        label: 'Left-to-right',
+        type: 'action',
+        toggle: true,
+        action: (e) => e.commands.exec('direction', 'ltr'),
+    },
+    rtl: {
+        icon: Icons.rtl,
+        label: 'Right-to-left',
+        type: 'action',
+        toggle: true,
+        action: (e) => e.commands.exec('direction', 'rtl'),
+    },
+
+    markdown: {
+        icon: Icons.markdown,
+        label: 'Markdown',
+        type: 'action',
+        toggle: true,
+        action: (e) => {
+            const md = e.module('markdown');
+            if (!md) return;
+            if (e.root.dataset.markdownMode === 'true') {
+                e.root.dataset.markdownMode = 'false';
+                e.setHTML(md.markdownToHtml(e._mdSource || ''));
+            } else {
+                e._mdSource = md.export();
+                md.import(e._mdSource);
+                e.root.dataset.markdownMode = 'true';
+            }
+        },
+    },
+
+    date: {
+        icon: Icons.date,
+        label: 'Insert date',
+        type: 'action',
+        action: (e) => {
+            const now = new Date();
+            const formatted = now.toLocaleDateString(e.options.locale ?? 'en', { year: 'numeric', month: 'long', day: 'numeric' });
+            e.commands.insertHTML(formatted);
+        },
+    },
+    time: {
+        icon: Icons.time,
+        label: 'Insert time',
+        type: 'action',
+        action: (e) => {
+            const now = new Date();
+            const formatted = now.toLocaleTimeString(e.options.locale ?? 'en', { hour: '2-digit', minute: '2-digit' });
+            e.commands.insertHTML(formatted);
+        },
+    },
+
+    anchor: {
+        icon: Icons.anchor,
+        label: 'Insert anchor',
+        type: 'action',
+        action: (e) => {
+            const name = prompt('Anchor name:');
+            if (!name) return;
+            e.history.push();
+            const a = document.createElement('a');
+            a.name = name.trim();
+            const range = e.selection.getRange();
+            if (range) {
+                range.deleteContents();
+                range.insertNode(a);
+            }
+            e.emitChange();
+        },
+    },
+
+    templates: {
+        icon: Icons.template,
+        label: 'Content templates',
+        type: 'action',
+        action: (e) => e.module('templates')?.open(),
+    },
+
+    listProps: {
+        icon: Icons.listProps,
+        label: 'List properties',
+        type: 'action',
+        action: (e) => {
+            const li = e.selection.closest('li');
+            const list = li?.closest('ol, ul');
+            if (!list || list.tagName !== 'OL') return;
+            const currentStart = list.getAttribute('start') || '';
+            const currentType = list.style.listStyleType || '';
+            const body = `
+                <label class="ife-field">
+                    <span>Start number</span>
+                    <input type="number" name="start" min="1" value="${currentStart || '1'}">
+                </label>
+                <label class="ife-field">
+                    <span>List style type</span>
+                    <select name="type">
+                        <option value="" ${!currentType ? 'selected' : ''}>Default (decimal)</option>
+                        <option value="decimal" ${currentType === 'decimal' ? 'selected' : ''}>Decimal</option>
+                        <option value="lower-alpha" ${currentType === 'lower-alpha' ? 'selected' : ''}>Lower alpha</option>
+                        <option value="upper-alpha" ${currentType === 'upper-alpha' ? 'selected' : ''}>Upper alpha</option>
+                        <option value="lower-roman" ${currentType === 'lower-roman' ? 'selected' : ''}>Lower roman</option>
+                        <option value="upper-roman" ${currentType === 'upper-roman' ? 'selected' : ''}>Upper roman</option>
+                    </select>
+                </label>
+            `;
+            const dialog = new Dialog(e.wrapper, {
+                title: 'List properties',
+                bodyHtml: body,
+                confirmLabel: 'Apply',
+                onConfirm: (form) => {
+                    const data = new FormData(form);
+                    const start = data.get('start');
+                    const type = data.get('type');
+                    e.history.push();
+                    if (start) list.setAttribute('start', String(start));
+                    else list.removeAttribute('start');
+                    if (type) list.style.listStyleType = type;
+                    else list.style.listStyleType = '';
+                    e.emitChange();
+                },
+            });
+            e.selection.save();
+            dialog.open();
+        },
     },
 };
 

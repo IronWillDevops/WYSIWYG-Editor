@@ -122,6 +122,10 @@ export default class Commands {
                 this.setInlineStyle('lineHeight', value, true);
                 break;
 
+            case 'direction':
+                this.setDirection(value);
+                break;
+
             case 'removeFormat':
                 // Native removeFormat strips most inline formatting elements
                 // (b/i/u/s/sup/sub/span[style]) but browsers are inconsistent
@@ -181,6 +185,18 @@ export default class Commands {
         range.selectNodeContents(replacement);
         range.collapse(false);
         this.selection.setRange(range);
+    }
+
+    /**
+     * Sets the text direction (ltr/rtl) on the current block element.
+     * @param {'ltr'|'rtl'} dir
+     */
+    setDirection(dir) {
+        const block = this.selection.getBlockElement();
+        if (block) {
+            block.dir = dir;
+            return;
+        }
     }
 
     /**

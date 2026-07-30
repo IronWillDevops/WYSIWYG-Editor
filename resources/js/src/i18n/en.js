@@ -34,4 +34,12 @@ export default {
     bulletList: 'Bullet list',
     linkLabel: 'Link',
     code: 'Code',
+    ltr: 'Left-to-right',
+    rtl: 'Right-to-left',
+    markdown: 'Markdown',
+    date: 'Insert date',
+    time: 'Insert time',
+    anchor: 'Insert anchor',
+    templates: 'Content templates',
+    listProps: 'List properties',
 };

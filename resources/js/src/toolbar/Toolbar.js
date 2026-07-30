@@ -7,10 +7,13 @@ const DEFAULT_LAYOUT = [
     ['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'],
     ['forecolor', 'backcolor', 'removeFormat'],
     ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'],
-    ['bulletList', 'orderedList', 'checklist', 'indent', 'outdent'],
+    ['ltr', 'rtl'],
+    ['bulletList', 'orderedList', 'checklist', 'indent', 'outdent', 'listProps'],
     ['link', 'unlink', 'image', 'video', 'audio', 'table', 'hr'],
     ['blockquote', 'codeInline', 'codeBlock', 'note'],
     ['emoji', 'specialChars'],
+    ['date', 'time', 'anchor', 'templates'],
+    ['markdown'],
     ['find', 'sourceCode', 'fullscreen'],
 ];
 
@@ -175,6 +178,29 @@ export default class Toolbar {
                 button.classList.toggle('is-active', activeAlign === id.replace('align', '').toLowerCase());
             }
         });
+
+        const dirBtnLtr = this.buttons.get('ltr');
+        const dirBtnRtl = this.buttons.get('rtl');
+        if (dirBtnLtr instanceof HTMLElement && dirBtnRtl instanceof HTMLElement) {
+            let activeDir = '';
+            if (block) {
+                let el = block;
+                while (el && el !== this.editor.root) {
+                    if (el.dir) {
+                        activeDir = el.dir;
+                        break;
+                    }
+                    el = el.parentElement;
+                }
+            }
+            dirBtnLtr.classList.toggle('is-active', activeDir === 'ltr');
+            dirBtnRtl.classList.toggle('is-active', activeDir === 'rtl');
+        }
+
+        const markdownBtn = this.buttons.get('markdown');
+        if (markdownBtn instanceof HTMLElement) {
+            markdownBtn.classList.toggle('is-active', this.editor.root.dataset.markdownMode === 'true');
+        }
 
         const blockquoteBtn = this.buttons.get('blockquote');
         if (blockquoteBtn instanceof HTMLElement) {

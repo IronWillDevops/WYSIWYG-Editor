@@ -34,4 +34,12 @@ export default {
     bulletList: 'Маркований список',
     linkLabel: 'Посилання',
     code: 'Код',
+    ltr: 'Зліва направо',
+    rtl: 'Справа наліво',
+    markdown: 'Markdown',
+    date: 'Вставити дату',
+    time: 'Вставити час',
+    anchor: 'Вставити якір',
+    templates: 'Шаблони',
+    listProps: 'Властивості списку',
 };

@@ -56,6 +56,9 @@ export default class Editor {
         });
 
         this.handleShortcut = this.handleShortcut.bind(this);
+        this.handleTableTab = this.handleTableTab.bind(this);
+        this.handleDragOver = this.handleDragOver.bind(this);
+        this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
         this.applyTheme(this.options.theme);
 
@@ -103,8 +106,11 @@ export default class Editor {
 
         this.root.addEventListener('paste', (event) => this.handlePaste(event));
         this.root.addEventListener('drop', (event) => this.events.emit('drop', event));
+        this.root.addEventListener('dragover', (event) => this.handleDragOver(event));
+        this.root.addEventListener('dragleave', (event) => this.handleDragLeave(event));
 
         document.addEventListener('keydown', this.handleShortcut);
+        document.addEventListener('keydown', this.handleTableTab);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -185,9 +191,22 @@ export default class Editor {
         if (this.destroyed) return;
         const html = event.clipboardData?.getData('text/html');
         const text = event.clipboardData?.getData('text/plain') ?? '';
-        const clean = html ? this.sanitizer.sanitize(html) : this.escapeHtml(text);
+        let clean;
+        if (html) {
+            clean = this.sanitizer.sanitize(html);
+        } else {
+            clean = this.escapeHtml(this.autoLink(text));
+        }
         this.commands.insertHTML(clean);
         this.events.emit('paste', { html, text });
+    }
+
+    /** Converts URLs in plain text to clickable <a> links. */
+    autoLink(text) {
+        return text.replace(
+            /(https?:\/\/[^\s<]+)/gi,
+            '<a href="$1">$1</a>'
+        );
     }
 
     /** @param {string} text */
@@ -219,6 +238,38 @@ export default class Editor {
             event.preventDefault();
             handler();
         }
+    }
+
+    /** @param {KeyboardEvent} event */
+    handleTableTab(event) {
+        if (event.key !== 'Tab') return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const tableModule = this.module('table');
+        if (!tableModule || !tableModule.getCurrentTable()) return;
+
+        event.preventDefault();
+        const backward = event.shiftKey;
+        tableModule.navigateToCell(backward ? 'prev' : 'next');
+    }
+
+    /** @param {DragEvent} event */
+    handleDragOver(event) {
+        if (this.destroyed) return;
+        const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
+        if (!dropIndicator) {
+            const indicator = document.createElement('div');
+            indicator.className = 'ife-drop-cursor';
+            this.wrapper.appendChild(indicator);
+        }
+    }
+
+    /** @param {DragEvent} event */
+    handleDragLeave(event) {
+        if (this.destroyed) return;
+        if (event.relatedTarget && this.wrapper.contains(event.relatedTarget)) return;
+        const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
+        if (dropIndicator) dropIndicator.remove();
     }
 
     setupAutosave() {
@@ -322,6 +373,9 @@ export default class Editor {
         this.events.emit('destroy', this);
         clearInterval(this.autosaveTimer);
         document.removeEventListener('keydown', this.handleShortcut);
+        document.removeEventListener('keydown', this.handleTableTab);
+        this.root.removeEventListener('dragover', this.handleDragOver);
+        this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();
         this.wrapper.remove();
         this.textarea.style.display = '';

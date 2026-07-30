@@ -35,21 +35,22 @@ describe('Editor', () => {
         expect(removeCall[1]).toBe(handler);
     });
 
-    it('calls removeEventListener with the exact function passed to addEventListener', () => {
+    it('calls removeEventListener with the exact functions passed to addEventListener', () => {
         const editor = new Editor(textarea);
 
         const keydownAdds = document.addEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownAdds).toHaveLength(1);
+        expect(keydownAdds).toHaveLength(2);
 
         editor.destroy();
 
         const keydownRemoves = document.removeEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownRemoves).toHaveLength(1);
+        expect(keydownRemoves).toHaveLength(2);
         expect(keydownRemoves[0][1]).toBe(keydownAdds[0][1]);
+        expect(keydownRemoves[1][1]).toBe(keydownAdds[1][1]);
     });
 
     it('calls history.destroy() on editor destroy', () => {
