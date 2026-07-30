@@ -287,7 +287,36 @@ export default class Editor {
         this.history.push();
 
         if (isPre) {
-            this._insertBreakInPre(range);
+            const isEmpty = !block.textContent.trim();
+            if (isEmpty) {
+                const p = document.createElement('p');
+                p.innerHTML = '<br>';
+                block.parentNode.insertBefore(p, block.nextSibling);
+                block.parentNode.removeChild(block);
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+            } else {
+                this._insertBreakInPre(range);
+            }
+            this.emitChange();
+            return;
+        }
+
+        const isEmpty = !block.textContent.trim();
+        if (isEmpty) {
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+            blockquote.parentNode.insertBefore(p, blockquote.nextSibling);
+            block.parentNode.removeChild(block);
+            if (!blockquote.textContent.trim() && !blockquote.children.length) {
+                blockquote.parentNode.removeChild(blockquote);
+            }
+            const newRange = document.createRange();
+            newRange.setStart(p, 0);
+            newRange.collapse(true);
+            this.selection.setRange(newRange);
             this.emitChange();
             return;
         }
