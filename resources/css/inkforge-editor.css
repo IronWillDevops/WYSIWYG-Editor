@@ -353,6 +353,7 @@
 }
 
 .ife-source-view {
+    box-sizing: border-box;
     width: 100%;
     min-height: 300px;
     border: none;
@@ -363,6 +364,7 @@
     font-size: 13px;
     background: var(--ife-bg);
     color: var(--ife-text);
+    overflow-x: auto;
 }
 
 /* Note blocks (mirrors Bootstrap/Tailwind alert palettes) */
