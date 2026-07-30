@@ -175,4 +175,148 @@ describe('Commands', () => {
         expect(root.querySelector('ol')).not.toBeNull();
         expect(root.querySelector('ul')).toBeNull();
     });
+
+    describe('exec — formatting commands', () => {
+        beforeEach(() => {
+            document.execCommand = vi.fn();
+        });
+
+        it('superscript toggles styleWithCSS off, calls execCommand, then restores it', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('superscript');
+
+            expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, false);
+            expect(document.execCommand).toHaveBeenCalledWith('superscript', false, undefined);
+            expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, true);
+        });
+
+        it('subscript toggles styleWithCSS off, calls execCommand, then restores it', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('subscript');
+
+            expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, false);
+            expect(document.execCommand).toHaveBeenCalledWith('subscript', false, undefined);
+            expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, true);
+        });
+
+        it('foreColor with value calls execCommand foreColor', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', 'red');
+
+            expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, 'red');
+        });
+
+        it('foreColor without value calls clearColor', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', null);
+
+            expect(commands.clearColor).toHaveBeenCalledWith('color');
+        });
+
+        it('backColor with value calls execCommand hiliteColor', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', 'yellow');
+
+            expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, 'yellow');
+        });
+
+        it('backColor without value calls clearColor', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', null);
+
+            expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
+        });
+
+        it('removeFormat calls execCommand removeFormat and clearInlineStyles', () => {
+            vi.spyOn(commands, 'clearInlineStyles');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('removeFormat');
+
+            expect(document.execCommand).toHaveBeenCalledWith('removeFormat', false);
+            expect(commands.clearInlineStyles).toHaveBeenCalled();
+        });
+    });
+
+    describe('exec — lineHeight', () => {
+        it('sets line-height on the current block', () => {
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.selectNodeContents(p.firstChild);
+            editor.selection.setRange(range);
+
+            commands.exec('lineHeight', '2');
+
+            expect(p.style.lineHeight).toBe('2');
+        });
+    });
+
+    describe('clearColor', () => {
+        it('removes color style from elements in range', () => {
+            root.innerHTML = '<p><span style="color: red;">red</span> normal</p>';
+            const span = root.querySelector('span');
+            const range = document.createRange();
+            range.selectNodeContents(span.firstChild);
+            editor.selection.setRange(range);
+
+            commands.clearColor('color');
+
+            expect(span.style.color).toBe('');
+        });
+
+        it('removes empty span after clearing style', () => {
+            root.innerHTML = '<p><span style="color: red;">text</span></p>';
+            const span = root.querySelector('span');
+            const range = document.createRange();
+            range.selectNodeContents(span.firstChild);
+            editor.selection.setRange(range);
+
+            commands.clearColor('color');
+
+            expect(root.querySelector('span')).toBeNull();
+        });
+    });
+
+    describe('clearInlineStyles', () => {
+        it('removes all style attributes from elements in range', () => {
+            root.innerHTML = '<p><span style="color: red; font-size: 20px;">text</span></p>';
+            const span = root.querySelector('span');
+            const range = document.createRange();
+            range.selectNodeContents(span.firstChild);
+            editor.selection.setRange(range);
+
+            commands.clearInlineStyles();
+
+            expect(span.hasAttribute('style')).toBe(false);
+        });
+    });
 });

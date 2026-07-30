@@ -83,4 +83,70 @@ describe('History', () => {
         expect(history.undoStack.at(-1).html).toBe('<p>ab</p>');
         vi.useRealTimers();
     });
+
+    describe('clear', () => {
+        it('resets undo stack to only current content', () => {
+            state.html = '<p>v1</p>';
+            history.push();
+            state.html = '<p>v2</p>';
+            history.push();
+            expect(history.undoStack.length).toBe(3);
+
+            history.clear();
+
+            expect(history.undoStack.length).toBe(1);
+            expect(history.undoStack[0].html).toBe('<p>v2</p>');
+            expect(history.canUndo()).toBe(false);
+        });
+
+        it('empties the redo stack', () => {
+            state.html = '<p>v1</p>';
+            history.push();
+            history.undo();
+            expect(history.canRedo()).toBe(true);
+
+            history.clear();
+
+            expect(history.canRedo()).toBe(false);
+            expect(history.redoStack.length).toBe(0);
+        });
+
+        it('clears any pending debounce timer', () => {
+            vi.useFakeTimers();
+            history.record();
+            history.clear();
+            vi.runAllTimers();
+            expect(history.undoStack.length).toBe(1);
+            vi.useRealTimers();
+        });
+    });
+
+    describe('destroy', () => {
+        it('clears undo stack', () => {
+            state.html = '<p>v1</p>';
+            history.push();
+            history.destroy();
+            expect(history.undoStack.length).toBe(0);
+        });
+
+        it('clears redo stack', () => {
+            state.html = '<p>v1</p>';
+            history.push();
+            history.undo();
+            history.destroy();
+            expect(history.redoStack.length).toBe(0);
+        });
+
+        it('clears any pending debounce timer', () => {
+            vi.useFakeTimers();
+            const timerSpy = vi.spyOn(globalThis, 'clearTimeout');
+            history.record();
+            expect(history.timer).not.toBeNull();
+            history.destroy();
+            expect(timerSpy).toHaveBeenCalled();
+            vi.runAllTimers();
+            expect(history.undoStack.length).toBe(0);
+            vi.useRealTimers();
+        });
+    });
 });

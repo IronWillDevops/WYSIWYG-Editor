@@ -134,4 +134,57 @@ describe('EmojiModule', () => {
         expect(leftVal).toBeGreaterThanOrEqual(200);
         document.body.removeChild(btn);
     });
+
+    describe('positioning edge cases', () => {
+        it('positions above when trigger is near bottom of viewport', () => {
+            const btn = document.createElement('button');
+            btn.className = 'ife-toolbar__btn';
+            const rect = { top: 700, bottom: 732, left: 100, right: 132, width: 32, height: 32 };
+            btn.getBoundingClientRect = vi.fn(() => rect);
+            document.body.appendChild(btn);
+
+            module.open(btn);
+            const picker = document.body.querySelector('.ife-emoji-picker');
+            picker.style.height = '200px';
+            Object.defineProperty(picker, 'offsetHeight', { configurable: true, value: 200 });
+
+            module.positionPicker();
+            const topVal = parseFloat(picker.style.top);
+            expect(topVal).toBeLessThan(700);
+            document.body.removeChild(btn);
+            module.close();
+        });
+
+        it('positions left when trigger is near right edge of viewport', () => {
+            Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
+
+            const btn = document.createElement('button');
+            btn.className = 'ife-toolbar__btn';
+            btn.getBoundingClientRect = vi.fn(() => ({
+                top: 100, bottom: 132, left: 450, right: 482, width: 32, height: 32,
+            }));
+            document.body.appendChild(btn);
+
+            module.open(btn);
+            const picker = document.body.querySelector('.ife-emoji-picker');
+            picker.style.width = '352px';
+            Object.defineProperty(picker, 'offsetWidth', { configurable: true, value: 352 });
+
+            module.positionPicker();
+            const leftVal = parseFloat(picker.style.left);
+            expect(leftVal).toBeLessThan(450);
+            document.body.removeChild(btn);
+            module.close();
+        });
+
+        it('positionPicker does nothing when no trigger element', () => {
+            expect(() => module.positionPicker()).not.toThrow();
+        });
+
+        it('positionPicker does nothing when no picker', () => {
+            module._triggerEl = document.createElement('button');
+            expect(() => module.positionPicker()).not.toThrow();
+            module._triggerEl = null;
+        });
+    });
 });

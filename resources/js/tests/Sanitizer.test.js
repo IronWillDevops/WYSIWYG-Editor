@@ -53,4 +53,47 @@ describe('Sanitizer', () => {
         const result = sanitizer.sanitize('<table><tr><td colspan="2" rowspan="1">x</td></tr></table>');
         expect(result).toContain('colspan="2"');
     });
+
+    describe('security', () => {
+        it('blocks data: URLs in href', () => {
+            const result = sanitizer.sanitize('<a href="data:text/html,<script>alert(1)</script>">click</a>');
+            expect(result).not.toContain('data:');
+        });
+
+        it('blocks data: URLs in img src', () => {
+            const result = sanitizer.sanitize('<img src="data:image/svg+xml,<script>alert(1)</script>">');
+            expect(result).not.toContain('data:');
+        });
+
+        it('blocks vbscript: URLs', () => {
+            const result = sanitizer.sanitize('<a href="vbscript:msgbox(1)">click</a>');
+            expect(result).not.toContain('vbscript:');
+        });
+
+        it('blocks javascript: in CSS url() via style attribute', () => {
+            const result = sanitizer.sanitize('<div style="background-image: url(javascript:alert(1))">text</div>');
+            expect(result).not.toContain('javascript:');
+        });
+
+        it('removes <meta> tags to prevent meta refresh', () => {
+            const result = sanitizer.sanitize('<meta http-equiv="refresh" content="0;url=http://evil.com">');
+            expect(result).not.toContain('<meta');
+        });
+
+        it('unwraps <foreignObject> inside SVG', () => {
+            const result = sanitizer.sanitize('<svg><foreignObject><div>text</div></foreignObject></svg>');
+            expect(result).not.toContain('foreignObject');
+            expect(result).toContain('<div>text</div>');
+        });
+
+        it('removes <base> tag to prevent base hijack', () => {
+            const result = sanitizer.sanitize('<base href="http://evil.com">');
+            expect(result).not.toContain('<base');
+        });
+
+        it('blocks javascript: in CSS expression() via style attribute', () => {
+            const result = sanitizer.sanitize('<div style="color: expression(alert(1))">x</div>');
+            expect(result).not.toContain('expression');
+        });
+    });
 });

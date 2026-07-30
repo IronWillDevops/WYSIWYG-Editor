@@ -83,4 +83,35 @@ describe('NoteModule', () => {
         module.open();
         expect(editor.selection.save).toHaveBeenCalled();
     });
+
+    describe('open dialog', () => {
+        it('creates dialog with type and text fields', () => {
+            module.open();
+            const overlay = document.body.querySelector('.ife-dialog-overlay');
+            expect(overlay).not.toBeNull();
+            expect(overlay.querySelector('select[name="type"]')).not.toBeNull();
+            expect(overlay.querySelector('textarea[name="text"]')).not.toBeNull();
+        });
+
+        it('includes all note types in select', () => {
+            module.open();
+            const select = document.body.querySelector('select[name="type"]');
+            const options = [...select.options].map((o) => o.value);
+            expect(options).toEqual(['info', 'warning', 'danger', 'success', 'quote', 'tip']);
+        });
+
+        it('onConfirm submits form and calls insert', () => {
+            const insertSpy = vi.spyOn(module, 'insert');
+            module.open();
+
+            const form = document.body.querySelector('form');
+            const typeSelect = form.querySelector('select[name="type"]');
+            const textArea = form.querySelector('textarea[name="text"]');
+            typeSelect.value = 'warning';
+            textArea.value = 'test note';
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(insertSpy).toHaveBeenCalledWith('warning', 'test note');
+        });
+    });
 });

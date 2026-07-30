@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import MediaModule from '../src/modules/MediaModule.js';
 
 function createMockEditor() {
+    const wrapper = document.createElement('div');
+    wrapper.scrollTop = 0;
+    document.body.appendChild(wrapper);
     return {
+        wrapper,
         commands: { insertHTML: vi.fn() },
         sanitizer: { sanitize: vi.fn((html) => html) },
         selection: { save: vi.fn(), restore: vi.fn() },
@@ -21,6 +25,7 @@ describe('MediaModule', () => {
 
     afterEach(() => {
         module.destroy();
+        document.body.querySelectorAll('.ife-dialog-overlay').forEach((el) => el.remove());
     });
 
     describe('insertVideo', () => {
@@ -82,6 +87,73 @@ describe('MediaModule', () => {
         it('inserts hr tag', () => {
             module.insertHorizontalRule();
             expect(editor.commands.insertHTML).toHaveBeenCalledWith('<hr>');
+        });
+    });
+
+    describe('openVideo', () => {
+        it('creates dialog with source input', () => {
+            module.openVideo();
+            const overlay = document.body.querySelector('.ife-dialog-overlay');
+            expect(overlay).not.toBeNull();
+            const sourceInput = overlay.querySelector('input[name="source"]');
+            expect(sourceInput).not.toBeNull();
+            expect(sourceInput.getAttribute('placeholder')).toContain('youtube.com');
+        });
+
+        it('saves selection before opening', () => {
+            module.openVideo();
+            expect(editor.selection.save).toHaveBeenCalled();
+        });
+
+        it('inserts video on form submit', () => {
+            module.openVideo();
+            const form = document.body.querySelector('form');
+            const sourceInput = form.querySelector('input[name="source"]');
+            sourceInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+            form.querySelector('[data-action="confirm"]').click();
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(
+                expect.stringContaining('youtube.com/embed/dQw4w9WgXcQ')
+            );
+        });
+    });
+
+    describe('openAudio', () => {
+        it('creates dialog with audio URL input', () => {
+            module.openAudio();
+            const overlay = document.body.querySelector('.ife-dialog-overlay');
+            expect(overlay).not.toBeNull();
+            const sourceInput = overlay.querySelector('input[name="source"]');
+            expect(sourceInput).not.toBeNull();
+            expect(sourceInput.name).toBe('source');
+        });
+
+        it('saves selection before opening', () => {
+            module.openAudio();
+            expect(editor.selection.save).toHaveBeenCalled();
+        });
+
+        it('inserts audio element on form submit', () => {
+            module.openAudio();
+            const form = document.body.querySelector('form');
+            const sourceInput = form.querySelector('input[name="source"]');
+            sourceInput.value = 'https://example.com/audio.mp3';
+            form.querySelector('[data-action="confirm"]').click();
+            expect(editor.sanitizer.sanitize).toHaveBeenCalledWith(
+                expect.stringContaining('<audio controls')
+            );
+            expect(editor.commands.insertHTML).toHaveBeenCalled();
+        });
+
+        it('inserted audio HTML contains source with correct src', () => {
+            module.openAudio();
+            const form = document.body.querySelector('form');
+            const sourceInput = form.querySelector('input[name="source"]');
+            sourceInput.value = 'https://example.com/audio.mp3';
+            vi.spyOn(editor.sanitizer, 'sanitize').mockImplementation((html) => html);
+            form.querySelector('[data-action="confirm"]').click();
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(
+                '<audio controls><source src="https://example.com/audio.mp3"></audio>'
+            );
         });
     });
 });
