@@ -276,11 +276,12 @@ export default class Editor {
 
         const blockquote = block.closest('blockquote');
         const isPre = block.tagName === 'PRE' || !!block.closest('pre');
+        const isNote = block.tagName === 'DIV' && block.classList.contains('note');
 
         const range = this.selection.getRange();
         if (!range) return;
 
-        if (!blockquote && !isPre) {
+        if (!blockquote && !isPre && !isNote) {
             let node = range.startContainer;
             if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
             if (!(node instanceof HTMLElement) || !node.closest('code')) return;
@@ -318,6 +319,46 @@ export default class Editor {
                 if (!blockquote.textContent.trim() && !blockquote.children.length) {
                     blockquote.parentNode.removeChild(blockquote);
                 }
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+                this.emitChange();
+                return;
+            }
+
+            const newP = document.createElement('p');
+            const { startContainer, startOffset } = range;
+
+            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
+                const text = startContainer.textContent;
+                const before = text.slice(0, startOffset);
+                const after = text.slice(startOffset);
+                startContainer.textContent = before;
+                if (after) newP.textContent = after;
+            }
+
+            if (!newP.textContent) newP.innerHTML = '<br>';
+
+            block.parentNode.insertBefore(newP, block.nextSibling);
+
+            const newRange = document.createRange();
+            const targetNode = newP.firstChild || newP;
+            newRange.setStart(targetNode, 0);
+            newRange.collapse(true);
+            this.selection.setRange(newRange);
+
+            this.emitChange();
+            return;
+        }
+
+        if (isNote) {
+            const isEmpty = !block.textContent.trim();
+            if (isEmpty) {
+                const p = document.createElement('p');
+                p.innerHTML = '<br>';
+                block.parentNode.insertBefore(p, block.nextSibling);
+                block.parentNode.removeChild(block);
                 const newRange = document.createRange();
                 newRange.setStart(p, 0);
                 newRange.collapse(true);

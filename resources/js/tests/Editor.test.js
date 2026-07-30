@@ -558,6 +558,72 @@ describe('Editor', () => {
             expect(ps.length).toBe(1);
             resetActiveElement();
         });
+
+        it('exits empty note on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-info';
+            note.innerHTML = '<br>';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.setStart(note, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('.note')).toBeNull();
+            const p = editor.root.querySelector('p');
+            expect(p).not.toBeNull();
+            expect(p.innerHTML).toBe('<br>');
+            resetActiveElement();
+        });
+
+        it('splits note content on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-tip';
+            note.textContent = 'hello world';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.setStart(note.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('.note')).not.toBeNull();
+            expect(editor.root.querySelector('.note').textContent).toBe('hello ');
+            const p = editor.root.querySelector(':scope > p');
+            expect(p).not.toBeNull();
+            expect(p.textContent).toBe('world');
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside a note', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const note = document.createElement('div');
+            note.className = 'note note-warning';
+            note.textContent = 'text';
+            editor.root.appendChild(note);
+
+            const range = document.createRange();
+            range.selectNodeContents(note);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('.note').length).toBe(1);
+            resetActiveElement();
+        });
     });
 
     describe('setHTML', () => {
