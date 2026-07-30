@@ -1,7 +1,7 @@
-var L = Object.defineProperty;
-var H = (s, e, t) => e in s ? L(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var y = (s, e, t) => H(s, typeof e != "symbol" ? e + "" : e, t);
-class S {
+var S = Object.defineProperty;
+var H = (s, e, t) => e in s ? S(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
+var k = (s, e, t) => H(s, typeof e != "symbol" ? e + "" : e, t);
+class C {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class S {
     this.listeners.clear();
   }
 }
-class C {
+class E {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class C {
     this.root.focus(), this.restore();
   }
 }
-class E {
+class M {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -191,7 +191,7 @@ class E {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class M {
+class T {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -504,7 +504,7 @@ const z = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), T = {
+]), x = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -541,8 +541,8 @@ const z = /* @__PURE__ */ new Set([
   mask: /* @__PURE__ */ new Set(["id"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, x = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class R {
+}, R = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class N {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -550,7 +550,7 @@ class R {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : z, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : T, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : x;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : z, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : x, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : R;
   }
   /**
    * @param {string} dirtyHtml
@@ -643,7 +643,7 @@ const A = {
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, k = /* @__PURE__ */ new Map();
+}, w = /* @__PURE__ */ new Map();
 class v {
   /**
    * @param {HTMLTextAreaElement} textarea
@@ -651,7 +651,7 @@ class v {
    */
   constructor(e, t = {}) {
     var n, o;
-    this.textarea = e, this.options = { ...A, ...t }, this.events = new S(), this.sanitizer = new R(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new C(this.root), this.commands = new M(this), this.history = new E({
+    this.textarea = e, this.options = { ...A, ...t }, this.events = new C(), this.sanitizer = new N(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new E(this.root), this.commands = new T(this), this.history = new M({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -786,19 +786,39 @@ class v {
   handleEnter(e) {
     if (e.key !== "Enter" || e.shiftKey || this.destroyed || !this.root.contains(document.activeElement)) return;
     const t = this.selection.getBlockElement();
-    if (!t || !t.closest("blockquote")) return;
+    if (!t) return;
+    const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre");
+    if (!n && !o) return;
     e.preventDefault();
-    const o = this.selection.getRange();
-    if (!o) return;
-    this.history.push();
-    const i = document.createElement("p"), { startContainer: r, startOffset: h } = o;
-    if (r.nodeType === Node.TEXT_NODE && t.contains(r)) {
-      const m = r.textContent, w = m.slice(0, h), b = m.slice(h);
-      r.textContent = w, b && (i.textContent = b);
+    const i = this.selection.getRange();
+    if (!i) return;
+    if (this.history.push(), o) {
+      this._insertBreakInPre(i), this.emitChange();
+      return;
     }
-    i.textContent || (i.innerHTML = "<br>"), t.parentNode.insertBefore(i, t.nextSibling);
-    const a = document.createRange(), d = i.firstChild || i;
-    a.setStart(d, 0), a.collapse(!0), this.selection.setRange(a), this.emitChange();
+    const r = document.createElement("p"), { startContainer: h, startOffset: a } = i;
+    if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
+      const b = h.textContent, L = b.slice(0, a), y = b.slice(a);
+      h.textContent = L, y && (r.textContent = y);
+    }
+    r.textContent || (r.innerHTML = "<br>"), t.parentNode.insertBefore(r, t.nextSibling);
+    const d = document.createRange(), m = r.firstChild || r;
+    d.setStart(m, 0), d.collapse(!0), this.selection.setRange(d), this.emitChange();
+  }
+  _insertBreakInPre(e) {
+    const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
+    if (t.nodeType === Node.TEXT_NODE) {
+      const r = t.textContent, h = r.slice(0, n), a = r.slice(n);
+      if (t.textContent = h, t.parentNode.insertBefore(o, t.nextSibling), a) {
+        const d = document.createTextNode(a);
+        t.parentNode.insertBefore(d, o.nextSibling);
+      }
+    } else {
+      const r = t.childNodes[n] || null;
+      t.insertBefore(o, r);
+    }
+    const i = document.createRange();
+    i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
   }
   handleDragOver() {
     if (this.destroyed) return;
@@ -830,7 +850,7 @@ class v {
    */
   async loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []), t = [];
-    k.forEach((n, o) => {
+    w.forEach((n, o) => {
       e.has(o) || t.push(
         Promise.resolve(n(this)).then((i) => {
           this.plugins.set(o, i);
@@ -904,7 +924,7 @@ class v {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    k.set(e, t);
+    w.set(e, t);
   }
 }
 const l = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, c = {
@@ -954,7 +974,7 @@ const l = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   anchor: l('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
   listProps: l('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
 };
-class N {
+class B {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -966,7 +986,7 @@ class N {
    * @param {() => void} [config.onClose]
    */
   constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: h }) {
-    y(this, "handleEscape", (e) => {
+    k(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = r, this.onClose = h, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1017,7 +1037,7 @@ class N {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const B = {
+const V = {
   undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
   redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
   bold: { icon: c.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
@@ -1086,16 +1106,16 @@ const B = {
   },
   codeBlock: { icon: c.codeBlock, label: "Code block", type: "action", action: (s) => {
     const e = s.selection.getBlockElement();
-    if (e && e !== s.root) {
-      if (e.tagName === "PRE") {
-        const t = document.createElement("p");
-        t.innerHTML = e.innerHTML, e.replaceWith(t);
-      } else {
-        const t = document.createElement("pre");
-        t.innerHTML = e.innerHTML, e.replaceWith(t);
-      }
-      s.emitChange();
+    if (!e || e === s.root) return;
+    const t = e.tagName === "PRE" || e.closest("pre");
+    if (s.history.push(), t) {
+      const n = e.tagName === "PRE" ? e : e.closest("pre"), o = document.createElement("p");
+      o.innerHTML = n.innerHTML, n.replaceWith(o);
+    } else {
+      const n = document.createElement("pre");
+      n.innerHTML = e.innerHTML, e.replaceWith(n);
     }
+    s.emitChange();
   } },
   note: { icon: c.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
@@ -1219,7 +1239,7 @@ const B = {
                         <option value="upper-roman" ${o === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, r = new N(s.wrapper, {
+            `, r = new B(s.wrapper, {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
@@ -1231,7 +1251,7 @@ const B = {
       s.selection.save(), r.open();
     }
   }
-}, V = {
+}, I = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -1295,7 +1315,7 @@ const B = {
   templates: "Content templates",
   listProps: "List properties",
   madeBy: "Made by ITkha"
-}, I = {
+}, D = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1359,7 +1379,7 @@ const B = {
   templates: "Шаблони",
   listProps: "Властивості списку",
   madeBy: "Зроблено в ITkha"
-}, D = {
+}, O = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1424,9 +1444,9 @@ const B = {
   listProps: "Свойства списка",
   madeBy: "Сделано в ITkha"
 }, p = /* @__PURE__ */ new Map([
-  ["en", V],
-  ["uk", I],
-  ["ru", D]
+  ["en", I],
+  ["uk", D],
+  ["ru", O]
 ]), u = {
   /**
    * @param {string} code
@@ -1446,7 +1466,7 @@ const B = {
   available() {
     return [...p.keys()];
   }
-}, O = [
+}, _ = [
   ["undo", "redo"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
   ["forecolor", "backcolor", "removeFormat"],
@@ -1460,19 +1480,19 @@ const B = {
   ["markdown"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class _ {
+class P {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? O, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? _, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const o = B[n];
+        const o = V[n];
         if (!o) return;
         const i = this.buildControl(n, o);
         i && t.appendChild(i);
@@ -1588,28 +1608,28 @@ class _ {
     this.el.remove();
   }
 }
-const q = {
-  link: () => import("./LinkModule-B96M8F1O.js"),
-  image: () => import("./ImageModule-DhV2jeUz.js"),
-  table: () => import("./TableModule-BISywkl6.js"),
+const F = {
+  link: () => import("./LinkModule-BviLFBxw.js"),
+  image: () => import("./ImageModule-dGVk9NJq.js"),
+  table: () => import("./TableModule-DiiQ23m4.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-ITzCdNoj.js"),
-  note: () => import("./NoteModule-CxSNv-H2.js"),
-  media: () => import("./MediaModule-_sUUGpWb.js"),
+  find: () => import("./FindModule-B_JBBIJf.js"),
+  note: () => import("./NoteModule-sWF-AvbY.js"),
+  media: () => import("./MediaModule-DckPRJg-.js"),
   markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-xEvYMqLj.js"),
+  statusBar: () => import("./StatusBar-C01-OF4U.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-C38zJJsE.js")
+  templates: () => import("./TemplateModule-DmA4DhyR.js")
 };
-Object.entries(q).forEach(([s, e]) => {
+Object.entries(F).forEach(([s, e]) => {
   v.registerPlugin(s, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
 });
-const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), P = {
+const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), U = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1623,7 +1643,7 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), P = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (g.has(t))
       return g.get(t);
-    const n = new v(t, e), o = new _(n, e.toolbar);
+    const n = new v(t, e), o = new P(n, e.toolbar);
     return n.on("destroy", () => o.destroy()), g.set(t, n), f.add(n), n.on("destroy", () => {
       g.delete(t), f.delete(n);
     }), n;
@@ -1643,9 +1663,9 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), P = {
   registerPlugin: v.registerPlugin
 };
 export {
-  N as D,
+  B as D,
   c as I,
   u as L,
-  P as a
+  U as a
 };
-//# sourceMappingURL=index-B1c-P62J.js.map
+//# sourceMappingURL=index-Ccv0d7hY.js.map

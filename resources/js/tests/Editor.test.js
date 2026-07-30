@@ -243,21 +243,6 @@ describe('Editor', () => {
             return { preventDefault: vi.fn(), key: 'Enter', shiftKey: false, ...overrides };
         }
 
-        it('does nothing when Enter is pressed outside a blockquote', () => {
-            const editor = withActiveFocus(new Editor(textarea));
-            editor.root.innerHTML = '<p>hello</p>';
-            const range = document.createRange();
-            range.selectNodeContents(editor.root.firstChild);
-            range.collapse(false);
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-
-            editor.handleEnter(createEnterEvent());
-            expect(editor.root.innerHTML).toBe('<p>hello</p>');
-            resetActiveElement();
-        });
-
         it('inserts a new paragraph inside blockquote on Enter', () => {
             const editor = withActiveFocus(new Editor(textarea));
             const blockquote = document.createElement('blockquote');
@@ -338,6 +323,80 @@ describe('Editor', () => {
             vi.spyOn(editor.history, 'push');
             editor.handleEnter(createEnterEvent());
             expect(editor.history.push).not.toHaveBeenCalled();
+            resetActiveElement();
+        });
+
+        it('inserts a line break inside <pre> on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'code';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.querySelector('pre')).not.toBeNull();
+            expect(pre.querySelector('br')).not.toBeNull();
+            resetActiveElement();
+        });
+
+        it('splits text at cursor inside <pre> on Enter', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'hello world';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 6);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(pre.textContent).toBe('hello world');
+            expect(pre.querySelectorAll('br').length).toBe(1);
+            resetActiveElement();
+        });
+
+        it('does nothing for Shift+Enter inside <pre>', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.textContent = 'code';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 4);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            vi.spyOn(editor.history, 'push');
+            editor.handleEnter(createEnterEvent({ shiftKey: true }));
+            expect(editor.history.push).not.toHaveBeenCalled();
+            expect(pre.querySelector('br')).toBeNull();
+            resetActiveElement();
+        });
+
+        it('does nothing when Enter is pressed outside a <pre> or blockquote', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>hello</p>';
+
+            const range = document.createRange();
+            range.selectNodeContents(editor.root.firstChild);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<p>hello</p>');
             resetActiveElement();
         });
     });

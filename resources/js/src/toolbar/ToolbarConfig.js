@@ -98,18 +98,22 @@ const ToolbarConfig = {
     },
     codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => {
         const block = e.selection.getBlockElement();
-        if (block && block !== e.root) {
-            if (block.tagName === 'PRE') {
-                const p = document.createElement('p');
-                p.innerHTML = block.innerHTML;
-                block.replaceWith(p);
-            } else {
-                const pre = document.createElement('pre');
-                pre.innerHTML = block.innerHTML;
-                block.replaceWith(pre);
-            }
-            e.emitChange();
+        if (!block || block === e.root) return;
+
+        const insidePre = block.tagName === 'PRE' || block.closest('pre');
+        e.history.push();
+
+        if (insidePre) {
+            const pre = block.tagName === 'PRE' ? block : block.closest('pre');
+            const p = document.createElement('p');
+            p.innerHTML = pre.innerHTML;
+            pre.replaceWith(p);
+        } else {
+            const pre = document.createElement('pre');
+            pre.innerHTML = block.innerHTML;
+            block.replaceWith(pre);
         }
+        e.emitChange();
     } },
     note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note').open() },
 

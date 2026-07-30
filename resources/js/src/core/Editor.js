@@ -275,7 +275,9 @@ export default class Editor {
         if (!block) return;
 
         const blockquote = block.closest('blockquote');
-        if (!blockquote) return;
+        const isPre = block.tagName === 'PRE' || !!block.closest('pre');
+
+        if (!blockquote && !isPre) return;
 
         event.preventDefault();
 
@@ -283,6 +285,12 @@ export default class Editor {
         if (!range) return;
 
         this.history.push();
+
+        if (isPre) {
+            this._insertBreakInPre(range);
+            this.emitChange();
+            return;
+        }
 
         const newP = document.createElement('p');
         const { startContainer, startOffset } = range;
@@ -306,6 +314,31 @@ export default class Editor {
         this.selection.setRange(newRange);
 
         this.emitChange();
+    }
+
+    _insertBreakInPre(range) {
+        const { startContainer, startOffset } = range;
+        const br = document.createElement('br');
+
+        if (startContainer.nodeType === Node.TEXT_NODE) {
+            const text = startContainer.textContent;
+            const before = text.slice(0, startOffset);
+            const after = text.slice(startOffset);
+            startContainer.textContent = before;
+            startContainer.parentNode.insertBefore(br, startContainer.nextSibling);
+            if (after) {
+                const afterText = document.createTextNode(after);
+                startContainer.parentNode.insertBefore(afterText, br.nextSibling);
+            }
+        } else {
+            const refNode = startContainer.childNodes[startOffset] || null;
+            startContainer.insertBefore(br, refNode);
+        }
+
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
     }
 
     handleDragOver() {
