@@ -249,6 +249,14 @@ describe('Toolbar', () => {
         expect(select.value).toBe('p');
     });
 
+    it('saves selection on select focus as fallback', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('fontFamily');
+        expect(select).toBeInstanceOf(HTMLSelectElement);
+        select.dispatchEvent(new Event('focus'));
+        expect(editor.selection.save).toHaveBeenCalled();
+    });
+
     it('resets fontSize select to default when size does not match any option', () => {
         const span = document.createElement('span');
         span.style.fontSize = '11px';

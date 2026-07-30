@@ -107,10 +107,12 @@ export default class Toolbar {
             select.appendChild(option);
         });
 
+        const saveSelection = () => this.editor.selection.save();
         select.addEventListener('mousedown', (event) => {
             event.stopPropagation();
-            this.editor.selection.save();
+            saveSelection();
         });
+        select.addEventListener('focus', saveSelection);
         select.addEventListener('change', () => {
             this.editor.selection.restore();
             def.onChange(this.editor, select.value);

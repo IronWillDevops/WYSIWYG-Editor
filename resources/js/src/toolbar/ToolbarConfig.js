@@ -174,7 +174,9 @@ const ToolbarConfig = {
             if (!md) return;
             if (e.root.dataset.markdownMode === 'true') {
                 e.root.dataset.markdownMode = 'false';
-                e.setHTML(md.markdownToHtml(e._mdSource || ''));
+                const currentHtml = e.getHTML();
+                const freshMd = md.htmlToMarkdown(currentHtml);
+                e.setHTML(md.markdownToHtml(freshMd));
             } else {
                 e._mdSource = md.export();
                 md.import(e._mdSource);

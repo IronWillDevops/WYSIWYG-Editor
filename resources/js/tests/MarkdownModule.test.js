@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import MarkdownModule from '../src/modules/MarkdownModule.js';
 
 describe('MarkdownModule', () => {
@@ -79,6 +79,25 @@ describe('MarkdownModule', () => {
         content = '<h1>Title</h1>';
         const md = module.export();
         expect(md).toBe('# Title');
+    });
+
+    it('htmlToMarkdown preserves edited content for round-trip toggle', () => {
+        const html = '<p><strong>Initial</strong> content</p>';
+        content = html;
+
+        const md = module.export();
+        expect(md).toBe('**Initial** content');
+
+        module.import(md);
+        expect(content).toBe('<p><strong>Initial</strong> content</p>');
+
+        content = '<p><strong>Edited</strong> content</p>';
+
+        const md2 = module.htmlToMarkdown(content);
+        expect(md2.trim()).toBe('**Edited** content');
+
+        const html2 = module.markdownToHtml(md2);
+        expect(html2).toBe('<p><strong>Edited</strong> content</p>');
     });
 
     it('converts nested inline formatting inside paragraphs', () => {

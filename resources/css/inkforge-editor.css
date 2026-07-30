@@ -798,7 +798,7 @@
 }
 
 /* Markdown mode indicator */
-.ife-root[data-markdown-mode="true"] {
+.ife-content[data-markdown-mode="true"] {
     font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
     white-space: pre-wrap;
 }

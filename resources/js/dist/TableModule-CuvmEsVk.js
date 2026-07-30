@@ -1,4 +1,4 @@
-import { D as H } from "./index-C8EhmnXV.js";
+import { D as H } from "./index-Cq8Mug0c.js";
 class A {
   constructor(e) {
     this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight), this.editor.root.addEventListener("mousedown", (t) => this.handleColumnResizeStart(t)), this.editor.on("paste", () => this.addColumnResizeHandles());
@@ -235,7 +235,6 @@ class A {
     e.preventDefault(), e.stopPropagation();
     const o = t.closest("table");
     if (!o) return;
-    o.getBoundingClientRect();
     const n = e.clientX, l = parseInt(t.dataset.col, 10), s = t.dataset.startWidth ? parseFloat(t.dataset.startWidth) : 0, r = (c) => {
       const a = c.clientX - n, d = Math.max(20, s + a);
       o.querySelectorAll("tr").forEach((u) => {
@@ -296,4 +295,4 @@ class A {
 export {
   A as default
 };
-//# sourceMappingURL=TableModule-L2wftFlX.js.map
+//# sourceMappingURL=TableModule-CuvmEsVk.js.map
