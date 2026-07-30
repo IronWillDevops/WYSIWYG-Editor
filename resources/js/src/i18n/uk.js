@@ -30,8 +30,7 @@ export default {
     emoji: 'Емодзі',
     specialChars: 'Спеціальні символи',
     blockFormat: 'Стиль абзацу',
-    fontFamily: 'Шрифт',
-    fontSize: 'Розмір шрифту',
+
     default: 'За замовчуванням',
     insert: 'Вставити',
     update: 'Оновити',

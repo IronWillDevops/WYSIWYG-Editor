@@ -110,14 +110,6 @@ export default class Commands {
                 this.setBlockFormat(value);
                 break;
 
-            case 'fontName':
-                this.setInlineStyle('fontFamily', value);
-                break;
-
-            case 'fontSize':
-                this.setInlineStyle('fontSize', value);
-                break;
-
             case 'lineHeight':
                 this.setInlineStyle('lineHeight', value, true);
                 break;

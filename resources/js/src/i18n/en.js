@@ -30,8 +30,7 @@ export default {
     emoji: 'Emoji',
     specialChars: 'Special characters',
     blockFormat: 'Paragraph style',
-    fontFamily: 'Font family',
-    fontSize: 'Font size',
+
     default: 'Default',
     insert: 'Insert',
     update: 'Update',

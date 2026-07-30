@@ -37,55 +37,6 @@ const ToolbarConfig = {
         onChange: (editor, value) => editor.commands.exec('blockFormat', value),
     },
 
-    fontFamily: {
-        label: 'Font family',
-        type: 'select',
-        options: [
-            ['', 'Default'],
-            ['Arial, sans-serif', 'Arial'],
-            ['Georgia, serif', 'Georgia'],
-            ['"Courier New", monospace', 'Courier New'],
-            ['"Times New Roman", serif', 'Times New Roman'],
-            ['Verdana, sans-serif', 'Verdana'],
-        ],
-        onChange: (editor, value) => {
-            if (!value) return;
-            editor.commands.prepare();
-            editor.history.push();
-            document.execCommand('fontName', false, value);
-            editor.emitChange();
-            editor.events.emit('selectionchange', editor);
-        },
-    },
-
-    fontSize: {
-        label: 'Font size',
-        type: 'select',
-        options: [
-            ['', 'Default'],
-            ['12px', '12'], ['14px', '14'], ['16px', '16'], ['18px', '18'],
-            ['24px', '24'], ['32px', '32'], ['48px', '48'],
-        ],
-        onChange: (editor, value) => {
-            if (!value) return;
-            editor.commands.prepare();
-            editor.history.push();
-            const sizeMap = { '12px': '1', '14px': '2', '16px': '3', '18px': '4', '24px': '5', '32px': '6', '48px': '7' };
-            document.execCommand('fontSize', false, sizeMap[value] || '3');
-            const sel = window.getSelection();
-            if (sel && sel.rangeCount > 0) {
-                const r = sel.getRangeAt(0);
-                let node = r.commonAncestorContainer;
-                if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-                const span = node && editor.root.contains(node) ? node.closest('span') : null;
-                if (span && editor.root.contains(span)) {
-                    span.style.fontSize = value;
-                }
-            }
-            editor.emitChange();
-            editor.events.emit('selectionchange', editor);
-        },
-    },
 
     bold: { icon: Icons.bold, label: 'Bold', shortcut: 'Ctrl+B', type: 'command', command: 'bold' },
     italic: { icon: Icons.italic, label: 'Italic', shortcut: 'Ctrl+I', type: 'command', command: 'italic' },
