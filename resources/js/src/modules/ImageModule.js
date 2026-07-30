@@ -186,6 +186,11 @@ export default class ImageModule {
         range?.deleteContents();
         range?.insertNode(figure);
 
+        const newRange = document.createRange();
+        newRange.setStartAfter(figure);
+        newRange.collapse(true);
+        this.editor.selection.setRange(newRange);
+
         this.editor.emitChange();
     }
 
@@ -210,15 +215,11 @@ export default class ImageModule {
             else img.removeAttribute('loading');
         }
 
-        let figcaption = figure.querySelector('figcaption');
+        figure.querySelectorAll('figcaption').forEach((fc) => fc.remove());
         if (caption) {
-            if (!figcaption) {
-                figcaption = document.createElement('figcaption');
-                figure.appendChild(figcaption);
-            }
+            const figcaption = document.createElement('figcaption');
             figcaption.textContent = caption;
-        } else if (figcaption) {
-            figcaption.remove();
+            figure.appendChild(figcaption);
         }
 
         figure.classList.remove('ife-image--selected');

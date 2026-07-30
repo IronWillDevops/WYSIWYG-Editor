@@ -31,6 +31,13 @@ describe('ImageModule', () => {
                 save: () => {},
                 restore: () => {},
                 getRange: () => rangeAtEndOf(root),
+                setRange: (range) => {
+                    const sel = window.getSelection();
+                    if (sel) {
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                },
                 getText: () => '',
                 closest: () => null,
             },

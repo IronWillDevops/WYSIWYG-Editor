@@ -1569,19 +1569,19 @@ class D {
   }
 }
 const O = {
-  link: () => import("./LinkModule-DZWI16De.js"),
-  image: () => import("./ImageModule-DIKxSnbL.js"),
-  table: () => import("./TableModule-BL9go6dt.js"),
+  link: () => import("./LinkModule-DOeb6arr.js"),
+  image: () => import("./ImageModule-2rziGP0R.js"),
+  table: () => import("./TableModule-uBhQxhxp.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DO6___pS.js"),
-  note: () => import("./NoteModule-D104O_Y2.js"),
-  media: () => import("./MediaModule-6SAR6Iwz.js"),
+  find: () => import("./FindModule-CJbgTstT.js"),
+  note: () => import("./NoteModule-DYSKvMQj.js"),
+  media: () => import("./MediaModule-qgtqPNyT.js"),
   markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-r0KYtkD2.js"),
+  statusBar: () => import("./StatusBar-rYRbpiYM.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-C9Nv521y.js")
+  templates: () => import("./TemplateModule-BqdEaYJS.js")
 };
 Object.entries(O).forEach(([s, e]) => {
   v.registerPlugin(s, async (t) => {
@@ -1628,4 +1628,4 @@ export {
   m as L,
   F as a
 };
-//# sourceMappingURL=index-3cxKWoa5.js.map
+//# sourceMappingURL=index-CIWeUnX5.js.map

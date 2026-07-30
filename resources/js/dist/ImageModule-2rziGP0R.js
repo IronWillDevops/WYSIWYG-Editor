@@ -1,10 +1,10 @@
-import { D as u } from "./index-3cxKWoa5.js";
+import { D as u } from "./index-CIWeUnX5.js";
 class v {
   constructor(e) {
     this.editor = e, this.uploadUrl = e.options.uploadUrl, this.handleDrop = this.handleDrop.bind(this), this.handleClick = this.handleClick.bind(this), this.handleDblClick = this.handleDblClick.bind(this), this.handleMouseDown = this.handleMouseDown.bind(this), this.handleResizeStart = this.handleResizeStart.bind(this), e.root.addEventListener("dragover", (t) => t.preventDefault()), e.root.addEventListener("drop", this.handleDrop), e.root.addEventListener("click", this.handleClick), e.root.addEventListener("dblclick", this.handleDblClick), e.root.addEventListener("mousedown", this.handleMouseDown);
   }
   open() {
-    const e = this.getSelectedFigure(), t = e == null ? void 0 : e.querySelector("img"), i = e == null ? void 0 : e.querySelector("figcaption"), n = ["left", "center", "right"].find((s) => e == null ? void 0 : e.classList.contains(`ife-image--${s}`)) ?? "center", o = `
+    const e = this.getSelectedFigure(), t = e == null ? void 0 : e.querySelector("img"), s = e == null ? void 0 : e.querySelector("figcaption"), n = ["left", "center", "right"].find((i) => e == null ? void 0 : e.classList.contains(`ife-image--${i}`)) ?? "center", o = `
             <div class="ife-tabs">
                 <label class="ife-field">
                     <span>Image URL</span>
@@ -20,7 +20,7 @@ class v {
                 </label>
                 <label class="ife-field">
                     <span>Caption</span>
-                    <input type="text" name="caption" value="${this.escape((i == null ? void 0 : i.textContent) ?? "")}">
+                    <input type="text" name="caption" value="${this.escape((s == null ? void 0 : s.textContent) ?? "")}">
                 </label>
                 <label class="ife-field">
                     <span>Alignment</span>
@@ -41,12 +41,12 @@ class v {
       title: e ? "Edit image" : "Insert image",
       bodyHtml: o,
       confirmLabel: e ? "Update" : "Insert",
-      onConfirm: (s) => this.handleSubmit(s, e)
+      onConfirm: (i) => this.handleSubmit(i, e)
     }), this.editor.selection.save(), this.dialog.open(), e) {
-      const s = document.createElement("button");
-      s.type = "button", s.className = "ife-btn ife-btn--danger", s.textContent = "Remove image", s.addEventListener("mousedown", (a) => a.preventDefault()), s.addEventListener("click", (a) => {
+      const i = document.createElement("button");
+      i.type = "button", i.className = "ife-btn ife-btn--danger", i.textContent = "Remove image", i.addEventListener("mousedown", (a) => a.preventDefault()), i.addEventListener("click", (a) => {
         a.stopPropagation(), this.editor.history.push(), e.remove(), this.editor.emitChange(), this.dialog.close();
-      }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(s);
+      }), this.dialog.form.querySelector(".ife-dialog__footer").prepend(i);
     }
   }
   /** Returns the currently selected/edited image's <figure>, if any. */
@@ -54,17 +54,17 @@ class v {
     return this.editor.root.querySelector("figure.ife-image--selected") ?? this.editor.selection.closest("figure.ife-image");
   }
   async handleSubmit(e, t) {
-    const i = new FormData(e), n = i.get("file");
-    let o = String(i.get("src") ?? "");
+    const s = new FormData(e), n = s.get("file");
+    let o = String(s.get("src") ?? "");
     if (n instanceof File && n.size > 0 && (o = await this.upload(n), !o) || !o) return;
-    const s = {
+    const i = {
       src: o,
-      alt: String(i.get("alt") ?? ""),
-      caption: String(i.get("caption") ?? ""),
-      align: String(i.get("align") ?? "center"),
-      lazy: !!i.get("lazy")
+      alt: String(s.get("alt") ?? ""),
+      caption: String(s.get("caption") ?? ""),
+      align: String(s.get("align") ?? "center"),
+      lazy: !!s.get("lazy")
     };
-    t ? this.update(t, s) : this.insert(s);
+    t ? this.update(t, i) : this.insert(i);
   }
   /** @param {File} file */
   async upload(e) {
@@ -73,17 +73,17 @@ class v {
       return console.warn("InkForge Editor: no uploadUrl configured, falling back to a local object URL."), URL.createObjectURL(e);
     const t = new FormData();
     t.append("file", e);
-    const i = (n = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : n.content;
+    const s = (n = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : n.content;
     try {
       const o = await fetch(this.uploadUrl, {
         method: "POST",
-        headers: i ? { "X-CSRF-TOKEN": i } : {},
+        headers: s ? { "X-CSRF-TOKEN": s } : {},
         body: t,
         credentials: "same-origin"
-      }), s = await o.json();
-      if (!o.ok || !s.success)
-        throw new Error(s.message ?? "Upload failed");
-      return s.url;
+      }), i = await o.json();
+      if (!o.ok || !i.success)
+        throw new Error(i.message ?? "Upload failed");
+      return i.url;
     } catch (o) {
       return this.editor.events.emit("error", o), null;
     }
@@ -91,17 +91,19 @@ class v {
   /**
    * @param {{src:string, alt:string, caption:string, align:string, lazy:boolean}} options
    */
-  insert({ src: e, alt: t, caption: i, align: n, lazy: o }) {
+  insert({ src: e, alt: t, caption: s, align: n, lazy: o }) {
     this.editor.history.push(), this.editor.selection.restore();
-    const s = document.createElement("figure");
-    s.className = `ife-image ife-image--${n}`;
+    const i = document.createElement("figure");
+    i.className = `ife-image ife-image--${n}`;
     const a = document.createElement("img");
-    if (this.editor.sanitizer.isSafeUrl(e) && (a.src = e), a.alt = t, o && (a.loading = "lazy"), s.appendChild(a), i) {
-      const r = document.createElement("figcaption");
-      r.textContent = i, s.appendChild(r);
+    if (this.editor.sanitizer.isSafeUrl(e) && (a.src = e), a.alt = t, o && (a.loading = "lazy"), i.appendChild(a), s) {
+      const c = document.createElement("figcaption");
+      c.textContent = s, i.appendChild(c);
     }
     const l = this.editor.selection.getRange();
-    l == null || l.deleteContents(), l == null || l.insertNode(s), this.editor.emitChange();
+    l == null || l.deleteContents(), l == null || l.insertNode(i);
+    const r = document.createRange();
+    r.setStartAfter(i), r.collapse(!0), this.editor.selection.setRange(r), this.editor.emitChange();
   }
   /**
    * Updates an already-inserted <figure class="ife-image"> in place instead
@@ -109,18 +111,20 @@ class v {
    * @param {HTMLElement} figure
    * @param {{src:string, alt:string, caption:string, align:string, lazy:boolean}} options
    */
-  update(e, { src: t, alt: i, caption: n, align: o, lazy: s }) {
+  update(e, { src: t, alt: s, caption: n, align: o, lazy: i }) {
     this.editor.history.push(), e.className = `ife-image ife-image--${o}`;
     const a = e.querySelector("img");
-    a && (this.editor.sanitizer.isSafeUrl(t) && (a.src = t), a.alt = i, s ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading"));
-    let l = e.querySelector("figcaption");
-    n ? (l || (l = document.createElement("figcaption"), e.appendChild(l)), l.textContent = n) : l && l.remove(), e.classList.remove("ife-image--selected"), this.editor.emitChange();
+    if (a && (this.editor.sanitizer.isSafeUrl(t) && (a.src = t), a.alt = s, i ? a.setAttribute("loading", "lazy") : a.removeAttribute("loading")), e.querySelectorAll("figcaption").forEach((l) => l.remove()), n) {
+      const l = document.createElement("figcaption");
+      l.textContent = n, e.appendChild(l);
+    }
+    e.classList.remove("ife-image--selected"), this.editor.emitChange();
   }
   /** Marks the clicked image's <figure> as selected (for edit/resize), or clears selection. */
   handleClick(e) {
-    var i;
+    var s;
     const t = e.target.closest("figure.ife-image img");
-    this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), t ? ((i = t.closest("figure")) == null || i.classList.add("ife-image--selected"), this.showResizeHandles(t)) : this.hideResizeHandles();
+    this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), t ? ((s = t.closest("figure")) == null || s.classList.add("ife-image--selected"), this.showResizeHandles(t)) : this.hideResizeHandles();
   }
   /** Adds visible resize handles around a selected image. */
   showResizeHandles(e) {
@@ -128,7 +132,7 @@ class v {
     const t = document.createElement("div");
     t.className = "ife-image-resize-handles", ["nw", "ne", "sw", "se"].forEach((n) => {
       const o = document.createElement("div");
-      o.className = `ife-image-resize-handle ife-image-resize-handle--${n}`, o.addEventListener("mousedown", (s) => this.handleResizeStart(s, e)), t.appendChild(o);
+      o.className = `ife-image-resize-handle ife-image-resize-handle--${n}`, o.addEventListener("mousedown", (i) => this.handleResizeStart(i, e)), t.appendChild(o);
     }), e.parentElement && e.parentElement.appendChild(t);
   }
   /** Removes visible resize handles. */
@@ -138,10 +142,10 @@ class v {
   /** Drag-start for visible resize handles. */
   handleResizeStart(e, t) {
     e.preventDefault(), e.stopPropagation();
-    const i = e.clientX, n = e.clientY, o = t.getBoundingClientRect().width, s = t.getBoundingClientRect().height, a = (r) => {
-      const h = r.clientX - i, m = r.clientY - n, p = o / s;
-      let d = Math.max(40, o + h), c = Math.max(40, s + m);
-      Math.abs(h) > Math.abs(m) ? c = d / p : d = c * p, t.style.width = `${Math.round(d)}px`, t.style.height = `${Math.round(c)}px`;
+    const s = e.clientX, n = e.clientY, o = t.getBoundingClientRect().width, i = t.getBoundingClientRect().height, a = (r) => {
+      const c = r.clientX - s, m = r.clientY - n, p = o / i;
+      let d = Math.max(40, o + c), h = Math.max(40, i + m);
+      Math.abs(c) > Math.abs(m) ? h = d / p : d = h * p, t.style.width = `${Math.round(d)}px`, t.style.height = `${Math.round(h)}px`;
     }, l = () => {
       document.removeEventListener("mousemove", a), document.removeEventListener("mouseup", l), this.editor.emitChange();
     };
@@ -149,22 +153,22 @@ class v {
   }
   /** Double-clicking an image opens the edit dialog directly. */
   handleDblClick(e) {
-    var i;
+    var s;
     const t = e.target.closest("figure.ife-image img");
-    t && (e.preventDefault(), this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), (i = t.closest("figure")) == null || i.classList.add("ife-image--selected"), this.open());
+    t && (e.preventDefault(), this.editor.root.querySelectorAll(".ife-image--selected").forEach((n) => n.classList.remove("ife-image--selected")), (s = t.closest("figure")) == null || s.classList.add("ife-image--selected"), this.open());
   }
   /** Alt+drag on an image resizes it (avoids clashing with normal caret placement). */
   handleMouseDown(e) {
     const t = e.target.closest("figure.ife-image img");
     if (!t || !e.altKey) return;
     e.preventDefault();
-    const i = e.clientX, n = t.getBoundingClientRect().width, o = (a) => {
-      const l = a.clientX - i;
+    const s = e.clientX, n = t.getBoundingClientRect().width, o = (a) => {
+      const l = a.clientX - s;
       t.style.width = `${Math.max(40, n + l)}px`;
-    }, s = () => {
-      document.removeEventListener("mousemove", o), document.removeEventListener("mouseup", s), this.editor.emitChange();
+    }, i = () => {
+      document.removeEventListener("mousemove", o), document.removeEventListener("mouseup", i), this.editor.emitChange();
     };
-    document.addEventListener("mousemove", o), document.addEventListener("mouseup", s);
+    document.addEventListener("mousemove", o), document.addEventListener("mouseup", i);
   }
   /** @param {DragEvent} event */
   async handleDrop(e) {
@@ -172,8 +176,8 @@ class v {
     const t = (o = (n = e.dataTransfer) == null ? void 0 : n.files) == null ? void 0 : o[0];
     if (!t || !t.type.startsWith("image/")) return;
     e.preventDefault();
-    const i = await this.upload(t);
-    i && (this.editor.selection.save(), this.insert({ src: i, alt: "", caption: "", align: "center", lazy: !0 }));
+    const s = await this.upload(t);
+    s && (this.editor.selection.save(), this.insert({ src: s, alt: "", caption: "", align: "center", lazy: !0 }));
   }
   escape(e) {
     return String(e ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -186,4 +190,4 @@ class v {
 export {
   v as default
 };
-//# sourceMappingURL=ImageModule-DIKxSnbL.js.map
+//# sourceMappingURL=ImageModule-2rziGP0R.js.map
