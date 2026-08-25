@@ -1,7 +1,7 @@
-var S = Object.defineProperty;
-var H = (s, e, t) => e in s ? S(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var k = (s, e, t) => H(s, typeof e != "symbol" ? e + "" : e, t);
-class C {
+var T = Object.defineProperty;
+var M = (s, e, t) => e in s ? T(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
+var E = (s, e, t) => M(s, typeof e != "symbol" ? e + "" : e, t);
+class z {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class C {
     this.listeners.clear();
   }
 }
-class E {
+class x {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class E {
     this.root.focus(), this.restore();
   }
 }
-class M {
+class N {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -151,9 +151,9 @@ class M {
    * @param {(bookmark: object) => void} [options.restoreBookmark]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: r, onChange: h }) {
+  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: r, onChange: d }) {
     this.getContent = e, this.setContent = t, this.maxSteps = n, this.debounceMs = o, this.saveBookmark = i ?? (() => null), this.restoreBookmark = r ?? (() => {
-    }), this.onChange = h ?? (() => {
+    }), this.onChange = d ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push({ html: this.getContent(), bookmark: null });
   }
   /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -191,7 +191,7 @@ class M {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-class T {
+class R {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -320,17 +320,17 @@ class T {
     if (!t) return;
     const n = this.selection.closest("li");
     if (n) {
-      const h = n.closest("ul, ol");
-      h && h.tagName.toLowerCase() === e ? this.unwrapList(h) : h && this.convertList(h, e);
+      const d = n.closest("ul, ol");
+      d && d.tagName.toLowerCase() === e ? this.unwrapList(d) : d && this.convertList(d, e);
       return;
     }
     const o = this.getBlocksInRange(t);
     if (!o.length) return;
     const i = document.createElement(e);
-    o.forEach((h) => {
+    o.forEach((d) => {
       const a = document.createElement("li");
-      a.innerHTML = h.innerHTML || "<br>", i.appendChild(a);
-    }), o[0].replaceWith(i), o.slice(1).forEach((h) => h.remove());
+      a.innerHTML = d.innerHTML || "<br>", i.appendChild(a);
+    }), o[0].replaceWith(i), o.slice(1).forEach((d) => d.remove());
     const r = document.createRange();
     r.selectNodeContents(i.lastElementChild), r.collapse(!1), this.selection.setRange(r);
   }
@@ -342,11 +342,11 @@ class T {
    */
   getBlocksInRange(e) {
     const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), n = (a) => {
-      let d = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
-      for (; d && d !== this.root; ) {
-        if (d instanceof HTMLElement && d.parentElement === this.root && t.has(d.tagName))
-          return d;
-        d = d.parentElement;
+      let l = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
+      for (; l && l !== this.root; ) {
+        if (l instanceof HTMLElement && l.parentElement === this.root && t.has(l.tagName))
+          return l;
+        l = l.parentElement;
       }
       return null;
     }, o = n(e.startContainer);
@@ -354,9 +354,9 @@ class T {
     const i = n(e.endContainer) ?? o;
     if (o === i) return [o];
     const r = [];
-    let h = o;
-    for (; h && (r.push(h), h !== i); )
-      h = h.nextElementSibling;
+    let d = o;
+    for (; d && (r.push(d), d !== i); )
+      d = d.nextElementSibling;
     return r.length ? r : [o];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -392,13 +392,13 @@ class T {
     let n = t.commonAncestorContainer;
     if (n.nodeType === Node.TEXT_NODE && (n = n.parentElement), !(n instanceof HTMLElement)) return;
     ((i = n.style) != null && i.length ? [n, ...n.querySelectorAll("*")] : [...n.querySelectorAll("*")]).forEach((r) => {
-      var h;
+      var d;
       try {
         if (!t.intersectsNode(r)) return;
       } catch {
         return;
       }
-      if ((h = r.style) != null && h[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
+      if ((d = r.style) != null && d[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
         const a = r.parentNode;
         if (!a) return;
         for (; r.firstChild; ) a.insertBefore(r.firstChild, r);
@@ -440,7 +440,7 @@ class T {
     this.editor.emitChange();
   }
 }
-const z = /* @__PURE__ */ new Set([
+const B = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -504,7 +504,7 @@ const z = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), x = {
+]), A = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -541,8 +541,8 @@ const z = /* @__PURE__ */ new Set([
   mask: /* @__PURE__ */ new Set(["id"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, R = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class N {
+}, V = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class I {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -550,7 +550,7 @@ class N {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : z, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : x, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : R;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : B, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : A, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : V;
   }
   /**
    * @param {string} dirtyHtml
@@ -637,21 +637,21 @@ class N {
     }
   }
 }
-const A = {
+const D = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
-}, w = /* @__PURE__ */ new Map();
-class v {
+}, S = /* @__PURE__ */ new Map();
+class C {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var n, o;
-    this.textarea = e, this.options = { ...A, ...t }, this.events = new C(), this.sanitizer = new N(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new E(this.root), this.commands = new T(this), this.history = new M({
+    this.textarea = e, this.options = { ...D, ...t }, this.events = new z(), this.sanitizer = new I(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new x(this.root), this.commands = new R(this), this.history = new N({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -667,7 +667,7 @@ class v {
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
-    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.style.minHeight = `${this.options.height}px`, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || ""), this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
+    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.style.minHeight = `${this.options.height}px`, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
   }
   bindEvents() {
     this.root.addEventListener("input", () => {
@@ -709,8 +709,8 @@ class v {
     if (!o || !i) return;
     const r = document.createRange();
     r.setStart(o.node, Math.min(o.offset, (o.node.textContent || "").length)), r.setEnd(i.node, Math.min(i.offset, (i.node.textContent || "").length));
-    const h = window.getSelection();
-    h && (h.removeAllRanges(), h.addRange(r));
+    const d = window.getSelection();
+    d && (d.removeAllRanges(), d.addRange(r));
   }
   /** Find text node and offset at a given character position from root start. */
   nodeAtOffset(e) {
@@ -787,31 +787,91 @@ class v {
     if (e.key !== "Enter" || e.shiftKey || this.destroyed || !this.root.contains(document.activeElement)) return;
     const t = this.selection.getBlockElement();
     if (!t) return;
-    const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre");
-    if (!n && !o) return;
-    e.preventDefault();
-    const i = this.selection.getRange();
-    if (!i) return;
-    if (this.history.push(), o) {
-      this._insertBreakInPre(i), this.emitChange();
+    const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre"), i = t.tagName === "DIV" && t.classList.contains("note"), r = this.selection.getRange();
+    if (!r) return;
+    if (!n && !o && !i) {
+      let a = r.startContainer;
+      if (a.nodeType === Node.TEXT_NODE && (a = a.parentElement), !(a instanceof HTMLElement) || !a.closest("code")) return;
+    }
+    if (e.preventDefault(), this.history.push(), o) {
+      if (!t.textContent.trim()) {
+        const l = document.createElement("p");
+        l.innerHTML = "<br>", t.parentNode.insertBefore(l, t.nextSibling), t.parentNode.removeChild(t);
+        const m = document.createRange();
+        m.setStart(l, 0), m.collapse(!0), this.selection.setRange(m);
+      } else
+        this._insertBreakInPre(r);
+      this.emitChange();
       return;
     }
-    const r = document.createElement("p"), { startContainer: h, startOffset: a } = i;
-    if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
-      const b = h.textContent, L = b.slice(0, a), y = b.slice(a);
-      h.textContent = L, y && (r.textContent = y);
+    if (n) {
+      if (!t.textContent.trim()) {
+        const u = document.createElement("p");
+        u.innerHTML = "<br>", n.parentNode.insertBefore(u, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
+        const p = document.createRange();
+        p.setStart(u, 0), p.collapse(!0), this.selection.setRange(p), this.emitChange();
+        return;
+      }
+      const l = document.createElement("p"), { startContainer: m, startOffset: g } = r;
+      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
+        const u = m.textContent, p = u.slice(0, g), b = u.slice(g);
+        m.textContent = p, b && (l.textContent = b);
+      }
+      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
+      const f = document.createRange(), v = l.firstChild || l;
+      f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      return;
     }
-    r.textContent || (r.innerHTML = "<br>"), t.parentNode.insertBefore(r, t.nextSibling);
-    const d = document.createRange(), m = r.firstChild || r;
-    d.setStart(m, 0), d.collapse(!0), this.selection.setRange(d), this.emitChange();
+    if (i) {
+      if (!t.textContent.trim()) {
+        const u = document.createElement("p");
+        u.innerHTML = "<br>", t.parentNode.insertBefore(u, t.nextSibling), t.parentNode.removeChild(t);
+        const p = document.createRange();
+        p.setStart(u, 0), p.collapse(!0), this.selection.setRange(p), this.emitChange();
+        return;
+      }
+      const l = document.createElement("p"), { startContainer: m, startOffset: g } = r;
+      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
+        const u = m.textContent, p = u.slice(0, g), b = u.slice(g);
+        m.textContent = p, b && (l.textContent = b);
+      }
+      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
+      const f = document.createRange(), v = l.firstChild || l;
+      f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      return;
+    }
+    const d = (() => {
+      let a = r.startContainer;
+      return a.nodeType === Node.TEXT_NODE && (a = a.parentElement), a instanceof HTMLElement ? a.closest("code") : null;
+    })();
+    if (d) {
+      const { startContainer: a, startOffset: l } = r;
+      if (a.nodeType === Node.TEXT_NODE && t.contains(a)) {
+        const m = a.textContent, g = m.slice(0, l), f = m.slice(l);
+        a.textContent = g;
+        const v = document.createElement("p");
+        if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !d.textContent.trim()) {
+          const b = d.parentNode, H = document.createTextNode("");
+          b.replaceChild(H, d);
+        }
+        const u = document.createRange(), p = v.firstChild || v;
+        u.setStart(p, 0), u.collapse(!0), this.selection.setRange(u);
+      } else {
+        const m = document.createElement("p");
+        m.innerHTML = "<br>", t.parentNode.insertBefore(m, t.nextSibling);
+        const g = document.createRange();
+        g.setStart(m, 0), g.collapse(!0), this.selection.setRange(g);
+      }
+      this.emitChange();
+    }
   }
   _insertBreakInPre(e) {
     const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
     if (t.nodeType === Node.TEXT_NODE) {
-      const r = t.textContent, h = r.slice(0, n), a = r.slice(n);
-      if (t.textContent = h, t.parentNode.insertBefore(o, t.nextSibling), a) {
-        const d = document.createTextNode(a);
-        t.parentNode.insertBefore(d, o.nextSibling);
+      const r = t.textContent, d = r.slice(0, n), a = r.slice(n);
+      if (t.textContent = d, t.parentNode.insertBefore(o, t.nextSibling), a) {
+        const l = document.createTextNode(a);
+        t.parentNode.insertBefore(l, o.nextSibling);
       }
     } else {
       const r = t.childNodes[n] || null;
@@ -850,7 +910,7 @@ class v {
    */
   async loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []), t = [];
-    w.forEach((n, o) => {
+    S.forEach((n, o) => {
       e.has(o) || t.push(
         Promise.resolve(n(this)).then((i) => {
           this.plugins.set(o, i);
@@ -894,7 +954,7 @@ class v {
   }
   clear() {
     var e;
-    if (this.setHTML(""), this.history.clear(), (e = this.options.autosave) != null && e.enabled)
+    if (this.setHTML("<div><br></div>"), this.history.clear(), (e = this.options.autosave) != null && e.enabled)
       try {
         window.localStorage.removeItem(this.options.autosave.storage_key);
       } catch {
@@ -924,57 +984,57 @@ class v {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    w.set(e, t);
+    S.set(e, t);
   }
 }
-const l = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, c = {
-  undo: l('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
-  redo: l('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
-  bold: l('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
-  italic: l('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
-  underline: l('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
-  strikeThrough: l('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
-  superscript: l('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  subscript: l('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  formatColorText: l('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
-  clearFormat: l('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
-  formatColorFill: l('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
-  alignLeft: l('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
-  alignCenter: l('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
-  alignRight: l('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
-  alignJustify: l('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
-  listBulleted: l('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  listNumbered: l('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
-  checklist: l('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
-  link: l('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
-  unlink: l('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
-  image: l('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
-  videocam: l('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
-  audiotrack: l('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
-  table: l('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
-  hr: l('<path d="M2 11h20v2H2z"/>'),
-  blockquote: l('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
-  code: l('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
-  codeBlock: l('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
-  note: l('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
-  emoji: l('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
-  specialChars: l('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
-  find: l('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
-  sourceCode: l('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
-  fullscreen: l('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
-  indent: l('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: l('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  wordCount: l('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
-  ltr: l('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
-  rtl: l('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
-  markdown: l('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
-  date: l('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
-  time: l('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
-  template: l('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
-  anchor: l('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
-  listProps: l('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
+const c = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, h = {
+  undo: c('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
+  redo: c('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
+  bold: c('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
+  italic: c('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
+  underline: c('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
+  strikeThrough: c('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
+  superscript: c('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  subscript: c('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  formatColorText: c('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
+  clearFormat: c('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
+  formatColorFill: c('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
+  alignLeft: c('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
+  alignCenter: c('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
+  alignRight: c('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
+  alignJustify: c('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
+  listBulleted: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  listNumbered: c('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
+  checklist: c('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
+  link: c('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
+  unlink: c('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
+  image: c('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
+  videocam: c('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
+  audiotrack: c('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
+  table: c('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
+  hr: c('<path d="M2 11h20v2H2z"/>'),
+  blockquote: c('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
+  code: c('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
+  codeBlock: c('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
+  note: c('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
+  emoji: c('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
+  specialChars: c('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
+  find: c('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
+  sourceCode: c('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
+  fullscreen: c('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
+  indent: c('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  ltr: c('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
+  rtl: c('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
+  markdown: c('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
+  date: c('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
+  time: c('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
+  template: c('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
+  anchor: c('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
+  listProps: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
 };
-class B {
+class O {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -985,11 +1045,11 @@ class B {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    * @param {() => void} [config.onClose]
    */
-  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: h }) {
-    k(this, "handleEscape", (e) => {
+  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: d }) {
+    E(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
-    this.container = e, this.onConfirm = r, this.onClose = h, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
+    this.container = e, this.onConfirm = r, this.onClose = d, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
             <form class="ife-dialog" role="dialog" aria-modal="true" aria-label="${t}">
                 <header class="ife-dialog__header">
                     <h2>${t}</h2>
@@ -1002,11 +1062,11 @@ class B {
                 </footer>
             </form>
         `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("click", (d) => d.stopPropagation()), a.addEventListener("keydown", (d) => {
-        d.key !== "Escape" && d.stopPropagation();
+      a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => {
+        l.key !== "Escape" && l.stopPropagation();
       });
     }), this.overlay.querySelectorAll("button").forEach((a) => {
-      a.addEventListener("mousedown", (d) => d.preventDefault());
+      a.addEventListener("mousedown", (l) => l.preventDefault());
     }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
       a.target === this.overlay && this.close();
     }), this.form.addEventListener("submit", (a) => {
@@ -1037,40 +1097,40 @@ class B {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const V = {
-  undo: { icon: c.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
-  redo: { icon: c.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
-  bold: { icon: c.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: c.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: c.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: c.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: c.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: c.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: c.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: c.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+const _ = {
+  undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
+  redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
+  bold: { icon: h.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: h.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: h.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: h.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: h.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: h.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: h.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: h.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: c.clearFormat,
+    icon: h.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: c.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: c.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: c.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: c.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: c.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: c.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: h.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: h.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: h.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: h.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: h.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: h.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: c.checklist,
+    icon: h.checklist,
     label: "Checklist",
     type: "action",
     action: (s) => s.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: c.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: c.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: c.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
+  indent: { icon: h.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: h.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: h.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
   unlink: {
-    icon: c.unlink,
+    icon: h.unlink,
     label: "Remove link",
     type: "action",
     action: (s) => {
@@ -1078,12 +1138,12 @@ const V = {
       e && s.module("link").remove(e);
     }
   },
-  image: { icon: c.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
-  video: { icon: c.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
-  audio: { icon: c.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
-  table: { icon: c.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
-  hr: { icon: c.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
-  blockquote: { icon: c.blockquote, label: "Blockquote", type: "action", action: (s) => {
+  image: { icon: h.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
+  video: { icon: h.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
+  audio: { icon: h.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
+  table: { icon: h.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
+  hr: { icon: h.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
+  blockquote: { icon: h.blockquote, label: "Blockquote", type: "action", action: (s) => {
     const e = s.selection.getBlockElement();
     if (!e || e === s.root) return;
     if (e.tagName === "BLOCKQUOTE" || e.closest("blockquote")) {
@@ -1099,12 +1159,12 @@ const V = {
     s.emitChange();
   } },
   codeInline: {
-    icon: c.code,
+    icon: h.code,
     label: "Inline code",
     type: "action",
     action: (s) => s.selection.wrap("code") && s.emitChange()
   },
-  codeBlock: { icon: c.codeBlock, label: "Code block", type: "action", action: (s) => {
+  codeBlock: { icon: h.codeBlock, label: "Code block", type: "action", action: (s) => {
     const e = s.selection.getBlockElement();
     if (!e || e === s.root) return;
     const t = e.tagName === "PRE" || e.closest("pre");
@@ -1117,50 +1177,50 @@ const V = {
     }
     s.emitChange();
   } },
-  note: { icon: c.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
+  note: { icon: h.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
-    icon: c.emoji,
+    icon: h.emoji,
     label: "Emoji",
     type: "action",
     action: (s, e) => s.module("emoji").open(e)
   },
   specialChars: {
-    icon: c.specialChars,
+    icon: h.specialChars,
     label: "Special characters",
     type: "action",
     action: (s) => s.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: c.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
+  find: { icon: h.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
   sourceCode: {
-    icon: c.sourceCode,
+    icon: h.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
     action: (s) => s.module("codeView").toggle()
   },
   fullscreen: {
-    icon: c.fullscreen,
+    icon: h.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
     action: (s) => s.module("fullscreen").toggle()
   },
   ltr: {
-    icon: c.ltr,
+    icon: h.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: c.rtl,
+    icon: h.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: c.markdown,
+    icon: h.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
@@ -1176,7 +1236,7 @@ const V = {
     }
   },
   date: {
-    icon: c.date,
+    icon: h.date,
     label: "Insert date",
     type: "action",
     action: (s) => {
@@ -1185,7 +1245,7 @@ const V = {
     }
   },
   time: {
-    icon: c.time,
+    icon: h.time,
     label: "Insert time",
     type: "action",
     action: (s) => {
@@ -1194,7 +1254,7 @@ const V = {
     }
   },
   anchor: {
-    icon: c.anchor,
+    icon: h.anchor,
     label: "Insert anchor",
     type: "action",
     action: (s) => {
@@ -1208,7 +1268,7 @@ const V = {
     }
   },
   templates: {
-    icon: c.template,
+    icon: h.template,
     label: "Content templates",
     type: "action",
     action: (s) => {
@@ -1217,7 +1277,7 @@ const V = {
     }
   },
   listProps: {
-    icon: c.listProps,
+    icon: h.listProps,
     label: "List properties",
     type: "action",
     action: (s) => {
@@ -1239,19 +1299,19 @@ const V = {
                         <option value="upper-roman" ${o === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, r = new B(s.wrapper, {
+            `, r = new O(s.wrapper, {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
-        onConfirm: (h) => {
-          const a = new FormData(h), d = a.get("start"), m = a.get("type");
-          s.history.push(), d ? t.setAttribute("start", String(d)) : t.removeAttribute("start"), m ? t.style.listStyleType = m : t.style.listStyleType = "", s.emitChange();
+        onConfirm: (d) => {
+          const a = new FormData(d), l = a.get("start"), m = a.get("type");
+          s.history.push(), l ? t.setAttribute("start", String(l)) : t.removeAttribute("start"), m ? t.style.listStyleType = m : t.style.listStyleType = "", s.emitChange();
         }
       });
       s.selection.save(), r.open();
     }
   }
-}, I = {
+}, P = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -1315,7 +1375,7 @@ const V = {
   templates: "Content templates",
   listProps: "List properties",
   madeBy: "Made by ITkha"
-}, D = {
+}, F = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1379,7 +1439,7 @@ const V = {
   templates: "Шаблони",
   listProps: "Властивості списку",
   madeBy: "Зроблено в ITkha"
-}, O = {
+}, q = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1443,17 +1503,17 @@ const V = {
   templates: "Шаблоны",
   listProps: "Свойства списка",
   madeBy: "Сделано в ITkha"
-}, p = /* @__PURE__ */ new Map([
-  ["en", I],
-  ["uk", D],
-  ["ru", O]
-]), u = {
+}, k = /* @__PURE__ */ new Map([
+  ["en", P],
+  ["uk", F],
+  ["ru", q]
+]), y = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
    */
   register(s, e) {
-    p.set(s, e);
+    k.set(s, e);
   },
   /**
    * @param {string} locale
@@ -1461,12 +1521,12 @@ const V = {
    * @returns {string}
    */
   t(s, e) {
-    return (p.get(s) ?? p.get("en"))[e] ?? p.get("en")[e] ?? e;
+    return (k.get(s) ?? k.get("en"))[e] ?? k.get("en")[e] ?? e;
   },
   available() {
-    return [...p.keys()];
+    return [...k.keys()];
   }
-}, _ = [
+}, U = [
   ["undo", "redo"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
   ["forecolor", "backcolor", "removeFormat"],
@@ -1480,19 +1540,19 @@ const V = {
   ["markdown"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class P {
+class W {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? _, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? U, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const o = V[n];
+        const o = _[n];
         if (!o) return;
         const i = this.buildControl(n, o);
         i && t.appendChild(i);
@@ -1504,7 +1564,7 @@ class P {
   }
   buildButton(e, t) {
     const n = this.editor.options.locale ?? "en";
-    let o = u.t(n, e) !== e ? u.t(n, e) : t.label;
+    let o = y.t(n, e) !== e ? y.t(n, e) : t.label;
     if (t.shortcut) {
       const r = t.shortcut.replace(/Ctrl/g, "⌘");
       o += ` (${t.shortcut} / ${r})`;
@@ -1517,9 +1577,9 @@ class P {
   }
   buildSelect(e, t) {
     const n = this.editor.options.locale ?? "en", o = document.createElement("select");
-    return o.className = "ife-toolbar__select", o.setAttribute("aria-label", u.t(n, e) !== e ? u.t(n, e) : t.label), t.options.forEach(([i, r]) => {
-      const h = document.createElement("option");
-      h.value = i, h.textContent = r, o.appendChild(h);
+    return o.className = "ife-toolbar__select", o.setAttribute("aria-label", y.t(n, e) !== e ? y.t(n, e) : t.label), t.options.forEach(([i, r]) => {
+      const d = document.createElement("option");
+      d.value = i, d.textContent = r, o.appendChild(d);
     }), o.addEventListener("pointerdown", () => {
       this.editor.selection.save();
     }), o.addEventListener("mousedown", () => {
@@ -1529,7 +1589,7 @@ class P {
     }), this.buttons.set(e, o), o;
   }
   buildColorPicker(e, t) {
-    const n = this.editor.options.locale ?? "en", o = u.t(n, e) !== e ? u.t(n, e) : t.label, i = document.createElement("label");
+    const n = this.editor.options.locale ?? "en", o = y.t(n, e) !== e ? y.t(n, e) : t.label, i = document.createElement("label");
     i.className = "ife-toolbar__color", i.title = o, i.innerHTML = t.icon;
     const r = document.createElement("input");
     return r.type = "color", r.setAttribute("aria-label", o), r.addEventListener("input", () => {
@@ -1547,9 +1607,9 @@ class P {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([a, d]) => {
+    }).forEach(([a, l]) => {
       const m = this.buttons.get(a);
-      m instanceof HTMLElement && m.classList.toggle("is-active", this.editor.commands.queryState(d));
+      m instanceof HTMLElement && m.classList.toggle("is-active", this.editor.commands.queryState(l));
     });
     const t = this.editor.selection.getBlockElement();
     let n = "";
@@ -1564,40 +1624,40 @@ class P {
       }
     }
     ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((a) => {
-      const d = this.buttons.get(a);
-      d instanceof HTMLElement && d.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
+      const l = this.buttons.get(a);
+      l instanceof HTMLElement && l.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
     });
     const o = this.buttons.get("ltr"), i = this.buttons.get("rtl");
     if (o instanceof HTMLElement && i instanceof HTMLElement) {
       let a = "";
       if (t) {
-        let d = t;
-        for (; d && d !== this.editor.root; ) {
-          if (d.dir) {
-            a = d.dir;
+        let l = t;
+        for (; l && l !== this.editor.root; ) {
+          if (l.dir) {
+            a = l.dir;
             break;
           }
-          d = d.parentElement;
+          l = l.parentElement;
         }
       }
       o.classList.toggle("is-active", a === "ltr"), i.classList.toggle("is-active", a === "rtl");
     }
     const r = this.buttons.get("markdown");
     r instanceof HTMLElement && r.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
-    const h = this.buttons.get("blockquote");
-    if (h instanceof HTMLElement) {
+    const d = this.buttons.get("blockquote");
+    if (d instanceof HTMLElement) {
       let a = !1;
       if (t) {
-        let d = t;
-        for (; d && d !== this.editor.root; ) {
-          if (d.tagName === "BLOCKQUOTE") {
+        let l = t;
+        for (; l && l !== this.editor.root; ) {
+          if (l.tagName === "BLOCKQUOTE") {
             a = !0;
             break;
           }
-          d = d.parentElement;
+          l = l.parentElement;
         }
       }
-      h.classList.toggle("is-active", a);
+      d.classList.toggle("is-active", a);
     }
   }
   setEnabled(e, t) {
@@ -1608,28 +1668,28 @@ class P {
     this.el.remove();
   }
 }
-const F = {
-  link: () => import("./LinkModule-BviLFBxw.js"),
-  image: () => import("./ImageModule-dGVk9NJq.js"),
-  table: () => import("./TableModule-DiiQ23m4.js"),
+const j = {
+  link: () => import("./LinkModule-DM9TuXPm.js"),
+  image: () => import("./ImageModule-CEX5MWCb.js"),
+  table: () => import("./TableModule-Dljis9qM.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-B_JBBIJf.js"),
-  note: () => import("./NoteModule-sWF-AvbY.js"),
-  media: () => import("./MediaModule-DckPRJg-.js"),
-  markdown: () => import("./MarkdownModule-CIWJ1oE_.js"),
-  statusBar: () => import("./StatusBar-C01-OF4U.js"),
+  find: () => import("./FindModule-BzDbrX7G.js"),
+  note: () => import("./NoteModule-BJZUDAdg.js"),
+  media: () => import("./MediaModule-dHJWni47.js"),
+  markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
+  statusBar: () => import("./StatusBar-hCE4cF77.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-DmA4DhyR.js")
+  templates: () => import("./TemplateModule-H9OLIDMh.js")
 };
-Object.entries(F).forEach(([s, e]) => {
-  v.registerPlugin(s, async (t) => {
+Object.entries(j).forEach(([s, e]) => {
+  C.registerPlugin(s, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
 });
-const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), U = {
+const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1641,11 +1701,11 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), U = {
       throw new Error(`InkForge Editor: target "${s}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
-    if (g.has(t))
-      return g.get(t);
-    const n = new v(t, e), o = new P(n, e.toolbar);
-    return n.on("destroy", () => o.destroy()), g.set(t, n), f.add(n), n.on("destroy", () => {
-      g.delete(t), f.delete(n);
+    if (w.has(t))
+      return w.get(t);
+    const n = new C(t, e), o = new W(n, e.toolbar);
+    return n.on("destroy", () => o.destroy()), w.set(t, n), L.add(n), n.on("destroy", () => {
+      w.delete(t), L.delete(n);
     }), n;
   },
   /**
@@ -1654,18 +1714,18 @@ const g = /* @__PURE__ */ new WeakMap(), f = /* @__PURE__ */ new Set(), U = {
    */
   get(s) {
     const e = typeof s == "string" ? document.querySelector(s) : s;
-    return e ? g.get(e) : void 0;
+    return e ? w.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    f.forEach((s) => s.destroy()), f.clear();
+    L.forEach((s) => s.destroy()), L.clear();
   },
-  registerPlugin: v.registerPlugin
+  registerPlugin: C.registerPlugin
 };
 export {
-  B as D,
-  c as I,
-  u as L,
-  U as a
+  O as D,
+  h as I,
+  y as L,
+  X as a
 };
-//# sourceMappingURL=index-Ccv0d7hY.js.map
+//# sourceMappingURL=index-DdpIAR1K.js.map
