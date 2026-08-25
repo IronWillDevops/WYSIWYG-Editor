@@ -452,6 +452,10 @@ const B = /* @__PURE__ */ new Set([
   "s",
   "sup",
   "sub",
+  "b",
+  "i",
+  "strike",
+  "font",
   "h1",
   "h2",
   "h3",
@@ -539,6 +543,7 @@ const B = /* @__PURE__ */ new Set([
   tspan: /* @__PURE__ */ new Set(["x", "dy", "textAnchor"]),
   symbol: /* @__PURE__ */ new Set(["id", "viewBox", "width", "height"]),
   mask: /* @__PURE__ */ new Set(["id"]),
+  font: /* @__PURE__ */ new Set(["color", "size", "face"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
 }, V = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
@@ -1669,19 +1674,19 @@ class W {
   }
 }
 const j = {
-  link: () => import("./LinkModule-DM9TuXPm.js"),
-  image: () => import("./ImageModule-CEX5MWCb.js"),
-  table: () => import("./TableModule-Dljis9qM.js"),
+  link: () => import("./LinkModule-Bu8yjADu.js"),
+  image: () => import("./ImageModule-BFWZlSYJ.js"),
+  table: () => import("./TableModule-CPqGcVzn.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-BzDbrX7G.js"),
-  note: () => import("./NoteModule-BJZUDAdg.js"),
-  media: () => import("./MediaModule-dHJWni47.js"),
+  find: () => import("./FindModule-DpUgAF0r.js"),
+  note: () => import("./NoteModule-BeJZL9ex.js"),
+  media: () => import("./MediaModule-CjEzpISN.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-hCE4cF77.js"),
+  statusBar: () => import("./StatusBar-tdQ8tSat.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-H9OLIDMh.js")
+  templates: () => import("./TemplateModule-D56MNntY.js")
 };
 Object.entries(j).forEach(([s, e]) => {
   C.registerPlugin(s, async (t) => {
@@ -1728,4 +1733,4 @@ export {
   y as L,
   X as a
 };
-//# sourceMappingURL=index-DdpIAR1K.js.map
+//# sourceMappingURL=index-DsBh6wje.js.map

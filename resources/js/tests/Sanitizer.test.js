@@ -54,6 +54,69 @@ describe('Sanitizer', () => {
         expect(result).toContain('colspan="2"');
     });
 
+    describe('legacy formatting tags preserved', () => {
+        it('preserves <b> tags from execCommand fallback', () => {
+            const result = sanitizer.sanitize('<p><b>bold</b></p>');
+            expect(result).toContain('<b>');
+            expect(result).toContain('bold');
+        });
+
+        it('preserves <i> tags from execCommand fallback', () => {
+            const result = sanitizer.sanitize('<p><i>italic</i></p>');
+            expect(result).toContain('<i>');
+            expect(result).toContain('italic');
+        });
+
+        it('preserves <strike> tags from execCommand fallback', () => {
+            const result = sanitizer.sanitize('<p><strike>strikethrough</strike></p>');
+            expect(result).toContain('<strike>');
+            expect(result).toContain('strikethrough');
+        });
+
+        it('preserves <font> tags with color attribute', () => {
+            const result = sanitizer.sanitize('<p><font color="red">colored</font></p>');
+            expect(result).toContain('<font');
+            expect(result).toContain('color="red"');
+            expect(result).toContain('colored');
+        });
+
+        it('preserves <font> tags with size attribute', () => {
+            const result = sanitizer.sanitize('<p><font size="5">sized</font></p>');
+            expect(result).toContain('<font');
+            expect(result).toContain('size="5"');
+        });
+
+        it('preserves <font> tags with face attribute', () => {
+            const result = sanitizer.sanitize('<p><font face="Arial">styled</font></p>');
+            expect(result).toContain('<font');
+            expect(result).toContain('face="Arial"');
+        });
+    });
+
+    describe('round-trip idempotency', () => {
+        it('produces same output on second sanitize pass', () => {
+            const html = '<p>hello <span style="font-weight: bold;">world</span></p>';
+            const first = sanitizer.sanitize(html);
+            const second = sanitizer.sanitize(first);
+            expect(second).toBe(first);
+        });
+
+        it('preserves formatting through double sanitize', () => {
+            const html = '<p><strong>bold</strong> <em>italic</em> <u>underline</u></p>';
+            const result = sanitizer.sanitize(sanitizer.sanitize(html));
+            expect(result).toContain('<strong>');
+            expect(result).toContain('<em>');
+            expect(result).toContain('<u>');
+        });
+
+        it('preserves legacy tags through double sanitize', () => {
+            const html = '<p><b>bold</b> <i>italic</i></p>';
+            const result = sanitizer.sanitize(sanitizer.sanitize(html));
+            expect(result).toContain('<b>');
+            expect(result).toContain('<i>');
+        });
+    });
+
     describe('security', () => {
         it('blocks data: URLs in href', () => {
             const result = sanitizer.sanitize('<a href="data:text/html,<script>alert(1)</script>">click</a>');

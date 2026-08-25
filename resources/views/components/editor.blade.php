@@ -46,7 +46,7 @@
         name="{{ $name }}"
         id="{{ $elementId }}"
         style="display:none"
-    >{!! $value !!}</textarea>
+    >{{ $value }}</textarea>
 </div>
 
 @once

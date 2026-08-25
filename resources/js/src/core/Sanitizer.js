@@ -1,5 +1,6 @@
 const DEFAULT_ALLOWED_TAGS = new Set([
     'p', 'br', 'div', 'span', 'a', 'strong', 'em', 'u', 's', 'sup', 'sub',
+    'b', 'i', 'strike', 'font',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
     'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
@@ -43,6 +44,7 @@ const DEFAULT_ALLOWED_ATTRS = {
     tspan: new Set(['x', 'dy', 'textAnchor']),
     symbol: new Set(['id', 'viewBox', 'width', 'height']),
     mask: new Set(['id']),
+    font: new Set(['color', 'size', 'face']),
     ol: new Set(['start', 'type', 'reversed', 'class', 'style']),
     ul: new Set(['class', 'style']),
 };
