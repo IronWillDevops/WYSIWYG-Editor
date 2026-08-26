@@ -573,7 +573,7 @@ class I {
    * double-escaped content produced by htmlspecialchars() or similar.
    */
   decodeDoubleEscapedEntities(e) {
-    if (/<[a-z][\s\S]*>/i.test(e) || !/&[a-z]+;|&#\d+;/i.test(e)) return e;
+    if (!/&[a-z]+;|&#\d+;/i.test(e)) return e;
     const t = document.createElement("textarea");
     return t.innerHTML = e, t.value;
   }
@@ -659,7 +659,7 @@ const D = {
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
-  autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
+  autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
 }, S = /* @__PURE__ */ new Map();
 class E {
   /**
@@ -679,7 +679,7 @@ class E {
       debounceMs: ((o = this.options.history) == null ? void 0 : o.debounce_ms) ?? 300,
       onChange: (i) => this.events.emit(i)
     }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((i) => {
-      console.error("InkForge Editor: plugin loading failed", i);
+      console.error("WYSIWYG Editor: plugin loading failed", i);
     }), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
@@ -1392,7 +1392,7 @@ const _ = {
   templates: "Content templates",
   listProps: "List properties",
   madeBy: "Made by ITkha"
-}, F = {
+}, q = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1456,7 +1456,7 @@ const _ = {
   templates: "Шаблони",
   listProps: "Властивості списку",
   madeBy: "Зроблено в ITkha"
-}, q = {
+}, W = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1522,8 +1522,8 @@ const _ = {
   madeBy: "Сделано в ITkha"
 }, k = /* @__PURE__ */ new Map([
   ["en", P],
-  ["uk", F],
-  ["ru", q]
+  ["uk", q],
+  ["ru", W]
 ]), y = {
   /**
    * @param {string} code
@@ -1543,7 +1543,7 @@ const _ = {
   available() {
     return [...k.keys()];
   }
-}, U = [
+}, F = [
   ["undo", "redo"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
   ["forecolor", "backcolor", "removeFormat"],
@@ -1557,13 +1557,13 @@ const _ = {
   ["markdown"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class W {
+class U {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? U, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? F, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
@@ -1686,19 +1686,19 @@ class W {
   }
 }
 const j = {
-  link: () => import("./LinkModule-hoIaT9TY.js"),
-  image: () => import("./ImageModule-CyqwPzR9.js"),
-  table: () => import("./TableModule-CuCtn_m9.js"),
+  link: () => import("./LinkModule-BM-uZSSy.js"),
+  image: () => import("./ImageModule-t1UskGai.js"),
+  table: () => import("./TableModule-DRXmLjA4.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DpOS3Nwc.js"),
-  note: () => import("./NoteModule-X5gOnRY9.js"),
-  media: () => import("./MediaModule-BSDfTA8g.js"),
+  find: () => import("./FindModule-dLL1WvkZ.js"),
+  note: () => import("./NoteModule-Dpib7q9u.js"),
+  media: () => import("./MediaModule-DN3aAu11.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-CpEBqxua.js"),
+  statusBar: () => import("./StatusBar-B6KKdYJj.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-5EThXAhP.js")
+  templates: () => import("./TemplateModule-CKasr4nJ.js")
 };
 Object.entries(j).forEach(([s, e]) => {
   E.registerPlugin(s, async (t) => {
@@ -1715,12 +1715,12 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
   init(s, e = {}) {
     const t = typeof s == "string" ? document.querySelector(s) : s;
     if (!t)
-      throw new Error(`InkForge Editor: target "${s}" not found`);
+      throw new Error(`WYSIWYG Editor: target "${s}" not found`);
     if (t.tagName !== "TEXTAREA")
-      throw new Error("InkForge Editor: init() target must be a <textarea> element");
+      throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
     if (w.has(t))
       return w.get(t);
-    const n = new E(t, e), o = new W(n, e.toolbar);
+    const n = new E(t, e), o = new U(n, e.toolbar);
     return n.on("destroy", () => o.destroy()), w.set(t, n), L.add(n), n.on("destroy", () => {
       w.delete(t), L.delete(n);
     }), n;
@@ -1743,6 +1743,6 @@ export {
   O as D,
   h as I,
   y as L,
-  X as a
+  X as W
 };
-//# sourceMappingURL=index-B7xMO_r_.js.map
+//# sourceMappingURL=index-B57W1GA6.js.map

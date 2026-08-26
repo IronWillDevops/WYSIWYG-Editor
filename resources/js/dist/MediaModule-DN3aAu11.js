@@ -1,4 +1,4 @@
-import { D as a } from "./index-B7xMO_r_.js";
+import { D as a } from "./index-B57W1GA6.js";
 const n = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/, l = /vimeo\.com\/(\d+)/;
 class m {
   constructor(i) {
@@ -70,4 +70,4 @@ class m {
 export {
   m as default
 };
-//# sourceMappingURL=MediaModule-BSDfTA8g.js.map
+//# sourceMappingURL=MediaModule-DN3aAu11.js.map

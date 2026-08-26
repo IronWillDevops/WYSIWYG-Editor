@@ -1,6 +1,6 @@
-# Contributing to InkForge Editor
+# Contributing to WYSIWYG Editor
 
-First off, thank you for considering contributing! InkForge Editor is a
+First off, thank you for considering contributing! WYSIWYG Editor is a
 community-driven, dependency-free WYSIWYG editor for Laravel, and it grows
 through issues, bug reports, docs fixes, and pull requests just like this one.
 
@@ -28,7 +28,7 @@ behavior of any kind is not tolerated.
 ## Development setup
 
 ```bash
-git clone https://github.com/inkforge/laravel-editor.git
+git clone https://github.com/wysiwyg/laravel-editor.git
 cd laravel-editor
 composer install
 cd resources/js && npm install && cd ../..
@@ -85,7 +85,7 @@ php artisan serve
 
 Please include:
 
-- InkForge Editor version, Laravel version, PHP version, browser + version.
+- WYSIWYG Editor version, Laravel version, PHP version, browser + version.
 - Minimal reproduction (a small Blade snippet or a link to a reduced repo).
 - Expected vs. actual behavior.
 - Console errors, if any.

@@ -93,7 +93,6 @@ export default class Sanitizer {
      * double-escaped content produced by htmlspecialchars() or similar.
      */
     decodeDoubleEscapedEntities(html) {
-        if (/<[a-z][\s\S]*>/i.test(html)) return html;
         if (!/&[a-z]+;|&#\d+;/i.test(html)) return html;
         const ta = document.createElement('textarea');
         ta.innerHTML = html;

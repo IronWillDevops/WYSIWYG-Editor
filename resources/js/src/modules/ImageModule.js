@@ -130,7 +130,7 @@ export default class ImageModule {
     /** @param {File} file */
     async upload(file) {
         if (!this.uploadUrl) {
-            console.warn('InkForge Editor: no uploadUrl configured, falling back to a local object URL.');
+            console.warn('WYSIWYG Editor: no uploadUrl configured, falling back to a local object URL.');
             return URL.createObjectURL(file);
         }
 

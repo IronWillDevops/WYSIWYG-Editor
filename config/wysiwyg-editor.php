@@ -12,7 +12,7 @@ return [
     | Supported: "light", "dark", "auto" (follows prefers-color-scheme).
     |
     */
-    'theme' => env('INKFORGE_EDITOR_THEME', 'auto'),
+    'theme' => env('WYSIWYG_EDITOR_THEME', 'auto'),
 
     /*
     |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ return [
     | Supported out of the box: "en", "uk", "ru".
     |
     */
-    'locale' => env('INKFORGE_EDITOR_LOCALE', 'en'),
+    'locale' => env('WYSIWYG_EDITOR_LOCALE', 'en'),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,7 +74,7 @@ return [
     'autosave' => [
         'enabled' => false,
         'interval_ms' => 15000,
-        'storage_key' => 'inkforge-editor-autosave',
+        'storage_key' => 'wysiwyg-editor-autosave',
     ],
 
     /*
@@ -111,10 +111,10 @@ return [
     |--------------------------------------------------------------------------
     */
     'upload' => [
-        'route_prefix' => 'inkforge-editor',
+        'route_prefix' => 'wysiwyg-editor',
         'middleware' => ['web'],
-        'disk' => env('INKFORGE_EDITOR_UPLOAD_DISK', 'public'),
-        'path' => 'inkforge-editor/uploads',
+        'disk' => env('WYSIWYG_EDITOR_UPLOAD_DISK', 'public'),
+        'path' => 'wysiwyg-editor/uploads',
         'max_size_kb' => 5120,
         'allowed_mimes' => ['jpg', 'jpeg', 'png', 'gif', 'webp'],
     ],

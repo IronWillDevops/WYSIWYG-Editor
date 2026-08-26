@@ -7,14 +7,14 @@ export default defineConfig({
         emptyOutDir: true,
         lib: {
             entry: resolve(__dirname, 'src/index.js'),
-            name: 'InkForgeEditor',
+            name: 'WysiwygEditor',
             formats: ['es', 'umd'],
-            fileName: (format) => (format === 'es' ? 'inkforge-editor.esm.js' : 'inkforge-editor.umd.js'),
+            fileName: (format) => (format === 'es' ? 'wysiwyg-editor.esm.js' : 'wysiwyg-editor.umd.js'),
         },
         rollupOptions: {
             output: {
                 assetFileNames: (assetInfo) =>
-                    assetInfo.name === 'style.css' ? 'inkforge-editor.css' : assetInfo.name,
+                    assetInfo.name === 'style.css' ? 'wysiwyg-editor.css' : assetInfo.name,
             },
         },
         sourcemap: true,

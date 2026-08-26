@@ -1,6 +1,6 @@
 {
-    "name": "inkforge/laravel-editor",
-    "description": "InkForge Editor — a modern, dependency-free WYSIWYG HTML editor for Laravel, built with native JavaScript (ES6+), HTML5 and CSS3.",
+    "name": "wysiwyg/laravel-editor",
+    "description": "WYSIWYG Editor — a modern, dependency-free WYSIWYG HTML editor for Laravel, built with native JavaScript (ES6+), HTML5 and CSS3.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -15,11 +15,11 @@
         "tailwind",
         "bootstrap"
     ],
-    "homepage": "https://github.com/inkforge/laravel-editor",
+    "homepage": "https://github.com/wysiwyg/laravel-editor",
     "authors": [
         {
-            "name": "InkForge Contributors",
-            "homepage": "https://github.com/inkforge/laravel-editor/graphs/contributors"
+            "name": "WYSIWYG Editor Contributors",
+            "homepage": "https://github.com/wysiwyg/laravel-editor/graphs/contributors"
         }
     ],
     "require": {
@@ -38,21 +38,21 @@
     },
     "autoload": {
         "psr-4": {
-            "InkForge\\Editor\\": "src/"
+            "Wysiwyg\\Editor\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "InkForge\\Editor\\Tests\\": "tests/"
+            "Wysiwyg\\Editor\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "InkForge\\Editor\\InkForgeEditorServiceProvider"
+                "Wysiwyg\\Editor\\WysiwygEditorServiceProvider"
             ],
             "aliases": {
-                "InkForgeEditor": "InkForge\\Editor\\Facades\\InkForgeEditor"
+                "WysiwygEditor": "Wysiwyg\\Editor\\Facades\\WysiwygEditor"
             }
         }
     },

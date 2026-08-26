@@ -1,21 +1,21 @@
-# InkForge Editor
+# WYSIWYG Editor
 
 **A modern, dependency-free WYSIWYG HTML editor for Laravel.**
 Built entirely from scratch with native JavaScript (ES6+), HTML5, and CSS3 —
 no TinyMCE, CKEditor, Quill, Tiptap, EditorJS, Froala, Summernote, or any
 other third-party editor under the hood.
 
-[![CI](https://github.com/inkforge/laravel-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/inkforge/laravel-editor/actions/workflows/ci.yml)
+[![CI](https://github.com/wysiwyg/laravel-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/wysiwyg/laravel-editor/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PHP](https://img.shields.io/badge/PHP-8.3%2B-777bb4)](composer.json)
 [![Laravel](https://img.shields.io/badge/Laravel-11%20%7C%2012%20%7C%2013%20%7C%2014-ff2d20)](composer.json)
 
 ---
 
-## Why InkForge?
+## Why Wysiwyg?
 
 Most "Laravel editor" packages are thin wrappers around TinyMCE or CKEditor.
-InkForge is the editor itself: a modular `contenteditable`-based engine with
+WYSIWYG Editor is the editor itself: a modular `contenteditable`-based engine with
 its own history, selection, sanitizer, and command system, distributed as a
 proper Laravel package with a one-line Blade component.
 
@@ -59,20 +59,20 @@ proper Laravel package with a one-line Blade component.
 ## Installation
 
 ```bash
-composer require inkforge/laravel-editor
+composer require wysiwyg/laravel-editor
 ```
 
 Publish the config (optional — sensible defaults ship out of the box):
 
 ```bash
-php artisan vendor:publish --tag=inkforge-editor-config
+php artisan vendor:publish --tag=wysiwyg-editor-config
 ```
 
 Publish the compiled assets to your public directory (or reference them
-directly from `vendor/inkforge/laravel-editor/resources` in your bundler):
+directly from `vendor/wysiwyg/laravel-editor/resources` in your bundler):
 
 ```bash
-php artisan vendor:publish --tag=inkforge-editor-assets
+php artisan vendor:publish --tag=wysiwyg-editor-assets
 ```
 
 If you want the editor's uploads to be publicly reachable, make sure your
@@ -112,7 +112,7 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 ```html
 <textarea id="editor"></textarea>
 <script type="module">
-    import Editor from '/vendor/inkforge-editor/js/inkforge-editor.esm.js';
+    import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
     Editor.init('#editor');
 </script>
 ```
@@ -120,8 +120,8 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 ### 3. Bundler import (Vite/Webpack)
 
 ```js
-import Editor from '@inkforge/editor';
-import '@inkforge/editor/style.css';
+import Editor from '@wysiwyg/editor';
+import '@wysiwyg/editor/style.css';
 
 Editor.init('#editor', { theme: 'auto', locale: 'en' });
 ```
@@ -136,11 +136,11 @@ Editor.init('#editor', { theme: 'auto', locale: 'en' });
 </div>
 
 <script type="module">
-    import Editor from '@inkforge/editor';
+    import Editor from '@wysiwyg/editor';
 
     document.addEventListener('livewire:navigated', () => {
         const editor = Editor.init('#editor', {
-            uploadUrl: @json(route('inkforge-editor.upload.image')),
+            uploadUrl: @json(route('wysiwyg-editor.upload.image')),
         });
 
         editor.on('change', (html) => {
@@ -161,7 +161,7 @@ component's state.
     content: @entangle('content'),
     editor: null,
     init() {
-        import('@inkforge/editor').then(({ default: Editor }) => {
+        import('@wysiwyg/editor').then(({ default: Editor }) => {
             this.editor = Editor.init(this.$refs.textarea, { theme: 'light' });
             this.editor.on('change', (html) => { this.content = html; });
         });
@@ -176,7 +176,7 @@ component's state.
 ```html
 <textarea id="editor"></textarea>
 <script type="module">
-    import Editor from '@inkforge/editor';
+    import Editor from '@wysiwyg/editor';
 
     const editor = Editor.init('#editor', {
         toolbar: [
@@ -201,7 +201,7 @@ component's state.
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
-import Editor from '@inkforge/editor';
+import Editor from '@wysiwyg/editor';
 
 const textarea = ref(null);
 let editor;
@@ -218,9 +218,9 @@ onBeforeUnmount(() => editor?.destroy());
 
 ```jsx
 import { useEffect, useRef } from 'react';
-import Editor from '@inkforge/editor';
+import Editor from '@wysiwyg/editor';
 
-export default function InkForgeEditor({ options = {} }) {
+export default function WysiwygEditor({ options = {} }) {
     const textareaRef = useRef(null);
 
     useEffect(() => {
@@ -234,15 +234,15 @@ export default function InkForgeEditor({ options = {} }) {
 
 ### Bootstrap / Tailwind
 
-InkForge ships its own scoped `.ife-*` classes and CSS variables (see
-[`resources/css/inkforge-editor.css`](resources/css/inkforge-editor.css)), so
+WYSIWYG Editor ships its own scoped `.ife-*` classes and CSS variables (see
+[`resources/css/wysiwyg-editor.css`](resources/css/wysiwyg-editor.css)), so
 it drops into either design system without class collisions. Note/callout
 blocks render as `<div class="note note-info">…</div>`, which maps cleanly
 onto Bootstrap's alert color palette or a Tailwind `@apply` equivalent.
 
 ## Configuration reference
 
-See [`config/inkforge-editor.php`](config/inkforge-editor.php) for the full,
+See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,
 commented list of options: `theme`, `locale`, `toolbar`, `plugins`,
 `history`, `autosave`, `sanitizer`, `upload`.
 
@@ -283,7 +283,7 @@ editor.on('destroy', (editor) => {});
 ### Plugin API
 
 ```js
-import Editor from '@inkforge/editor';
+import Editor from '@wysiwyg/editor';
 
 Editor.registerPlugin('word-count', (editor) => {
     const counter = document.createElement('div');
@@ -331,7 +331,7 @@ options if you don't need them.
 - Server-side, `UploadController` validates uploaded files by MIME type and
   size before storing them via Laravel's filesystem abstraction.
 - We recommend also sanitizing on save server-side if you accept HTML from
-  untrusted users — see `config('inkforge-editor.sanitizer')` for a whitelist
+  untrusted users — see `config('wysiwyg-editor.sanitizer')` for a whitelist
   you can reuse with a PHP HTML purifier of your choice.
 
 ## Demo
@@ -358,6 +358,6 @@ first — in particular, the "no editor dependencies" ground rule.
 
 ## License
 
-InkForge Editor is open-sourced software licensed under the
+WYSIWYG Editor is open-sourced software licensed under the
 [MIT license](LICENSE). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
 for icon attribution.

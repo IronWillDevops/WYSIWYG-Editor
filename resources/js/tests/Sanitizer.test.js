@@ -132,11 +132,20 @@ describe('Sanitizer', () => {
             expect(result).not.toContain('&lt;p&gt;');
         });
 
-        it('does not decode when raw HTML tags are already present', () => {
-            const input = '<p>5 &lt; 3 and &amp; ampersand</p>';
+        it('decodes entity-encoded tags even when raw HTML tags are present', () => {
+            const input = '<p>text &lt;strong&gt;bold&lt;/strong&gt; more</p>';
             const result = sanitizer.sanitize(input);
-            expect(result).toContain('5 &lt; 3');
-            expect(result).toContain('&amp;');
+            expect(result).toContain('<strong>');
+            expect(result).toContain('bold');
+            expect(result).not.toContain('&lt;strong');
+        });
+
+        it('decodes mixed raw and entity-encoded tags from DB', () => {
+            const input = 'Hello &lt;p&gt;&lt;strong&gt;World&lt;/strong&gt;&lt;/p&gt;';
+            const result = sanitizer.sanitize(input);
+            expect(result).toContain('<strong>');
+            expect(result).toContain('World');
+            expect(result).not.toContain('&lt;p');
         });
 
         it('does not decode when content has no entities', () => {
