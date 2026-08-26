@@ -141,7 +141,7 @@
 .ife-content {
     padding: 16px;
     outline: none;
-    overflow-y: auto;
+    overflow: auto;
     line-height: 1.6;
 }
 
@@ -197,9 +197,7 @@
     border-collapse: collapse;
     width: 100%;
     margin: 8px 0;
-    display: block;
     max-width: 100%;
-    overflow-y: auto;
 }
 
 .ife-content table.ife-table thead {
@@ -283,14 +281,16 @@
 
 .ife-content blockquote {
     margin: 12px 0;
-    padding: 4px 16px;
+    padding: 8px 16px;
     border-left: 4px solid var(--ife-accent);
+    background: rgba(37, 99, 235, 0.06);
     color: #57606a;
     font-style: italic;
 }
 
 .ife-wrapper[data-resolved-theme="dark"] .ife-content blockquote {
     color: #9198a1;
+    background: rgba(88, 166, 255, 0.08);
 }
 
 .ife-content code {
