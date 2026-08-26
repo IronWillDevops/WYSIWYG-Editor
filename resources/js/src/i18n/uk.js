@@ -61,5 +61,6 @@ export default {
     anchor: 'Вставити якір',
     templates: 'Шаблони',
     listProps: 'Властивості списку',
+    blockFormat: 'Формат блоку',
     madeBy: 'Зроблено в ITkha',
 };

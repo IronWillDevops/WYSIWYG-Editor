@@ -3,6 +3,7 @@ import Localization from '../i18n/Localization.js';
 
 const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
+    ['blockFormat'],
     ['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript'],
     ['forecolor', 'backcolor', 'removeFormat'],
     ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'],
@@ -221,6 +222,13 @@ export default class Toolbar {
                 }
             }
             blockquoteBtn.classList.toggle('is-active', isBlockquote);
+        }
+
+        const blockFormatSelect = this.buttons.get('blockFormat');
+        if (blockFormatSelect instanceof HTMLSelectElement && block) {
+            const tagName = block.tagName.toLowerCase();
+            const validValues = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            blockFormatSelect.value = validValues.includes(tagName) ? tagName : 'p';
         }
     }
 

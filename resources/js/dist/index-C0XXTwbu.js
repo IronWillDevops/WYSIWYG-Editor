@@ -1,6 +1,6 @@
 var T = Object.defineProperty;
 var M = (s, e, t) => e in s ? T(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var C = (s, e, t) => M(s, typeof e != "symbol" ? e + "" : e, t);
+var E = (s, e, t) => M(s, typeof e != "symbol" ? e + "" : e, t);
 class z {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -151,9 +151,9 @@ class N {
    * @param {(bookmark: object) => void} [options.restoreBookmark]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: r, onChange: d }) {
+  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: r, onChange: m }) {
     this.getContent = e, this.setContent = t, this.maxSteps = n, this.debounceMs = o, this.saveBookmark = i ?? (() => null), this.restoreBookmark = r ?? (() => {
-    }), this.onChange = d ?? (() => {
+    }), this.onChange = m ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push({ html: this.getContent(), bookmark: null });
   }
   /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -259,6 +259,9 @@ class R {
       case "removeFormat":
         document.execCommand("removeFormat", !1), this.clearInlineStyles();
         break;
+      case "formatBlock":
+        this.formatBlock(t);
+        break;
       default:
         throw new Error(`Unknown command: ${e}`);
     }
@@ -320,17 +323,17 @@ class R {
     if (!t) return;
     const n = this.selection.closest("li");
     if (n) {
-      const d = n.closest("ul, ol");
-      d && d.tagName.toLowerCase() === e ? this.unwrapList(d) : d && this.convertList(d, e);
+      const m = n.closest("ul, ol");
+      m && m.tagName.toLowerCase() === e ? this.unwrapList(m) : m && this.convertList(m, e);
       return;
     }
     const o = this.getBlocksInRange(t);
     if (!o.length) return;
     const i = document.createElement(e);
-    o.forEach((d) => {
-      const a = document.createElement("li");
-      a.innerHTML = d.innerHTML || "<br>", i.appendChild(a);
-    }), o[0].replaceWith(i), o.slice(1).forEach((d) => d.remove());
+    o.forEach((m) => {
+      const l = document.createElement("li");
+      l.innerHTML = m.innerHTML || "<br>", i.appendChild(l);
+    }), o[0].replaceWith(i), o.slice(1).forEach((m) => m.remove());
     const r = document.createRange();
     r.selectNodeContents(i.lastElementChild), r.collapse(!1), this.selection.setRange(r);
   }
@@ -341,12 +344,12 @@ class R {
    * @returns {HTMLElement[]}
    */
   getBlocksInRange(e) {
-    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), n = (a) => {
-      let l = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
-      for (; l && l !== this.root; ) {
-        if (l instanceof HTMLElement && l.parentElement === this.root && t.has(l.tagName))
-          return l;
-        l = l.parentElement;
+    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), n = (l) => {
+      let a = l.nodeType === Node.TEXT_NODE ? l.parentElement : l;
+      for (; a && a !== this.root; ) {
+        if (a instanceof HTMLElement && a.parentElement === this.root && t.has(a.tagName))
+          return a;
+        a = a.parentElement;
       }
       return null;
     }, o = n(e.startContainer);
@@ -354,9 +357,9 @@ class R {
     const i = n(e.endContainer) ?? o;
     if (o === i) return [o];
     const r = [];
-    let d = o;
-    for (; d && (r.push(d), d !== i); )
-      d = d.nextElementSibling;
+    let m = o;
+    for (; m && (r.push(m), m !== i); )
+      m = m.nextElementSibling;
     return r.length ? r : [o];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -392,17 +395,17 @@ class R {
     let n = t.commonAncestorContainer;
     if (n.nodeType === Node.TEXT_NODE && (n = n.parentElement), !(n instanceof HTMLElement)) return;
     ((i = n.style) != null && i.length ? [n, ...n.querySelectorAll("*")] : [...n.querySelectorAll("*")]).forEach((r) => {
-      var d;
+      var m;
       try {
         if (!t.intersectsNode(r)) return;
       } catch {
         return;
       }
-      if ((d = r.style) != null && d[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
-        const a = r.parentNode;
-        if (!a) return;
-        for (; r.firstChild; ) a.insertBefore(r.firstChild, r);
-        a.removeChild(r);
+      if ((m = r.style) != null && m[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
+        const l = r.parentNode;
+        if (!l) return;
+        for (; r.firstChild; ) l.insertBefore(r.firstChild, r);
+        l.removeChild(r);
       }
     });
   }
@@ -438,6 +441,23 @@ class R {
       i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
     }
     this.editor.emitChange();
+  }
+  /**
+   * Changes the block-level element type of the current block(s).
+   * Converts the block containing the caret (and any blocks fully
+   * contained in the selection) to the given tag name, e.g. 'h1' or 'p'.
+   * @param {string} tag the target block tag name (lowercase, e.g. 'p', 'h1'-'h6')
+   */
+  formatBlock(e) {
+    const t = this.selection.getBlockElement();
+    if (!t || t === this.root) return;
+    const n = e.toLowerCase();
+    if (t.tagName.toLowerCase() === n) return;
+    this.editor.history.push();
+    const o = document.createElement(n);
+    o.innerHTML = t.innerHTML || "<br>", t.replaceWith(o);
+    const i = document.createRange();
+    i.selectNodeContents(o), i.collapse(!1), this.selection.setRange(i);
   }
 }
 const B = /* @__PURE__ */ new Set([
@@ -661,7 +681,7 @@ const D = {
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
 }, S = /* @__PURE__ */ new Map();
-class E {
+class C {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
@@ -726,8 +746,8 @@ class E {
     if (!o || !i) return;
     const r = document.createRange();
     r.setStart(o.node, Math.min(o.offset, (o.node.textContent || "").length)), r.setEnd(i.node, Math.min(i.offset, (i.node.textContent || "").length));
-    const d = window.getSelection();
-    d && (d.removeAllRanges(), d.addRange(r));
+    const m = window.getSelection();
+    m && (m.removeAllRanges(), m.addRange(r));
   }
   /** Find text node and offset at a given character position from root start. */
   nodeAtOffset(e) {
@@ -807,15 +827,15 @@ class E {
     const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre"), i = t.tagName === "DIV" && t.classList.contains("note"), r = this.selection.getRange();
     if (!r) return;
     if (!n && !o && !i) {
-      let a = r.startContainer;
-      if (a.nodeType === Node.TEXT_NODE && (a = a.parentElement), !(a instanceof HTMLElement) || !a.closest("code")) return;
+      let l = r.startContainer;
+      if (l.nodeType === Node.TEXT_NODE && (l = l.parentElement), !(l instanceof HTMLElement) || !l.closest("code")) return;
     }
     if (e.preventDefault(), this.history.push(), o) {
       if (!t.textContent.trim()) {
-        const l = document.createElement("p");
-        l.innerHTML = "<br>", t.parentNode.insertBefore(l, t.nextSibling), t.parentNode.removeChild(t);
-        const m = document.createRange();
-        m.setStart(l, 0), m.collapse(!0), this.selection.setRange(m);
+        const a = document.createElement("p");
+        a.innerHTML = "<br>", t.parentNode.insertBefore(a, t.nextSibling), t.parentNode.removeChild(t);
+        const d = document.createRange();
+        d.setStart(a, 0), d.collapse(!0), this.selection.setRange(d);
       } else
         this._insertBreakInPre(r);
       this.emitChange();
@@ -825,17 +845,17 @@ class E {
       if (!t.textContent.trim()) {
         const u = document.createElement("p");
         u.innerHTML = "<br>", n.parentNode.insertBefore(u, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
-        const p = document.createRange();
-        p.setStart(u, 0), p.collapse(!0), this.selection.setRange(p), this.emitChange();
+        const g = document.createRange();
+        g.setStart(u, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
         return;
       }
-      const l = document.createElement("p"), { startContainer: m, startOffset: g } = r;
-      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
-        const u = m.textContent, p = u.slice(0, g), b = u.slice(g);
-        m.textContent = p, b && (l.textContent = b);
+      const a = document.createElement("p"), { startContainer: d, startOffset: p } = r;
+      if (d.nodeType === Node.TEXT_NODE && t.contains(d)) {
+        const u = d.textContent, g = u.slice(0, p), b = u.slice(p);
+        d.textContent = g, b && (a.textContent = b);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), v = l.firstChild || l;
+      a.textContent || (a.innerHTML = "<br>"), t.parentNode.insertBefore(a, t.nextSibling);
+      const f = document.createRange(), v = a.firstChild || a;
       f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
       return;
     }
@@ -843,41 +863,41 @@ class E {
       if (!t.textContent.trim()) {
         const u = document.createElement("p");
         u.innerHTML = "<br>", t.parentNode.insertBefore(u, t.nextSibling), t.parentNode.removeChild(t);
-        const p = document.createRange();
-        p.setStart(u, 0), p.collapse(!0), this.selection.setRange(p), this.emitChange();
+        const g = document.createRange();
+        g.setStart(u, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
         return;
       }
-      const l = document.createElement("p"), { startContainer: m, startOffset: g } = r;
-      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
-        const u = m.textContent, p = u.slice(0, g), b = u.slice(g);
-        m.textContent = p, b && (l.textContent = b);
+      const a = document.createElement("p"), { startContainer: d, startOffset: p } = r;
+      if (d.nodeType === Node.TEXT_NODE && t.contains(d)) {
+        const u = d.textContent, g = u.slice(0, p), b = u.slice(p);
+        d.textContent = g, b && (a.textContent = b);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), v = l.firstChild || l;
+      a.textContent || (a.innerHTML = "<br>"), t.parentNode.insertBefore(a, t.nextSibling);
+      const f = document.createRange(), v = a.firstChild || a;
       f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
       return;
     }
-    const d = (() => {
-      let a = r.startContainer;
-      return a.nodeType === Node.TEXT_NODE && (a = a.parentElement), a instanceof HTMLElement ? a.closest("code") : null;
+    const m = (() => {
+      let l = r.startContainer;
+      return l.nodeType === Node.TEXT_NODE && (l = l.parentElement), l instanceof HTMLElement ? l.closest("code") : null;
     })();
-    if (d) {
-      const { startContainer: a, startOffset: l } = r;
-      if (a.nodeType === Node.TEXT_NODE && t.contains(a)) {
-        const m = a.textContent, g = m.slice(0, l), f = m.slice(l);
-        a.textContent = g;
+    if (m) {
+      const { startContainer: l, startOffset: a } = r;
+      if (l.nodeType === Node.TEXT_NODE && t.contains(l)) {
+        const d = l.textContent, p = d.slice(0, a), f = d.slice(a);
+        l.textContent = p;
         const v = document.createElement("p");
-        if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !d.textContent.trim()) {
-          const b = d.parentNode, H = document.createTextNode("");
-          b.replaceChild(H, d);
+        if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !m.textContent.trim()) {
+          const b = m.parentNode, H = document.createTextNode("");
+          b.replaceChild(H, m);
         }
-        const u = document.createRange(), p = v.firstChild || v;
-        u.setStart(p, 0), u.collapse(!0), this.selection.setRange(u);
+        const u = document.createRange(), g = v.firstChild || v;
+        u.setStart(g, 0), u.collapse(!0), this.selection.setRange(u);
       } else {
-        const m = document.createElement("p");
-        m.innerHTML = "<br>", t.parentNode.insertBefore(m, t.nextSibling);
-        const g = document.createRange();
-        g.setStart(m, 0), g.collapse(!0), this.selection.setRange(g);
+        const d = document.createElement("p");
+        d.innerHTML = "<br>", t.parentNode.insertBefore(d, t.nextSibling);
+        const p = document.createRange();
+        p.setStart(d, 0), p.collapse(!0), this.selection.setRange(p);
       }
       this.emitChange();
     }
@@ -885,10 +905,10 @@ class E {
   _insertBreakInPre(e) {
     const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
     if (t.nodeType === Node.TEXT_NODE) {
-      const r = t.textContent, d = r.slice(0, n), a = r.slice(n);
-      if (t.textContent = d, t.parentNode.insertBefore(o, t.nextSibling), a) {
-        const l = document.createTextNode(a);
-        t.parentNode.insertBefore(l, o.nextSibling);
+      const r = t.textContent, m = r.slice(0, n), l = r.slice(n);
+      if (t.textContent = m, t.parentNode.insertBefore(o, t.nextSibling), l) {
+        const a = document.createTextNode(l);
+        t.parentNode.insertBefore(a, o.nextSibling);
       }
     } else {
       const r = t.childNodes[n] || null;
@@ -1049,7 +1069,8 @@ const c = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   time: c('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
   template: c('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
   anchor: c('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
-  listProps: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>')
+  listProps: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  paragraph: c('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
 class O {
   /**
@@ -1062,11 +1083,11 @@ class O {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    * @param {() => void} [config.onClose]
    */
-  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: d }) {
-    C(this, "handleEscape", (e) => {
+  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: m }) {
+    E(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
-    this.container = e, this.onConfirm = r, this.onClose = d, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
+    this.container = e, this.onConfirm = r, this.onClose = m, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
             <form class="ife-dialog" role="dialog" aria-modal="true" aria-label="${t}">
                 <header class="ife-dialog__header">
                     <h2>${t}</h2>
@@ -1078,16 +1099,16 @@ class O {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => {
-        l.key !== "Escape" && l.stopPropagation();
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((l) => {
+      l.addEventListener("click", (a) => a.stopPropagation()), l.addEventListener("keydown", (a) => {
+        a.key !== "Escape" && a.stopPropagation();
       });
-    }), this.overlay.querySelectorAll("button").forEach((a) => {
-      a.addEventListener("mousedown", (l) => l.preventDefault());
-    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
-      a.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), a.stopPropagation(), this.onConfirm(this.form), this.close();
+    }), this.overlay.querySelectorAll("button").forEach((l) => {
+      l.addEventListener("mousedown", (a) => a.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (l) => {
+      l.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (l) => {
+      l.preventDefault(), l.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
@@ -1115,6 +1136,23 @@ class O {
   }
 }
 const _ = {
+  blockFormat: {
+    icon: h.paragraph,
+    label: "Block format",
+    type: "select",
+    options: [
+      ["p", "paragraph"],
+      ["h1", "heading1"],
+      ["h2", "heading2"],
+      ["h3", "heading3"],
+      ["h4", "heading4"],
+      ["h5", "heading5"],
+      ["h6", "heading6"]
+    ],
+    onChange: (s, e) => {
+      s.commands.exec("formatBlock", e);
+    }
+  },
   undo: { icon: h.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
   redo: { icon: h.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
   bold: { icon: h.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
@@ -1320,9 +1358,9 @@ const _ = {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
-        onConfirm: (d) => {
-          const a = new FormData(d), l = a.get("start"), m = a.get("type");
-          s.history.push(), l ? t.setAttribute("start", String(l)) : t.removeAttribute("start"), m ? t.style.listStyleType = m : t.style.listStyleType = "", s.emitChange();
+        onConfirm: (m) => {
+          const l = new FormData(m), a = l.get("start"), d = l.get("type");
+          s.history.push(), a ? t.setAttribute("start", String(a)) : t.removeAttribute("start"), d ? t.style.listStyleType = d : t.style.listStyleType = "", s.emitChange();
         }
       });
       s.selection.save(), r.open();
@@ -1391,8 +1429,9 @@ const _ = {
   anchor: "Insert anchor",
   templates: "Content templates",
   listProps: "List properties",
+  blockFormat: "Block format",
   madeBy: "Made by ITkha"
-}, q = {
+}, F = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1455,8 +1494,9 @@ const _ = {
   anchor: "Вставити якір",
   templates: "Шаблони",
   listProps: "Властивості списку",
+  blockFormat: "Формат блоку",
   madeBy: "Зроблено в ITkha"
-}, W = {
+}, q = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1519,11 +1559,12 @@ const _ = {
   anchor: "Вставить якорь",
   templates: "Шаблоны",
   listProps: "Свойства списка",
+  blockFormat: "Формат блока",
   madeBy: "Сделано в ITkha"
 }, k = /* @__PURE__ */ new Map([
   ["en", P],
-  ["uk", q],
-  ["ru", W]
+  ["uk", F],
+  ["ru", q]
 ]), y = {
   /**
    * @param {string} code
@@ -1543,8 +1584,9 @@ const _ = {
   available() {
     return [...k.keys()];
   }
-}, F = [
+}, W = [
   ["undo", "redo"],
+  ["blockFormat"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
   ["forecolor", "backcolor", "removeFormat"],
   ["alignLeft", "alignCenter", "alignRight", "alignJustify"],
@@ -1563,7 +1605,7 @@ class U {
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? F, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
+    this.editor = e, this.layout = t ?? W, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates());
   }
   render() {
     this.layout.forEach((e) => {
@@ -1595,8 +1637,8 @@ class U {
   buildSelect(e, t) {
     const n = this.editor.options.locale ?? "en", o = document.createElement("select");
     return o.className = "ife-toolbar__select", o.setAttribute("aria-label", y.t(n, e) !== e ? y.t(n, e) : t.label), t.options.forEach(([i, r]) => {
-      const d = document.createElement("option");
-      d.value = i, d.textContent = r, o.appendChild(d);
+      const m = document.createElement("option");
+      m.value = i, m.textContent = r, o.appendChild(m);
     }), o.addEventListener("pointerdown", () => {
       this.editor.selection.save();
     }), o.addEventListener("mousedown", () => {
@@ -1624,9 +1666,9 @@ class U {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([a, l]) => {
-      const m = this.buttons.get(a);
-      m instanceof HTMLElement && m.classList.toggle("is-active", this.editor.commands.queryState(l));
+    }).forEach(([a, d]) => {
+      const p = this.buttons.get(a);
+      p instanceof HTMLElement && p.classList.toggle("is-active", this.editor.commands.queryState(d));
     });
     const t = this.editor.selection.getBlockElement();
     let n = "";
@@ -1641,40 +1683,45 @@ class U {
       }
     }
     ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((a) => {
-      const l = this.buttons.get(a);
-      l instanceof HTMLElement && l.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
+      const d = this.buttons.get(a);
+      d instanceof HTMLElement && d.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
     });
     const o = this.buttons.get("ltr"), i = this.buttons.get("rtl");
     if (o instanceof HTMLElement && i instanceof HTMLElement) {
       let a = "";
       if (t) {
-        let l = t;
-        for (; l && l !== this.editor.root; ) {
-          if (l.dir) {
-            a = l.dir;
+        let d = t;
+        for (; d && d !== this.editor.root; ) {
+          if (d.dir) {
+            a = d.dir;
             break;
           }
-          l = l.parentElement;
+          d = d.parentElement;
         }
       }
       o.classList.toggle("is-active", a === "ltr"), i.classList.toggle("is-active", a === "rtl");
     }
     const r = this.buttons.get("markdown");
     r instanceof HTMLElement && r.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
-    const d = this.buttons.get("blockquote");
-    if (d instanceof HTMLElement) {
+    const m = this.buttons.get("blockquote");
+    if (m instanceof HTMLElement) {
       let a = !1;
       if (t) {
-        let l = t;
-        for (; l && l !== this.editor.root; ) {
-          if (l.tagName === "BLOCKQUOTE") {
+        let d = t;
+        for (; d && d !== this.editor.root; ) {
+          if (d.tagName === "BLOCKQUOTE") {
             a = !0;
             break;
           }
-          l = l.parentElement;
+          d = d.parentElement;
         }
       }
-      d.classList.toggle("is-active", a);
+      m.classList.toggle("is-active", a);
+    }
+    const l = this.buttons.get("blockFormat");
+    if (l instanceof HTMLSelectElement && t) {
+      const a = t.tagName.toLowerCase(), d = ["p", "h1", "h2", "h3", "h4", "h5", "h6"];
+      l.value = d.includes(a) ? a : "p";
     }
   }
   setEnabled(e, t) {
@@ -1686,22 +1733,22 @@ class U {
   }
 }
 const j = {
-  link: () => import("./LinkModule-BM-uZSSy.js"),
-  image: () => import("./ImageModule-t1UskGai.js"),
-  table: () => import("./TableModule-DRXmLjA4.js"),
+  link: () => import("./LinkModule-BOv5zI4f.js"),
+  image: () => import("./ImageModule-BF-Qlnqw.js"),
+  table: () => import("./TableModule-5TKxRdR2.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-dLL1WvkZ.js"),
-  note: () => import("./NoteModule-Dpib7q9u.js"),
-  media: () => import("./MediaModule-DN3aAu11.js"),
+  find: () => import("./FindModule-C6zyF_tW.js"),
+  note: () => import("./NoteModule-BPLi0NOR.js"),
+  media: () => import("./MediaModule-DSoD2NCD.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-B6KKdYJj.js"),
+  statusBar: () => import("./StatusBar-B7KHIbbj.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CKasr4nJ.js")
+  templates: () => import("./TemplateModule-DR2mk29B.js")
 };
 Object.entries(j).forEach(([s, e]) => {
-  E.registerPlugin(s, async (t) => {
+  C.registerPlugin(s, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
@@ -1720,7 +1767,7 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
       throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
     if (w.has(t))
       return w.get(t);
-    const n = new E(t, e), o = new U(n, e.toolbar);
+    const n = new C(t, e), o = new U(n, e.toolbar);
     return n.on("destroy", () => o.destroy()), w.set(t, n), L.add(n), n.on("destroy", () => {
       w.delete(t), L.delete(n);
     }), n;
@@ -1737,7 +1784,7 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
   destroyAll() {
     L.forEach((s) => s.destroy()), L.clear();
   },
-  registerPlugin: E.registerPlugin
+  registerPlugin: C.registerPlugin
 };
 export {
   O as D,
@@ -1745,4 +1792,4 @@ export {
   y as L,
   X as W
 };
-//# sourceMappingURL=index-B57W1GA6.js.map
+//# sourceMappingURL=index-C0XXTwbu.js.map
