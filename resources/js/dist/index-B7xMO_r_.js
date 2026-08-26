@@ -1,6 +1,6 @@
 var T = Object.defineProperty;
 var M = (s, e, t) => e in s ? T(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var E = (s, e, t) => M(s, typeof e != "symbol" ? e + "" : e, t);
+var C = (s, e, t) => M(s, typeof e != "symbol" ? e + "" : e, t);
 class z {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -562,8 +562,20 @@ class I {
    * @returns {string} sanitized HTML
    */
   sanitize(e) {
-    const t = this.stripWordMso(e), n = document.createElement("template");
+    let t = this.stripWordMso(e);
+    t = this.decodeDoubleEscapedEntities(t);
+    const n = document.createElement("template");
     return n.innerHTML = t, this.cleanNode(n.content), n.innerHTML;
+  }
+  /**
+   * Decodes HTML entities when content contains no raw HTML tags but does
+   * contain entity-encoded tags (e.g. &lt;span&gt;). This handles
+   * double-escaped content produced by htmlspecialchars() or similar.
+   */
+  decodeDoubleEscapedEntities(e) {
+    if (/<[a-z][\s\S]*>/i.test(e) || !/&[a-z]+;|&#\d+;/i.test(e)) return e;
+    const t = document.createElement("textarea");
+    return t.innerHTML = e, t.value;
   }
   /** Strips Microsoft Word/Copilot mso-* junk, XML wrappers, and empty elements. */
   stripWordMso(e) {
@@ -649,7 +661,7 @@ const D = {
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "inkforge-editor-autosave" }
 }, S = /* @__PURE__ */ new Map();
-class C {
+class E {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
@@ -1051,7 +1063,7 @@ class O {
    * @param {() => void} [config.onClose]
    */
   constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: d }) {
-    E(this, "handleEscape", (e) => {
+    C(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = r, this.onClose = d, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1674,22 +1686,22 @@ class W {
   }
 }
 const j = {
-  link: () => import("./LinkModule-Bu8yjADu.js"),
-  image: () => import("./ImageModule-BFWZlSYJ.js"),
-  table: () => import("./TableModule-CPqGcVzn.js"),
+  link: () => import("./LinkModule-hoIaT9TY.js"),
+  image: () => import("./ImageModule-CyqwPzR9.js"),
+  table: () => import("./TableModule-CuCtn_m9.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DpUgAF0r.js"),
-  note: () => import("./NoteModule-BeJZL9ex.js"),
-  media: () => import("./MediaModule-CjEzpISN.js"),
+  find: () => import("./FindModule-DpOS3Nwc.js"),
+  note: () => import("./NoteModule-X5gOnRY9.js"),
+  media: () => import("./MediaModule-BSDfTA8g.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-tdQ8tSat.js"),
+  statusBar: () => import("./StatusBar-CpEBqxua.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-D56MNntY.js")
+  templates: () => import("./TemplateModule-5EThXAhP.js")
 };
 Object.entries(j).forEach(([s, e]) => {
-  C.registerPlugin(s, async (t) => {
+  E.registerPlugin(s, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
@@ -1708,7 +1720,7 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
       throw new Error("InkForge Editor: init() target must be a <textarea> element");
     if (w.has(t))
       return w.get(t);
-    const n = new C(t, e), o = new W(n, e.toolbar);
+    const n = new E(t, e), o = new W(n, e.toolbar);
     return n.on("destroy", () => o.destroy()), w.set(t, n), L.add(n), n.on("destroy", () => {
       w.delete(t), L.delete(n);
     }), n;
@@ -1725,7 +1737,7 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), X = {
   destroyAll() {
     L.forEach((s) => s.destroy()), L.clear();
   },
-  registerPlugin: C.registerPlugin
+  registerPlugin: E.registerPlugin
 };
 export {
   O as D,
@@ -1733,4 +1745,4 @@ export {
   y as L,
   X as a
 };
-//# sourceMappingURL=index-DsBh6wje.js.map
+//# sourceMappingURL=index-B7xMO_r_.js.map

@@ -79,11 +79,25 @@ export default class Sanitizer {
      * @returns {string} sanitized HTML
      */
     sanitize(dirtyHtml) {
-        const cleaned = this.stripWordMso(dirtyHtml);
+        let cleaned = this.stripWordMso(dirtyHtml);
+        cleaned = this.decodeDoubleEscapedEntities(cleaned);
         const template = document.createElement('template');
         template.innerHTML = cleaned;
         this.cleanNode(template.content);
         return template.innerHTML;
+    }
+
+    /**
+     * Decodes HTML entities when content contains no raw HTML tags but does
+     * contain entity-encoded tags (e.g. &lt;span&gt;). This handles
+     * double-escaped content produced by htmlspecialchars() or similar.
+     */
+    decodeDoubleEscapedEntities(html) {
+        if (/<[a-z][\s\S]*>/i.test(html)) return html;
+        if (!/&[a-z]+;|&#\d+;/i.test(html)) return html;
+        const ta = document.createElement('textarea');
+        ta.innerHTML = html;
+        return ta.value;
     }
 
     /** Strips Microsoft Word/Copilot mso-* junk, XML wrappers, and empty elements. */

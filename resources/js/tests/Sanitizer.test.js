@@ -117,6 +117,45 @@ describe('Sanitizer', () => {
         });
     });
 
+    describe('double-escaped entity decoding', () => {
+        it('decodes entity-encoded span tags into rendered HTML', () => {
+            const result = sanitizer.sanitize('&lt;span style="font-weight: bold;"&gt;Welcome&lt;/span&gt;');
+            expect(result).toContain('<span');
+            expect(result).toContain('Welcome');
+            expect(result).not.toContain('&lt;span');
+        });
+
+        it('decodes entity-encoded paragraph tags', () => {
+            const result = sanitizer.sanitize('&lt;p&gt;Hello&lt;/p&gt;');
+            expect(result).toContain('<p>');
+            expect(result).toContain('Hello');
+            expect(result).not.toContain('&lt;p&gt;');
+        });
+
+        it('does not decode when raw HTML tags are already present', () => {
+            const input = '<p>5 &lt; 3 and &amp; ampersand</p>';
+            const result = sanitizer.sanitize(input);
+            expect(result).toContain('5 &lt; 3');
+            expect(result).toContain('&amp;');
+        });
+
+        it('does not decode when content has no entities', () => {
+            const input = '<p>plain text</p>';
+            const result = sanitizer.sanitize(input);
+            expect(result).toContain('<p>');
+            expect(result).toContain('plain text');
+        });
+
+        it('decodes full document of entity-encoded HTML', () => {
+            const encoded = '&lt;h1&gt;Title&lt;/h1&gt;&lt;p&gt;&lt;span style="font-weight: bold;"&gt;Bold text&lt;/span&gt;&lt;/p&gt;';
+            const result = sanitizer.sanitize(encoded);
+            expect(result).toContain('<h1>');
+            expect(result).toContain('<span');
+            expect(result).toContain('Bold text');
+            expect(result).not.toContain('&lt;h1');
+        });
+    });
+
     describe('security', () => {
         it('blocks data: URLs in href', () => {
             const result = sanitizer.sanitize('<a href="data:text/html,<script>alert(1)</script>">click</a>');
