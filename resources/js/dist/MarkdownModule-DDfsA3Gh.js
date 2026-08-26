@@ -137,8 +137,7 @@ ${e()}
         return;
       }
       this.closeList(n, r), r = null, s.trim() !== "" && n.push(`<p>${this.inlineMarkdown(s)}</p>`);
-    }), this.closeList(n, r), n.join(`
-`);
+    }), this.closeList(n, r), n.join("");
   }
   closeList(t, e) {
     e && t.push(`</${e}>`);
@@ -153,4 +152,4 @@ ${e()}
 export {
   $ as default
 };
-//# sourceMappingURL=MarkdownModule-CIWJ1oE_.js.map
+//# sourceMappingURL=MarkdownModule-DDfsA3Gh.js.map

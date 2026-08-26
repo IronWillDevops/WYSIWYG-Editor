@@ -125,6 +125,10 @@ export default class Commands {
                 this.clearInlineStyles();
                 break;
 
+            case 'formatBlock':
+                this.formatBlock(value);
+                break;
+
             default:
                 throw new Error(`Unknown command: ${name}`);
         }
@@ -371,5 +375,30 @@ export default class Commands {
         }
 
         this.editor.emitChange();
+    }
+
+    /**
+     * Changes the block-level element type of the current block(s).
+     * Converts the block containing the caret (and any blocks fully
+     * contained in the selection) to the given tag name, e.g. 'h1' or 'p'.
+     * @param {string} tag the target block tag name (lowercase, e.g. 'p', 'h1'-'h6')
+     */
+    formatBlock(tag) {
+        const block = this.selection.getBlockElement();
+        if (!block || block === this.root) return;
+
+        const targetTag = tag.toLowerCase();
+        if (block.tagName.toLowerCase() === targetTag) return;
+
+        this.editor.history.push();
+
+        const replacement = document.createElement(targetTag);
+        replacement.innerHTML = block.innerHTML || '<br>';
+        block.replaceWith(replacement);
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(replacement);
+        newRange.collapse(false);
+        this.selection.setRange(newRange);
     }
 }

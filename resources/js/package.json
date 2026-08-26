@@ -1,17 +1,17 @@
 {
-  "name": "@inkforge/editor",
+  "name": "@wysiwyg/editor",
   "version": "1.0.0",
-  "description": "InkForge Editor — a modern, dependency-free WYSIWYG HTML editor built with native JavaScript (ES6+), HTML5 and CSS3.",
+  "description": "WYSIWYG Editor — a modern, dependency-free WYSIWYG HTML editor built with native JavaScript (ES6+), HTML5 and CSS3.",
   "type": "module",
   "license": "MIT",
-  "main": "dist/inkforge-editor.umd.js",
-  "module": "dist/inkforge-editor.esm.js",
+  "main": "dist/wysiwyg-editor.umd.js",
+  "module": "dist/wysiwyg-editor.esm.js",
   "exports": {
     ".": {
-      "import": "./dist/inkforge-editor.esm.js",
-      "require": "./dist/inkforge-editor.umd.js"
+      "import": "./dist/wysiwyg-editor.esm.js",
+      "require": "./dist/wysiwyg-editor.umd.js"
     },
-    "./style.css": "./dist/inkforge-editor.css"
+    "./style.css": "./dist/wysiwyg-editor.css"
   },
   "files": [
     "dist",
@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/inkforge/laravel-editor.git",
+    "url": "https://github.com/wysiwyg/laravel-editor.git",
     "directory": "resources/js"
   },
   "keywords": [

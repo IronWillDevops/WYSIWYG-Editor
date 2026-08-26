@@ -1,5 +1,6 @@
 const DEFAULT_ALLOWED_TAGS = new Set([
     'p', 'br', 'div', 'span', 'a', 'strong', 'em', 'u', 's', 'sup', 'sub',
+    'b', 'i', 'strike', 'font',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
     'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
@@ -43,6 +44,7 @@ const DEFAULT_ALLOWED_ATTRS = {
     tspan: new Set(['x', 'dy', 'textAnchor']),
     symbol: new Set(['id', 'viewBox', 'width', 'height']),
     mask: new Set(['id']),
+    font: new Set(['color', 'size', 'face']),
     ol: new Set(['start', 'type', 'reversed', 'class', 'style']),
     ul: new Set(['class', 'style']),
 };
@@ -77,11 +79,24 @@ export default class Sanitizer {
      * @returns {string} sanitized HTML
      */
     sanitize(dirtyHtml) {
-        const cleaned = this.stripWordMso(dirtyHtml);
+        let cleaned = this.stripWordMso(dirtyHtml);
+        cleaned = this.decodeDoubleEscapedEntities(cleaned);
         const template = document.createElement('template');
         template.innerHTML = cleaned;
         this.cleanNode(template.content);
         return template.innerHTML;
+    }
+
+    /**
+     * Decodes HTML entities when content contains no raw HTML tags but does
+     * contain entity-encoded tags (e.g. &lt;span&gt;). This handles
+     * double-escaped content produced by htmlspecialchars() or similar.
+     */
+    decodeDoubleEscapedEntities(html) {
+        if (!/&[a-z]+;|&#\d+;/i.test(html)) return html;
+        const ta = document.createElement('textarea');
+        ta.innerHTML = html;
+        return ta.value;
     }
 
     /** Strips Microsoft Word/Copilot mso-* junk, XML wrappers, and empty elements. */

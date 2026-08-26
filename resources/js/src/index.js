@@ -1,4 +1,4 @@
-import '../../css/inkforge-editor.css';
+import '../../css/wysiwyg-editor.css';
 import EditorCore from './core/Editor.js';
 import Toolbar from './toolbar/Toolbar.js';
 import './modules/register.js';
@@ -11,12 +11,12 @@ const allInstances = new Set();
 /**
  * Public facade matching the TinyMCE-style bootstrap convention:
  *
- *   InkForgeEditor.init('#editor', { theme: 'dark' });
+ *   WysiwygEditor.init('#editor', { theme: 'dark' });
  *
  * Resolves a selector or element to a <textarea>, mounts the contenteditable
  * surface + toolbar, and returns the underlying Editor instance.
  */
-const InkForgeEditor = {
+const WysiwygEditor = {
     /**
      * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
      * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -26,10 +26,10 @@ const InkForgeEditor = {
         const textarea = typeof target === 'string' ? document.querySelector(target) : target;
 
         if (!textarea) {
-            throw new Error(`InkForge Editor: target "${target}" not found`);
+            throw new Error(`WYSIWYG Editor: target "${target}" not found`);
         }
         if (textarea.tagName !== 'TEXTAREA') {
-            throw new Error('InkForge Editor: init() target must be a <textarea> element');
+            throw new Error('WYSIWYG Editor: init() target must be a <textarea> element');
         }
         if (instances.has(textarea)) {
             return instances.get(textarea);
@@ -67,4 +67,4 @@ const InkForgeEditor = {
     registerPlugin: EditorCore.registerPlugin,
 };
 
-export default InkForgeEditor;
+export default WysiwygEditor;

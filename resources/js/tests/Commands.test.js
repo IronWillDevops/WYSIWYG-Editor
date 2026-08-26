@@ -272,4 +272,88 @@ describe('Commands', () => {
             expect(span.hasAttribute('style')).toBe(false);
         });
     });
+
+    describe('formatBlock', () => {
+        it('converts paragraph to heading', () => {
+            root.innerHTML = '<p>hello</p>';
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.selectNodeContents(p.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('p')).toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('hello');
+        });
+
+        it('converts heading back to paragraph', () => {
+            root.innerHTML = '<h2>title</h2>';
+            const h2 = root.querySelector('h2');
+            const range = document.createRange();
+            range.selectNodeContents(h2.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('p');
+
+            expect(root.querySelector('p')).not.toBeNull();
+            expect(root.querySelector('h2')).toBeNull();
+            expect(root.querySelector('p').textContent).toBe('title');
+        });
+
+        it('does nothing if block is already the target tag', () => {
+            root.innerHTML = '<h3>title</h3>';
+            const h3 = root.querySelector('h3');
+            const range = document.createRange();
+            range.selectNodeContents(h3.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h3');
+
+            expect(root.querySelector('h3')).not.toBeNull();
+            expect(root.querySelector('h3').textContent).toBe('title');
+        });
+
+        it('does nothing if block is the root', () => {
+            root.innerHTML = 'plain text';
+            const range = document.createRange();
+            range.selectNodeContents(root.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).toBeNull();
+        });
+
+        it('supports all heading levels h1-h6', () => {
+            for (let i = 1; i <= 6; i++) {
+                root.innerHTML = '<p>text</p>';
+                const p = root.querySelector('p');
+                const range = document.createRange();
+                range.selectNodeContents(p.firstChild);
+                editor.selection.setRange(range);
+
+                commands.formatBlock(`h${i}`);
+
+                expect(root.querySelector(`h${i}`)).not.toBeNull();
+                expect(root.querySelector('p')).toBeNull();
+            }
+        });
+
+        it('preserves inline formatting inside the heading', () => {
+            root.innerHTML = '<p><strong>bold</strong> text</p>';
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.selectNodeContents(p.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            const h1 = root.querySelector('h1');
+            expect(h1).not.toBeNull();
+            expect(h1.querySelector('strong')).not.toBeNull();
+            expect(h1.querySelector('strong').textContent).toBe('bold');
+        });
+    });
 });

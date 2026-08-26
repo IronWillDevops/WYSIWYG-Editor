@@ -153,4 +153,46 @@ describe('Toolbar', () => {
         expect(btn.classList.contains('is-active')).toBe(true);
     });
 
+    it('renders a blockFormat select control', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        expect(select).not.toBeNull();
+        expect(select.tagName).toBe('SELECT');
+    });
+
+    it('blockFormat select has paragraph and heading options', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        const options = Array.from(select.options);
+        expect(options.map(o => o.value)).toEqual(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+    });
+
+    it('blockFormat select value syncs to current block tag', () => {
+        toolbar = new Toolbar(editor);
+        const h2 = document.createElement('h2');
+        h2.textContent = 'test';
+        editor.selection.getBlockElement = vi.fn(() => h2);
+        toolbar.syncActiveStates();
+        const select = toolbar.buttons.get('blockFormat');
+        expect(select.value).toBe('h2');
+    });
+
+    it('blockFormat select defaults to p for unknown block tag', () => {
+        toolbar = new Toolbar(editor);
+        const div = document.createElement('div');
+        div.textContent = 'test';
+        editor.selection.getBlockElement = vi.fn(() => div);
+        toolbar.syncActiveStates();
+        const select = toolbar.buttons.get('blockFormat');
+        expect(select.value).toBe('p');
+    });
+
+    it('blockFormat select change triggers formatBlock command', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        select.value = 'h1';
+        select.dispatchEvent(new Event('change'));
+        expect(editor.commands.exec).toHaveBeenCalledWith('formatBlock', 'h1');
+    });
+
 });

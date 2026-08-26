@@ -690,4 +690,89 @@ describe('Editor', () => {
             expect(result).toBe('<p>clean</p>');
         });
     });
+
+    describe('save/load round-trip', () => {
+        it('preserves CSS-based formatting through getHTML/setHTML', () => {
+            const editor = new Editor(textarea);
+            const html = '<p>hello <span style="font-weight: bold;">world</span></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('font-weight');
+            expect(reloaded).toContain('hello');
+            expect(reloaded).toContain('world');
+        });
+
+        it('preserves legacy <b> tags through getHTML/setHTML', () => {
+            const editor = new Editor(textarea);
+            const html = '<p><b>bold text</b></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            expect(saved).toContain('<b>');
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('<b>');
+            expect(reloaded).toContain('bold text');
+        });
+
+        it('preserves legacy <i> tags through getHTML/setHTML', () => {
+            const editor = new Editor(textarea);
+            const html = '<p><i>italic text</i></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            expect(saved).toContain('<i>');
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('<i>');
+            expect(reloaded).toContain('italic text');
+        });
+
+        it('preserves legacy <strike> tags through getHTML/setHTML', () => {
+            const editor = new Editor(textarea);
+            const html = '<p><strike>struck text</strike></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            expect(saved).toContain('<strike>');
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('<strike>');
+        });
+
+        it('preserves <font> tags with color through getHTML/setHTML', () => {
+            const editor = new Editor(textarea);
+            const html = '<p><font color="#ff0000">red text</font></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            expect(saved).toContain('<font');
+            expect(saved).toContain('color');
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('<font');
+            expect(reloaded).toContain('red text');
+        });
+
+        it('preserves bold through textarea sync cycle', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p><b>bold</b></p>');
+            editor.syncTextarea();
+            const savedValue = textarea.value;
+            expect(savedValue).toContain('<b>');
+            expect(savedValue).toContain('bold');
+        });
+
+        it('preserves mixed formatting through full cycle', () => {
+            const editor = new Editor(textarea);
+            const html = '<p><b>bold</b> <i>italic</i> <u>underline</u> <strong>strong</strong> <em>emphasis</em></p>';
+            editor.setHTML(html);
+            const saved = editor.getHTML();
+            editor.setHTML(saved);
+            const reloaded = editor.getHTML();
+            expect(reloaded).toContain('<b>');
+            expect(reloaded).toContain('<i>');
+            expect(reloaded).toContain('<u>');
+            expect(reloaded).toContain('<strong>');
+            expect(reloaded).toContain('<em>');
+        });
+    });
 });

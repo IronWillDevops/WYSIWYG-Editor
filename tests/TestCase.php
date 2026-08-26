@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace InkForge\Editor\Tests;
+namespace Wysiwyg\Editor\Tests;
 
-use InkForge\Editor\InkForgeEditorServiceProvider;
+use Wysiwyg\Editor\WysiwygEditorServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -12,7 +12,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            InkForgeEditorServiceProvider::class,
+            WysiwygEditorServiceProvider::class,
         ];
     }
 

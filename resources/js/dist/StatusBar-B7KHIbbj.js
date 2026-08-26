@@ -1,4 +1,4 @@
-import { I as n, L as h } from "./index-Ccv0d7hY.js";
+import { I as n, L as h } from "./index-C0XXTwbu.js";
 const o = {
   p: "paragraph",
   h1: "heading1",
@@ -17,9 +17,7 @@ class u {
     this.editor = t, this.update = this.update.bind(this), this._onDestroy = () => this.destroy(), this.buildDom(), this.bindEvents(), this.update();
   }
   buildDom() {
-    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.typeEl = document.createElement("span"), this.typeEl.className = "ife-statusbar__item", this.typeEl.innerHTML = '<span class="ife-statusbar__value">Paragraph</span>', this.wordsEl = document.createElement("span"), this.wordsEl.className = "ife-statusbar__item", this.wordsEl.innerHTML = `${n.wordCount} <span class="ife-statusbar__value">0</span>`, this.charsEl = document.createElement("span"), this.charsEl.className = "ife-statusbar__item", this.charsEl.innerHTML = `${n.specialChars} <span class="ife-statusbar__value">0</span>`, this.left.appendChild(this.typeEl), this.left.appendChild(this.wordsEl), this.left.appendChild(this.charsEl);
-    const t = this.editor.options.locale ?? "en";
-    this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = h.t(t, "madeBy"), this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
+    this.el = document.createElement("div"), this.el.className = "ife-statusbar", this.left = document.createElement("span"), this.left.className = "ife-statusbar__left", this.typeEl = document.createElement("span"), this.typeEl.className = "ife-statusbar__item", this.typeEl.innerHTML = '<span class="ife-statusbar__value">Paragraph</span>', this.wordsEl = document.createElement("span"), this.wordsEl.className = "ife-statusbar__item", this.wordsEl.innerHTML = `${n.wordCount} <span class="ife-statusbar__value">0</span>`, this.charsEl = document.createElement("span"), this.charsEl.className = "ife-statusbar__item", this.charsEl.innerHTML = `${n.specialChars} <span class="ife-statusbar__value">0</span>`, this.left.appendChild(this.typeEl), this.left.appendChild(this.wordsEl), this.left.appendChild(this.charsEl), this.right = document.createElement("span"), this.right.className = "ife-statusbar__right", this.right.textContent = "Made by ITkha", this.el.appendChild(this.left), this.el.appendChild(this.right), this.editor.wrapper.appendChild(this.el);
   }
   bindEvents() {
     this.editor.root.addEventListener("input", this.update), this._unsubChange = this.editor.on("change", this.update), this._unsubSelectionChange = this.editor.on("selectionchange", this.update), this._unsubDestroy = this.editor.on("destroy", this._onDestroy);
@@ -56,4 +54,4 @@ class u {
 export {
   u as default
 };
-//# sourceMappingURL=StatusBar-C01-OF4U.js.map
+//# sourceMappingURL=StatusBar-B7KHIbbj.js.map

@@ -1,12 +1,12 @@
 {
-    "name": "inkforge/laravel-editor-demo",
-    "description": "Minimal Laravel demo application for InkForge Editor.",
+    "name": "wysiwyg/laravel-editor-demo",
+    "description": "Minimal Laravel demo application for WYSIWYG Editor.",
     "type": "project",
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
-        "inkforge/laravel-editor": "*"
+        "wysiwyg/laravel-editor": "*"
     },
     "repositories": [
         {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use InkForge\Editor\InkForgeEditor;
+use Wysiwyg\Editor\WysiwygEditor;
 
 it('returns the configured value via get() with dot notation', function () {
-    $editor = new InkForgeEditor([
+    $editor = new WysiwygEditor([
         'theme' => 'dark',
         'upload' => ['max_size_kb' => 2048],
     ]);
@@ -16,7 +16,7 @@ it('returns the configured value via get() with dot notation', function () {
 });
 
 it('merges overrides into the base config via buildOptions()', function () {
-    $editor = new InkForgeEditor([
+    $editor = new WysiwygEditor([
         'theme' => 'light',
         'toolbar' => [['bold', 'italic']],
     ]);
@@ -28,20 +28,20 @@ it('merges overrides into the base config via buildOptions()', function () {
 });
 
 it('exposes a semantic version string', function () {
-    $editor = new InkForgeEditor();
+    $editor = new WysiwygEditor();
 
     expect($editor->version())->toMatch('/^\d+\.\d+\.\d+$/');
 });
 
 it('returns the full config array via config()', function () {
     $config = ['theme' => 'dark', 'upload' => ['max_size_kb' => 2048]];
-    $editor = new InkForgeEditor($config);
+    $editor = new WysiwygEditor($config);
 
     expect($editor->config())->toBe($config);
 });
 
 it('returns an empty array from config() when constructed without arguments', function () {
-    $editor = new InkForgeEditor();
+    $editor = new WysiwygEditor();
 
     expect($editor->config())->toBe([]);
 });

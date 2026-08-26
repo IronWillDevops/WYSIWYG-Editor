@@ -145,6 +145,49 @@
     line-height: 1.6;
 }
 
+.ife-content h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    margin: 16px 0 8px;
+    line-height: 1.3;
+}
+
+.ife-content h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    line-height: 1.35;
+}
+
+.ife-content h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 12px 0 6px;
+    line-height: 1.4;
+}
+
+.ife-content h4 {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 10px 0 4px;
+    line-height: 1.45;
+}
+
+.ife-content h5 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 8px 0 4px;
+    line-height: 1.5;
+}
+
+.ife-content h6 {
+    font-size: 0.9em;
+    font-weight: 600;
+    margin: 8px 0 4px;
+    line-height: 1.5;
+    color: var(--ife-muted);
+}
+
 .ife-content:empty::before {
     content: attr(data-placeholder);
     color: #8b949e;

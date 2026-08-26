@@ -1,6 +1,6 @@
-# InkForge Editor — Demo
+# WYSIWYG Editor — Demo
 
-A minimal Laravel application that wires the local `inkforge/laravel-editor`
+A minimal Laravel application that wires the local `wysiwyg/laravel-editor`
 package via a Composer path repository, so you can try changes to the
 package in a real browser without publishing anything.
 
@@ -13,7 +13,7 @@ laravel/laravel .` conventions: `app/`, `bootstrap/`, `config/`, `public/`,
 `laravel/laravel` project, or run:
 
 ```bash
-composer create-project laravel/laravel:^13.0 inkforge-demo-tmp
+composer create-project laravel/laravel:^13.0 wysiwyg-demo-tmp
 # then copy app/Http/Controllers/DemoPostController.php,
 # routes/web.php, and resources/views/demo/edit.blade.php from here into it,
 # and merge this composer.json's "require" + "repositories" into its composer.json
@@ -25,7 +25,7 @@ Then, from inside the full Laravel project:
 composer install
 cp .env.example .env
 php artisan key:generate
-php artisan vendor:publish --tag=inkforge-editor-assets
+php artisan vendor:publish --tag=wysiwyg-editor-assets
 php artisan storage:link
 php artisan serve
 ```

@@ -21,7 +21,7 @@ const DEFAULT_OPTIONS = {
     locale: 'en',
     height: 420,
     history: { max_steps: 1000, debounce_ms: 300 },
-    autosave: { enabled: false, interval_ms: 15000, storage_key: 'inkforge-editor-autosave' },
+    autosave: { enabled: false, interval_ms: 15000, storage_key: 'wysiwyg-editor-autosave' },
 };
 
 /** Registry of plugin factories added via Editor.registerPlugin(). */
@@ -65,7 +65,7 @@ export default class Editor {
 
         this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300);
         this.loadPlugins().catch((err) => {
-            console.error('InkForge Editor: plugin loading failed', err);
+            console.error('WYSIWYG Editor: plugin loading failed', err);
         });
         this.setupAutosave();
 

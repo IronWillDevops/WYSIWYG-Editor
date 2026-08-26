@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-InkForge Editor's source code is 100% original and contains no code from
+WYSIWYG Editor's source code is 100% original and contains no code from
 TinyMCE, CKEditor, Quill, Tiptap, EditorJS, Froala, Summernote, or any other
 third-party editor.
 

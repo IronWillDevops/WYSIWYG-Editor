@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace InkForge\Editor\Http\Controllers;
+namespace Wysiwyg\Editor\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,15 +14,15 @@ final class UploadController extends Controller
 {
     public function image(Request $request): JsonResponse
     {
-        $maxSizeKb = (int) config('inkforge-editor.upload.max_size_kb', 5120);
-        $allowedMimes = implode(',', config('inkforge-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp']));
+        $maxSizeKb = (int) config('wysiwyg-editor.upload.max_size_kb', 5120);
+        $allowedMimes = implode(',', config('wysiwyg-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp']));
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'image', "mimes:{$allowedMimes}", "max:{$maxSizeKb}"],
         ]);
 
-        $disk = (string) config('inkforge-editor.upload.disk', 'public');
-        $directory = trim((string) config('inkforge-editor.upload.path', 'inkforge-editor/uploads'), '/');
+        $disk = (string) config('wysiwyg-editor.upload.disk', 'public');
+        $directory = trim((string) config('wysiwyg-editor.upload.path', 'wysiwyg-editor/uploads'), '/');
 
         /** @var \Illuminate\Http\UploadedFile $file */
         $file = $validated['file'];
@@ -39,7 +39,7 @@ final class UploadController extends Controller
         if ($path === false) {
             return response()->json([
                 'success' => false,
-                'message' => __('inkforge-editor::editor.upload_failed'),
+                'message' => __('wysiwyg-editor::editor.upload_failed'),
             ], 422);
         }
 

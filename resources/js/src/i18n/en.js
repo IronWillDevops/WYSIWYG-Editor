@@ -61,5 +61,6 @@ export default {
     anchor: 'Insert anchor',
     templates: 'Content templates',
     listProps: 'List properties',
+    blockFormat: 'Block format',
     madeBy: 'Made by ITkha',
 };

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace InkForge\Editor;
+namespace Wysiwyg\Editor;
 
-final class InkForgeEditor
+final class WysiwygEditor
 {
     /**
      * @param  array<string, mixed>  $config

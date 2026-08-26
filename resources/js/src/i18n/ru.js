@@ -61,5 +61,6 @@ export default {
     anchor: 'Вставить якорь',
     templates: 'Шаблоны',
     listProps: 'Свойства списка',
+    blockFormat: 'Формат блока',
     madeBy: 'Сделано в ITkha',
 };

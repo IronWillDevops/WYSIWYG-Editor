@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to InkForge Editor are documented in this file.
+All notable changes to WYSIWYG Editor are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial public release of **InkForge Editor**.
+- Initial public release of **WYSIWYG Editor**.
 - Dependency-free core engine (`Core`, `Selection`, `History`, `Commands`, `Sanitizer`, `EventBus`) built on native `contenteditable`, ES6 modules, HTML5 and CSS3 — no TinyMCE/CKEditor/Quill/Tiptap/EditorJS/Froala/Summernote code.
 - Configurable toolbar with SVG icons, light/dark/auto themes, and per-button enable/disable.
 - Formatting: bold, italic, underline, strikethrough, superscript, subscript, block formats (P/H1-H6/blockquote/pre), font family, font size, line height, text/background color.
@@ -62,5 +62,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Demo Laravel application in `/demo`.
 - PHPUnit/Pest test suite and Vitest test suite; GitHub Actions CI (PHPStan, Pint, Pest, ESLint, Vitest, build) and a tag-triggered release workflow.
 
-[Unreleased]: https://github.com/inkforge/laravel-editor/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/inkforge/laravel-editor/releases/tag/v1.0.0
+[Unreleased]: https://github.com/wysiwyg/laravel-editor/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/wysiwyg/laravel-editor/releases/tag/v1.0.0
