@@ -19,6 +19,13 @@ export default class TableModule {
         this.editor.on('init', () => setTimeout(this.adjustTableHeight, 0));
         this.editor.on('change', this.adjustTableHeight);
 
+        // The editor emits 'init' synchronously, but this plugin is loaded
+        // asynchronously (dynamic import), so the init subscription above runs
+        // too late to ever constrain the content area on first paint. Bound the
+        // editor to the viewport once now so it doesn't initially grow past the
+        // screen (it keeps being re-applied on resize/content change).
+        setTimeout(this.adjustTableHeight, 0);
+
         this.editor.root.addEventListener('mousedown', (e) => this.handleColumnResizeStart(e));
         this.editor.on('paste', () => this.addColumnResizeHandles());
     }

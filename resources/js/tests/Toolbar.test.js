@@ -65,12 +65,11 @@ describe('Toolbar', () => {
         expect(editor.selection.save).toHaveBeenCalled();
     });
 
-    it('color picker prevents default on mousedown to keep the editor selection', () => {
+    it('color picker saves the selection on mousedown (mirrors block-format select)', () => {
         toolbar = new Toolbar(editor);
         const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        const event = new MouseEvent('mousedown', { cancelable: true });
-        const defaultPrevented = !input.dispatchEvent(event);
-        expect(defaultPrevented).toBe(true);
+        input.dispatchEvent(new Event('mousedown'));
+        expect(editor.selection.save).toHaveBeenCalled();
     });
 
     it('color picker restores selection and applies the chosen color on input', () => {

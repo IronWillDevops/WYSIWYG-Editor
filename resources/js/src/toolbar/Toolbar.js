@@ -144,13 +144,15 @@ export default class Toolbar {
         input.type = 'color';
         input.setAttribute('aria-label', label);
         // Save the current editor selection before the native color dialog can
-        // steal focus, and prevent focus-steal on mousedown (keeps the text
-        // selection intact) — otherwise `input` applies the new color to a
-        // lost/empty selection.
+        // steal focus (pointerdown + mousedown, mirroring the block-format
+        // select) so the chosen color is applied back to the original text
+        // selection rather than to a lost/empty one.
         input.addEventListener('pointerdown', () => {
             this.editor.selection.save();
         });
-        input.addEventListener('mousedown', (event) => event.preventDefault());
+        input.addEventListener('mousedown', () => {
+            this.editor.selection.save();
+        });
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
