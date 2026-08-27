@@ -206,6 +206,54 @@ describe('Commands', () => {
             expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
         });
 
+        it('foreColor with the default black color clears instead of applying it', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#000000');
+
+            expect(commands.clearColor).toHaveBeenCalledWith('color');
+            expect(document.execCommand).not.toHaveBeenCalledWith('foreColor', false, '#000000');
+        });
+
+        it('foreColor with a custom non-default color is applied', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#00ff00');
+
+            expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, '#00ff00');
+        });
+
+        it('backColor with the default white background clears instead of applying it', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ffffff');
+
+            expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
+            expect(document.execCommand).not.toHaveBeenCalledWith('hiliteColor', false, '#ffffff');
+        });
+
+        it('backColor with a custom non-default background is applied', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ffcc00');
+
+            expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, '#ffcc00');
+        });
+
         it('removeFormat calls execCommand removeFormat and clearInlineStyles', () => {
             vi.spyOn(commands, 'clearInlineStyles');
             const textNode = root.querySelector('p').firstChild;

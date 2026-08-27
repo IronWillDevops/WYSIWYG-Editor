@@ -4,6 +4,8 @@
  * and implements block-level / structural commands manually for full control
  * over the resulting markup (no legacy <font>/<b> soup).
  */
+import { isDefaultTextColor, isDefaultBgColor } from '../utils/colors.js';
+
 export default class Commands {
     /**
      * @param {import('./Editor').default} editor
@@ -91,7 +93,12 @@ export default class Commands {
                 break;
 
             case 'foreColor':
-                if (value) {
+                // A default/neutral text color (black) is not an explicit
+                // choice — it is what the color picker reports by default.
+                // Treat it as "clear the text color" so the site theme (not a
+                // hard-coded value) controls the color, avoiding invisible
+                // text in dark themes.
+                if (value && !isDefaultTextColor(value)) {
                     document.execCommand('foreColor', false, value);
                 } else {
                     this.clearColor('color');
@@ -99,7 +106,9 @@ export default class Commands {
                 break;
 
             case 'backColor':
-                if (value) {
+                // Likewise, the default background (white) clears the
+                // highlights so no hard-coded white box is persisted.
+                if (value && !isDefaultBgColor(value)) {
                     document.execCommand('hiliteColor', false, value);
                 } else {
                     this.clearColor('backgroundColor');
