@@ -74,8 +74,15 @@ describe('content stylesheet boundary', () => {
     it('defines standalone variable fallbacks on .ife-content for use without a wrapper', () => {
         // The content file must declare its own --ife-* defaults so a post page
         // has no dependency on .ife-wrapper variable definitions.
-        expect(contentCss).toContain('--ife-text: #1f2328');
         expect(contentCss).toContain('--ife-border: #d0d7de');
         expect(contentCss).toContain('var(--ife-accent');
+    });
+
+    it('does not hard-code a default text color so posts inherit the theme color', () => {
+        // A built-in --ife-text default would pin published prose to a
+        // light-on-dark value (invisible text in a dark theme). The base text
+        // color must instead fall back to the inherited/theme color.
+        expect(contentCss).not.toContain('--ife-text: #1f2328');
+        expect(contentCss).toContain('color: var(--ife-text, currentColor)');
     });
 });

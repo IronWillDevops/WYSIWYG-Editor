@@ -20,8 +20,10 @@
  */
 
 .ife-content {
-    /* Standalone defaults — overridden by `.ife-wrapper` when the editor mounts. */
-    --ife-text: #1f2328;
+    /* Standalone defaults — overridden by `.ife-wrapper` when the editor mounts.
+       Note: no built-in `--ife-text` default. On a plain published post the
+       prose color inherits from the surrounding theme (`currentColor`) so a
+       dark site theme is honored instead of a hard-coded light value. */
     --ife-border: #d0d7de;
     --ife-toolbar-bg: #f6f8fa;
     --ife-accent: #2563eb;
@@ -32,7 +34,7 @@
     --ife-quote-fg: #57606a;
     --ife-quote-bg: rgba(37, 99, 235, 0.06);
 
-    color: var(--ife-text);
+    color: var(--ife-text, currentColor);
     font-family: var(--ife-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif);
     line-height: 1.6;
     overflow-wrap: break-word;
