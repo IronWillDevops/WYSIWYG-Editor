@@ -1,4 +1,5 @@
 import '../../css/wysiwyg-editor.css';
+import '../../css/wysiwyg-content.css';
 import EditorCore from './core/Editor.js';
 import Toolbar from './toolbar/Toolbar.js';
 import './modules/register.js';
