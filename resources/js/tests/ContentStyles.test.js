@@ -85,4 +85,13 @@ describe('content stylesheet boundary', () => {
         expect(contentCss).not.toContain('--ife-text: #1f2328');
         expect(contentCss).toContain('color: var(--ife-text, currentColor)');
     });
+
+    it('does not hard-code light quote/code text colors so dark themes stay readable', () => {
+        // blockquote/code previously defaulted to dark text (unreadable on a
+        // dark theme). They now fall back to the theme/current color.
+        expect(contentCss).not.toContain('--ife-quote-fg: #57606a');
+        expect(contentCss).not.toContain('--ife-code-fg: #cf222e');
+        expect(contentCss).toContain('color: var(--ife-quote-fg, currentColor)');
+        expect(contentCss).toContain('color: var(--ife-code-fg, currentColor)');
+    });
 });

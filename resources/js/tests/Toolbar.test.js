@@ -58,6 +58,37 @@ describe('Toolbar', () => {
         expect(wrapper.querySelector('input[type="color"]')).not.toBeNull();
     });
 
+    it('color picker saves the selection on pointerdown before focus is stolen', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.dispatchEvent(new Event('pointerdown'));
+        expect(editor.selection.save).toHaveBeenCalled();
+    });
+
+    it('color picker prevents default on mousedown to keep the editor selection', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        const event = new MouseEvent('mousedown', { cancelable: true });
+        const defaultPrevented = !input.dispatchEvent(event);
+        expect(defaultPrevented).toBe(true);
+    });
+
+    it('color picker restores selection and applies the chosen color on input', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.value = '#ff0000';
+        input.dispatchEvent(new Event('input'));
+        expect(editor.selection.restore).toHaveBeenCalled();
+        expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#ff0000');
+    });
+
+    it('captures the selection on any toolbar mousedown (e.g. native select) so commands keep the text selection', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        select.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        expect(editor.selection.save).toHaveBeenCalled();
+    });
+
     it('inserts toolbar before editor root', () => {
         toolbar = new Toolbar(editor);
         expect(editor.wrapper.firstChild).toBe(toolbar.el);

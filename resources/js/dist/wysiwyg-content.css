@@ -29,9 +29,11 @@
     --ife-accent: #2563eb;
     --ife-muted: #6e7781;
     --ife-radius: 8px;
-    --ife-code-fg: #cf222e;
+    /* No built-in --ife-code-fg / --ife-quote-fg defaults: like the base
+       text color, these must follow the surrounding theme on a published
+       post (`currentColor`) so dark site themes stay readable. Sites may
+       still opt in by declaring their own --ife-code-fg / --ife-quote-fg. */
     --ife-code-bg: rgba(110, 119, 129, 0.15);
-    --ife-quote-fg: #57606a;
     --ife-quote-bg: rgba(37, 99, 235, 0.06);
 
     color: var(--ife-text, currentColor);
@@ -180,7 +182,7 @@
     padding: 8px 16px;
     border-left: 4px solid var(--ife-accent);
     background: var(--ife-quote-bg);
-    color: var(--ife-quote-fg);
+    color: var(--ife-quote-fg, currentColor);
     font-style: italic;
 }
 
@@ -188,7 +190,7 @@
     padding: 0.15em 0.4em;
     border-radius: 4px;
     background: var(--ife-code-bg);
-    color: var(--ife-code-fg);
+    color: var(--ife-code-fg, currentColor);
     font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
     font-size: 0.9em;
 }

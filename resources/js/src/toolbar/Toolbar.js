@@ -38,6 +38,14 @@ export default class Toolbar {
 
         this.editor.on('selectionchange', () => this.syncActiveStates());
         this.editor.on('focus', () => this.syncActiveStates());
+
+        // Capture the selection at the toolbar level (capture phase, before any
+        // child control's default behavior) so that interacting with native
+        // controls that steal focus — the block-format <select>, color inputs,
+        // etc. — never loses the user's text selection before the command runs.
+        this.el.addEventListener('mousedown', () => {
+            this.editor.selection.save();
+        }, true);
     }
 
     render() {
@@ -135,6 +143,14 @@ export default class Toolbar {
         const input = document.createElement('input');
         input.type = 'color';
         input.setAttribute('aria-label', label);
+        // Save the current editor selection before the native color dialog can
+        // steal focus, and prevent focus-steal on mousedown (keeps the text
+        // selection intact) — otherwise `input` applies the new color to a
+        // lost/empty selection.
+        input.addEventListener('pointerdown', () => {
+            this.editor.selection.save();
+        });
+        input.addEventListener('mousedown', (event) => event.preventDefault());
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
