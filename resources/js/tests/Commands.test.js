@@ -403,5 +403,47 @@ describe('Commands', () => {
             expect(h1.querySelector('strong')).not.toBeNull();
             expect(h1.querySelector('strong').textContent).toBe('bold');
         });
+
+        it('converts every block touched by a multi-block selection', () => {
+            root.innerHTML = '<p>one</p><p>two</p><p>three</p>';
+            const ps = root.querySelectorAll('p');
+            const range = document.createRange();
+            range.setStart(ps[0].firstChild, 0);
+            range.setEnd(ps[2].firstChild, 5);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            expect(root.querySelectorAll('h2').length).toBe(3);
+            expect(root.querySelectorAll('p').length).toBe(0);
+            expect([...root.querySelectorAll('h2')].map((h) => h.textContent)).toEqual(['one', 'two', 'three']);
+        });
+
+        it('converts all blocks when the range common ancestor is the root (Select All)', () => {
+            root.innerHTML = '<p>first</p><p>second</p><p>third</p>';
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelectorAll('h1').length).toBe(3);
+            expect(root.querySelectorAll('p').length).toBe(0);
+        });
+
+        it('only converts blocks that differ from the target tag', () => {
+            root.innerHTML = '<h1>one</h1><p>two</p>';
+            const h1 = root.querySelector('h1');
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.setStart(h1.firstChild, 0);
+            range.setEnd(p.firstChild, 3);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelectorAll('h1').length).toBe(2);
+            expect(root.querySelectorAll('p').length).toBe(0);
+        });
     });
 });

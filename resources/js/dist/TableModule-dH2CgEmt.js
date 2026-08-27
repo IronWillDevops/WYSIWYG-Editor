@@ -1,4 +1,4 @@
-import { D as H } from "./index-BSFSYvJ8.js";
+import { D as H } from "./index-D3LbNCyQ.js";
 class A {
   constructor(e) {
     this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight), setTimeout(this.adjustTableHeight, 0), this.editor.root.addEventListener("mousedown", (t) => this.handleColumnResizeStart(t)), this.editor.on("paste", () => this.addColumnResizeHandles());
@@ -295,4 +295,4 @@ class A {
 export {
   A as default
 };
-//# sourceMappingURL=TableModule-Vg1tcppi.js.map
+//# sourceMappingURL=TableModule-dH2CgEmt.js.map

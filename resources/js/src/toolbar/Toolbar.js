@@ -147,11 +147,18 @@ export default class Toolbar {
         // steal focus (pointerdown + mousedown, mirroring the block-format
         // select) so the chosen color is applied back to the original text
         // selection rather than to a lost/empty one.
+        const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
+        const syncValue = () => {
+            const color = this.getCurrentColor(cssProp);
+            if (color) input.value = color;
+        };
         input.addEventListener('pointerdown', () => {
             this.editor.selection.save();
+            syncValue();
         });
         input.addEventListener('mousedown', () => {
             this.editor.selection.save();
+            syncValue();
         });
         input.addEventListener('input', () => {
             this.editor.selection.restore();
@@ -248,6 +255,57 @@ export default class Toolbar {
             const validValues = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
             blockFormatSelect.value = validValues.includes(tagName) ? tagName : 'p';
         }
+
+        // Keep the native color inputs in step with the current selection so the
+        // picker opens on the color that is actually applied (instead of always
+        // defaulting to black/white). Without this, the first interaction reports
+        // the stale default (#000000), which the command layer treats as "no
+        // color" and wrongly clears the selection instead of applying the color.
+        ['forecolor', 'backcolor'].forEach((id) => {
+            const def = ToolbarConfig[id];
+            const wrapper = this.buttons.get(id);
+            if (!def || !(wrapper instanceof HTMLInputElement || wrapper instanceof HTMLLabelElement)) return;
+            const input = wrapper.querySelector('input[type="color"]');
+            if (!input) return;
+            const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
+            const color = this.getCurrentColor(cssProp);
+            if (color) input.value = color;
+        });
+    }
+
+    /**
+     * Returns the effective inline color of the current selection for the given
+     * CSS property (e.g. 'color' or 'backgroundColor'), walking up from the
+     * caret to the nearest element that sets it, normalized to '#rrggbb' so it
+     * can be assigned to a native <input type="color"> value.
+     * @param {string} cssProp camelCase CSS property name
+     * @returns {string} normalized hex color, or '' when none is set
+     */
+    getCurrentColor(cssProp) {
+        const range = this.editor.selection.getRange();
+        if (!range) return '';
+        let node = range.commonAncestorContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        let el = node instanceof HTMLElement ? node : null;
+        while (el && el !== this.editor.root) {
+            if (el.style?.[cssProp]) {
+                return this.normalizeColorValue(el.style[cssProp]);
+            }
+            el = el.parentElement;
+        }
+        return '';
+    }
+
+    /** Normalizes a CSS color ('#ff0000', 'rgb(255, 0, 0)', ...) to '#rrggbb'. */
+    normalizeColorValue(value) {
+        if (!value) return '';
+        const trimmed = String(value).trim();
+        const match = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+        if (match) {
+            const toHex = (n) => parseInt(n, 10).toString(16).padStart(2, '0');
+            return `#${toHex(match[1])}${toHex(match[2])}${toHex(match[3])}`;
+        }
+        return trimmed;
     }
 
     setEnabled(id, enabled) {

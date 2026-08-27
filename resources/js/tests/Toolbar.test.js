@@ -58,6 +58,51 @@ describe('Toolbar', () => {
         expect(wrapper.querySelector('input[type="color"]')).not.toBeNull();
     });
 
+    it('syncs the color input value to the current text color on selection change', () => {
+        editor.root.innerHTML = '<p><span style="color: rgb(255, 0, 0)">hello</span></p>';
+        const span = editor.root.querySelector('span');
+        const range = document.createRange();
+        range.selectNodeContents(span.firstChild);
+        editor.selection.getRange = vi.fn(() => range);
+        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+        toolbar = new Toolbar(editor);
+
+        toolbar.syncActiveStates();
+
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        expect(input.value).toBe('#ff0000');
+    });
+
+    it('syncs the background color input value from the current selection', () => {
+        editor.root.innerHTML = '<p><span style="background-color: rgb(0, 128, 255)">hi</span></p>';
+        const span = editor.root.querySelector('span');
+        const range = document.createRange();
+        range.selectNodeContents(span.firstChild);
+        editor.selection.getRange = vi.fn(() => range);
+        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+        toolbar = new Toolbar(editor);
+
+        toolbar.syncActiveStates();
+
+        const input = toolbar.buttons.get('backcolor').querySelector('input[type="color"]');
+        expect(input.value).toBe('#0080ff');
+    });
+
+    it('opens the color picker on the current selection color so the first pick is not a stale default', () => {
+        editor.root.innerHTML = '<p><span style="color: rgb(255, 255, 0)">text</span></p>';
+        const span = editor.root.querySelector('span');
+        const range = document.createRange();
+        range.selectNodeContents(span.firstChild);
+        editor.selection.getRange = vi.fn(() => range);
+        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+        toolbar = new Toolbar(editor);
+
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.dispatchEvent(new Event('pointerdown'));
+
+        expect(input.value).toBe('#ffff00');
+    });
+
     it('color picker saves the selection on pointerdown before focus is stolen', () => {
         toolbar = new Toolbar(editor);
         const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');

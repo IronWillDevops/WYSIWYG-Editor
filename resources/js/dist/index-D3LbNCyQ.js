@@ -1,7 +1,7 @@
-var x = Object.defineProperty;
-var N = (s, e, t) => e in s ? x(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
-var H = (s, e, t) => N(s, typeof e != "symbol" ? e + "" : e, t);
-class R {
+var N = Object.defineProperty;
+var R = (s, e, t) => e in s ? N(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
+var T = (s, e, t) => R(s, typeof e != "symbol" ? e + "" : e, t);
+class B {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -43,7 +43,7 @@ class R {
     this.listeners.clear();
   }
 }
-class B {
+class A {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class B {
     this.root.focus(), this.restore();
   }
 }
-class A {
+class V {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -191,7 +191,7 @@ class A {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const M = /* @__PURE__ */ new Set([
+const z = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -200,7 +200,7 @@ const M = /* @__PURE__ */ new Set([
   "rgb(0,0,0,0)",
   "rgba(0,0,0,1)",
   "rgba(0, 0, 0, 1)"
-]), C = /* @__PURE__ */ new Set([
+]), L = /* @__PURE__ */ new Set([
   "white",
   "#fff",
   "#ffffff",
@@ -213,13 +213,13 @@ function S(s) {
   const e = String(s).trim().toLowerCase().replace(/\s+/g, " ");
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
-function V(s) {
-  return M.has(S(s));
-}
 function D(s) {
-  return C.has(S(s));
+  return z.has(S(s));
 }
-class I {
+function I(s) {
+  return L.has(S(s));
+}
+class O {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -273,10 +273,10 @@ class I {
         this.toggleList("ol");
         break;
       case "foreColor":
-        t && !V(t) ? document.execCommand("foreColor", !1, t) : this.clearColor("color");
+        t && !D(t) ? document.execCommand("foreColor", !1, t) : this.clearColor("color");
         break;
       case "backColor":
-        t && !D(t) ? document.execCommand("hiliteColor", !1, t) : this.clearColor("backgroundColor");
+        t && !I(t) ? document.execCommand("hiliteColor", !1, t) : this.clearColor("backgroundColor");
         break;
       case "lineHeight":
         this.setInlineStyle("lineHeight", t, !0);
@@ -359,8 +359,8 @@ class I {
     if (!o.length) return;
     const i = document.createElement(e);
     o.forEach((h) => {
-      const l = document.createElement("li");
-      l.innerHTML = h.innerHTML || "<br>", i.appendChild(l);
+      const c = document.createElement("li");
+      c.innerHTML = h.innerHTML || "<br>", i.appendChild(c);
     }), o[0].replaceWith(i), o.slice(1).forEach((h) => h.remove());
     const r = document.createRange();
     r.selectNodeContents(i.lastElementChild), r.collapse(!1), this.selection.setRange(r);
@@ -372,23 +372,29 @@ class I {
    * @returns {HTMLElement[]}
    */
   getBlocksInRange(e) {
-    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), n = (l) => {
-      let a = l.nodeType === Node.TEXT_NODE ? l.parentElement : l;
-      for (; a && a !== this.root; ) {
-        if (a instanceof HTMLElement && a.parentElement === this.root && t.has(a.tagName))
-          return a;
-        a = a.parentElement;
+    const t = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "DIV"]), n = (a) => {
+      let l = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
+      if (l === this.root) return null;
+      for (; l && l !== this.root; ) {
+        if (l instanceof HTMLElement && l.parentElement === this.root && t.has(l.tagName))
+          return l;
+        l = l.parentElement;
       }
       return null;
-    }, o = n(e.startContainer);
-    if (!o) return [];
-    const i = n(e.endContainer) ?? o;
-    if (o === i) return [o];
-    const r = [];
-    let h = o;
-    for (; h && (r.push(h), h !== i); )
-      h = h.nextElementSibling;
-    return r.length ? r : [o];
+    }, o = e.startContainer, i = n(o);
+    if (!i) {
+      let a = o;
+      return a.nodeType === Node.TEXT_NODE && (a = a.parentElement), a === this.root ? [...this.root.children].filter(
+        (l) => l instanceof HTMLElement && t.has(l.tagName)
+      ) : [];
+    }
+    const r = n(e.endContainer) ?? i;
+    if (i === r) return [i];
+    const h = [];
+    let c = i;
+    for (; c && (h.push(c), c !== r); )
+      c = c.nextElementSibling;
+    return h.length ? h : [i];
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
   convertList(e, t) {
@@ -430,10 +436,10 @@ class I {
         return;
       }
       if ((h = r.style) != null && h[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
-        const l = r.parentNode;
-        if (!l) return;
-        for (; r.firstChild; ) l.insertBefore(r.firstChild, r);
-        l.removeChild(r);
+        const c = r.parentNode;
+        if (!c) return;
+        for (; r.firstChild; ) c.insertBefore(r.firstChild, r);
+        c.removeChild(r);
       }
     });
   }
@@ -472,23 +478,32 @@ class I {
   }
   /**
    * Changes the block-level element type of the current block(s).
-   * Converts the block containing the caret (and any blocks fully
-   * contained in the selection) to the given tag name, e.g. 'h1' or 'p'.
+   * Converts every block touched by the selection (a single block, several
+   * paragraphs, or a full Select-All range whose common ancestor is the root)
+   * to the given tag name, e.g. 'h1' or 'p'.
    * @param {string} tag the target block tag name (lowercase, e.g. 'p', 'h1'-'h6')
    */
   formatBlock(e) {
-    const t = this.selection.getBlockElement();
-    if (!t || t === this.root) return;
-    const n = e.toLowerCase();
-    if (t.tagName.toLowerCase() === n) return;
+    const t = this.selection.getRange();
+    if (!t) return;
+    const n = e.toLowerCase(), o = this.getBlocksInRange(t);
+    if (!o.length) return;
+    const i = o.filter(
+      (h) => h.tagName.toLowerCase() !== n
+    );
+    if (!i.length) return;
     this.editor.history.push();
-    const o = document.createElement(n);
-    o.innerHTML = t.innerHTML || "<br>", t.replaceWith(o);
-    const i = document.createRange();
-    i.selectNodeContents(o), i.collapse(!1), this.selection.setRange(i);
+    let r = null;
+    if (i.forEach((h) => {
+      const c = document.createElement(n);
+      c.innerHTML = h.innerHTML || "<br>", h.replaceWith(c), r = c;
+    }), r) {
+      const h = document.createRange();
+      h.selectNodeContents(r), h.collapse(!1), this.selection.setRange(h);
+    }
   }
 }
-const O = /* @__PURE__ */ new Set([
+const _ = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -556,7 +571,7 @@ const O = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), _ = {
+]), P = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -594,8 +609,8 @@ const O = /* @__PURE__ */ new Set([
   font: /* @__PURE__ */ new Set(["color", "size", "face"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, P = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class F {
+}, F = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class q {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -603,7 +618,7 @@ class F {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : O, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : _, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : P;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : _, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : P, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : F;
   }
   /**
    * @param {string} dirtyHtml
@@ -710,7 +725,7 @@ class F {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
     const n = t[1].toLowerCase(), o = S(t[2]);
-    return n === "color" ? M.has(o) : n === "background-color" ? C.has(o) : n === "background" ? this.isSolidBalancedColor(o) && C.has(o) : !1;
+    return n === "color" ? z.has(o) : n === "background-color" ? L.has(o) : n === "background" ? this.isSolidBalancedColor(o) && L.has(o) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -735,13 +750,13 @@ class F {
     }
   }
 }
-const q = {
+const W = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
-}, T = /* @__PURE__ */ new Map();
+}, H = /* @__PURE__ */ new Map();
 class E {
   /**
    * @param {HTMLTextAreaElement} textarea
@@ -749,7 +764,7 @@ class E {
    */
   constructor(e, t = {}) {
     var n, o;
-    this.textarea = e, this.options = { ...q, ...t }, this.events = new R(), this.sanitizer = new F(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new B(this.root), this.commands = new I(this), this.history = new A({
+    this.textarea = e, this.options = { ...W, ...t }, this.events = new B(), this.sanitizer = new q(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new A(this.root), this.commands = new O(this), this.history = new V({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -888,15 +903,15 @@ class E {
     const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre"), i = t.tagName === "DIV" && t.classList.contains("note"), r = this.selection.getRange();
     if (!r) return;
     if (!n && !o && !i) {
-      let l = r.startContainer;
-      if (l.nodeType === Node.TEXT_NODE && (l = l.parentElement), !(l instanceof HTMLElement) || !l.closest("code")) return;
+      let c = r.startContainer;
+      if (c.nodeType === Node.TEXT_NODE && (c = c.parentElement), !(c instanceof HTMLElement) || !c.closest("code")) return;
     }
     if (e.preventDefault(), this.history.push(), o) {
       if (!t.textContent.trim()) {
         const a = document.createElement("p");
         a.innerHTML = "<br>", t.parentNode.insertBefore(a, t.nextSibling), t.parentNode.removeChild(t);
-        const m = document.createRange();
-        m.setStart(a, 0), m.collapse(!0), this.selection.setRange(m);
+        const l = document.createRange();
+        l.setStart(a, 0), l.collapse(!0), this.selection.setRange(l);
       } else
         this._insertBreakInPre(r);
       this.emitChange();
@@ -906,59 +921,59 @@ class E {
       if (!t.textContent.trim()) {
         const u = document.createElement("p");
         u.innerHTML = "<br>", n.parentNode.insertBefore(u, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
-        const g = document.createRange();
-        g.setStart(u, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
+        const f = document.createRange();
+        f.setStart(u, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
         return;
       }
-      const a = document.createElement("p"), { startContainer: m, startOffset: p } = r;
-      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
-        const u = m.textContent, g = u.slice(0, p), b = u.slice(p);
-        m.textContent = g, b && (a.textContent = b);
+      const a = document.createElement("p"), { startContainer: l, startOffset: p } = r;
+      if (l.nodeType === Node.TEXT_NODE && t.contains(l)) {
+        const u = l.textContent, f = u.slice(0, p), b = u.slice(p);
+        l.textContent = f, b && (a.textContent = b);
       }
       a.textContent || (a.innerHTML = "<br>"), t.parentNode.insertBefore(a, t.nextSibling);
-      const f = document.createRange(), v = a.firstChild || a;
-      f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      const g = document.createRange(), v = a.firstChild || a;
+      g.setStart(v, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
       return;
     }
     if (i) {
       if (!t.textContent.trim()) {
         const u = document.createElement("p");
         u.innerHTML = "<br>", t.parentNode.insertBefore(u, t.nextSibling), t.parentNode.removeChild(t);
-        const g = document.createRange();
-        g.setStart(u, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
+        const f = document.createRange();
+        f.setStart(u, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
         return;
       }
-      const a = document.createElement("p"), { startContainer: m, startOffset: p } = r;
-      if (m.nodeType === Node.TEXT_NODE && t.contains(m)) {
-        const u = m.textContent, g = u.slice(0, p), b = u.slice(p);
-        m.textContent = g, b && (a.textContent = b);
+      const a = document.createElement("p"), { startContainer: l, startOffset: p } = r;
+      if (l.nodeType === Node.TEXT_NODE && t.contains(l)) {
+        const u = l.textContent, f = u.slice(0, p), b = u.slice(p);
+        l.textContent = f, b && (a.textContent = b);
       }
       a.textContent || (a.innerHTML = "<br>"), t.parentNode.insertBefore(a, t.nextSibling);
-      const f = document.createRange(), v = a.firstChild || a;
-      f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      const g = document.createRange(), v = a.firstChild || a;
+      g.setStart(v, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
       return;
     }
     const h = (() => {
-      let l = r.startContainer;
-      return l.nodeType === Node.TEXT_NODE && (l = l.parentElement), l instanceof HTMLElement ? l.closest("code") : null;
+      let c = r.startContainer;
+      return c.nodeType === Node.TEXT_NODE && (c = c.parentElement), c instanceof HTMLElement ? c.closest("code") : null;
     })();
     if (h) {
-      const { startContainer: l, startOffset: a } = r;
-      if (l.nodeType === Node.TEXT_NODE && t.contains(l)) {
-        const m = l.textContent, p = m.slice(0, a), f = m.slice(a);
-        l.textContent = p;
+      const { startContainer: c, startOffset: a } = r;
+      if (c.nodeType === Node.TEXT_NODE && t.contains(c)) {
+        const l = c.textContent, p = l.slice(0, a), g = l.slice(a);
+        c.textContent = p;
         const v = document.createElement("p");
-        if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !h.textContent.trim()) {
-          const b = h.parentNode, z = document.createTextNode("");
-          b.replaceChild(z, h);
+        if (g ? v.textContent = g : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !h.textContent.trim()) {
+          const b = h.parentNode, x = document.createTextNode("");
+          b.replaceChild(x, h);
         }
-        const u = document.createRange(), g = v.firstChild || v;
-        u.setStart(g, 0), u.collapse(!0), this.selection.setRange(u);
+        const u = document.createRange(), f = v.firstChild || v;
+        u.setStart(f, 0), u.collapse(!0), this.selection.setRange(u);
       } else {
-        const m = document.createElement("p");
-        m.innerHTML = "<br>", t.parentNode.insertBefore(m, t.nextSibling);
+        const l = document.createElement("p");
+        l.innerHTML = "<br>", t.parentNode.insertBefore(l, t.nextSibling);
         const p = document.createRange();
-        p.setStart(m, 0), p.collapse(!0), this.selection.setRange(p);
+        p.setStart(l, 0), p.collapse(!0), this.selection.setRange(p);
       }
       this.emitChange();
     }
@@ -966,9 +981,9 @@ class E {
   _insertBreakInPre(e) {
     const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
     if (t.nodeType === Node.TEXT_NODE) {
-      const r = t.textContent, h = r.slice(0, n), l = r.slice(n);
-      if (t.textContent = h, t.parentNode.insertBefore(o, t.nextSibling), l) {
-        const a = document.createTextNode(l);
+      const r = t.textContent, h = r.slice(0, n), c = r.slice(n);
+      if (t.textContent = h, t.parentNode.insertBefore(o, t.nextSibling), c) {
+        const a = document.createTextNode(c);
         t.parentNode.insertBefore(a, o.nextSibling);
       }
     } else {
@@ -1008,7 +1023,7 @@ class E {
    */
   async loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []), t = [];
-    T.forEach((n, o) => {
+    H.forEach((n, o) => {
       e.has(o) || t.push(
         Promise.resolve(n(this)).then((i) => {
           this.plugins.set(o, i);
@@ -1082,58 +1097,58 @@ class E {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    T.set(e, t);
+    H.set(e, t);
   }
 }
-const c = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, d = {
-  undo: c('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
-  redo: c('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
-  bold: c('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
-  italic: c('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
-  underline: c('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
-  strikeThrough: c('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
-  superscript: c('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  subscript: c('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  formatColorText: c('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
-  clearFormat: c('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
-  formatColorFill: c('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
-  alignLeft: c('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
-  alignCenter: c('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
-  alignRight: c('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
-  alignJustify: c('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
-  listBulleted: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  listNumbered: c('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
-  checklist: c('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
-  link: c('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
-  unlink: c('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
-  image: c('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
-  videocam: c('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
-  audiotrack: c('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
-  table: c('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
-  hr: c('<path d="M2 11h20v2H2z"/>'),
-  blockquote: c('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
-  code: c('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
-  codeBlock: c('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
-  note: c('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
-  emoji: c('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
-  specialChars: c('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
-  find: c('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
-  sourceCode: c('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
-  fullscreen: c('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
-  indent: c('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: c('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  wordCount: c('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
-  ltr: c('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
-  rtl: c('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
-  markdown: c('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
-  date: c('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
-  time: c('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
-  template: c('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
-  anchor: c('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
-  listProps: c('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  paragraph: c('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
+const d = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, m = {
+  undo: d('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
+  redo: d('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
+  bold: d('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
+  italic: d('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
+  underline: d('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
+  strikeThrough: d('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
+  superscript: d('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  subscript: d('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  formatColorText: d('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
+  clearFormat: d('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
+  formatColorFill: d('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
+  alignLeft: d('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
+  alignCenter: d('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
+  alignRight: d('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
+  alignJustify: d('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
+  listBulleted: d('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  listNumbered: d('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
+  checklist: d('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
+  link: d('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
+  unlink: d('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
+  image: d('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
+  videocam: d('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
+  audiotrack: d('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
+  table: d('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
+  hr: d('<path d="M2 11h20v2H2z"/>'),
+  blockquote: d('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
+  code: d('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
+  codeBlock: d('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
+  note: d('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
+  emoji: d('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
+  specialChars: d('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
+  find: d('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
+  sourceCode: d('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
+  fullscreen: d('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
+  indent: d('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  outdent: d('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: d('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  ltr: d('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
+  rtl: d('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
+  markdown: d('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
+  date: d('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
+  time: d('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
+  template: d('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
+  anchor: d('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
+  listProps: d('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  paragraph: d('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
-class W {
+class U {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1145,7 +1160,7 @@ class W {
    * @param {() => void} [config.onClose]
    */
   constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: r, onClose: h }) {
-    H(this, "handleEscape", (e) => {
+    T(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = r, this.onClose = h, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1160,16 +1175,16 @@ class W {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((l) => {
-      l.addEventListener("click", (a) => a.stopPropagation()), l.addEventListener("keydown", (a) => {
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((c) => {
+      c.addEventListener("click", (a) => a.stopPropagation()), c.addEventListener("keydown", (a) => {
         a.key !== "Escape" && a.stopPropagation();
       });
-    }), this.overlay.querySelectorAll("button").forEach((l) => {
-      l.addEventListener("mousedown", (a) => a.preventDefault());
-    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (l) => {
-      l.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (l) => {
-      l.preventDefault(), l.stopPropagation(), this.onConfirm(this.form), this.close();
+    }), this.overlay.querySelectorAll("button").forEach((c) => {
+      c.addEventListener("mousedown", (a) => a.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (c) => {
+      c.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (c) => {
+      c.preventDefault(), c.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
@@ -1196,9 +1211,9 @@ class W {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const U = {
+const M = {
   blockFormat: {
-    icon: d.paragraph,
+    icon: m.paragraph,
     label: "Block format",
     type: "select",
     options: [
@@ -1214,39 +1229,39 @@ const U = {
       s.commands.exec("formatBlock", e);
     }
   },
-  undo: { icon: d.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
-  redo: { icon: d.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
-  bold: { icon: d.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: d.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: d.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: d.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: d.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: d.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: d.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: d.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+  undo: { icon: m.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
+  redo: { icon: m.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
+  bold: { icon: m.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: m.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: m.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: m.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: m.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: m.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: m.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: m.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: d.clearFormat,
+    icon: m.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: d.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: d.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: d.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: d.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: d.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: d.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: m.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: m.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: m.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: m.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: m.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: m.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: d.checklist,
+    icon: m.checklist,
     label: "Checklist",
     type: "action",
     action: (s) => s.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: d.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: d.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: d.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
+  indent: { icon: m.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: m.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: m.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
   unlink: {
-    icon: d.unlink,
+    icon: m.unlink,
     label: "Remove link",
     type: "action",
     action: (s) => {
@@ -1254,12 +1269,12 @@ const U = {
       e && s.module("link").remove(e);
     }
   },
-  image: { icon: d.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
-  video: { icon: d.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
-  audio: { icon: d.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
-  table: { icon: d.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
-  hr: { icon: d.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
-  blockquote: { icon: d.blockquote, label: "Blockquote", type: "action", action: (s) => {
+  image: { icon: m.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
+  video: { icon: m.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
+  audio: { icon: m.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
+  table: { icon: m.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
+  hr: { icon: m.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
+  blockquote: { icon: m.blockquote, label: "Blockquote", type: "action", action: (s) => {
     const e = s.selection.getBlockElement();
     if (!e || e === s.root) return;
     if (e.tagName === "BLOCKQUOTE" || e.closest("blockquote")) {
@@ -1275,12 +1290,12 @@ const U = {
     s.emitChange();
   } },
   codeInline: {
-    icon: d.code,
+    icon: m.code,
     label: "Inline code",
     type: "action",
     action: (s) => s.selection.wrap("code") && s.emitChange()
   },
-  codeBlock: { icon: d.codeBlock, label: "Code block", type: "action", action: (s) => {
+  codeBlock: { icon: m.codeBlock, label: "Code block", type: "action", action: (s) => {
     const e = s.selection.getBlockElement();
     if (!e || e === s.root) return;
     const t = e.tagName === "PRE" || e.closest("pre");
@@ -1293,50 +1308,50 @@ const U = {
     }
     s.emitChange();
   } },
-  note: { icon: d.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
+  note: { icon: m.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
-    icon: d.emoji,
+    icon: m.emoji,
     label: "Emoji",
     type: "action",
     action: (s, e) => s.module("emoji").open(e)
   },
   specialChars: {
-    icon: d.specialChars,
+    icon: m.specialChars,
     label: "Special characters",
     type: "action",
     action: (s) => s.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: d.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
+  find: { icon: m.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
   sourceCode: {
-    icon: d.sourceCode,
+    icon: m.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
     action: (s) => s.module("codeView").toggle()
   },
   fullscreen: {
-    icon: d.fullscreen,
+    icon: m.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
     action: (s) => s.module("fullscreen").toggle()
   },
   ltr: {
-    icon: d.ltr,
+    icon: m.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: d.rtl,
+    icon: m.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: d.markdown,
+    icon: m.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
@@ -1352,7 +1367,7 @@ const U = {
     }
   },
   date: {
-    icon: d.date,
+    icon: m.date,
     label: "Insert date",
     type: "action",
     action: (s) => {
@@ -1361,7 +1376,7 @@ const U = {
     }
   },
   time: {
-    icon: d.time,
+    icon: m.time,
     label: "Insert time",
     type: "action",
     action: (s) => {
@@ -1370,7 +1385,7 @@ const U = {
     }
   },
   anchor: {
-    icon: d.anchor,
+    icon: m.anchor,
     label: "Insert anchor",
     type: "action",
     action: (s) => {
@@ -1384,7 +1399,7 @@ const U = {
     }
   },
   templates: {
-    icon: d.template,
+    icon: m.template,
     label: "Content templates",
     type: "action",
     action: (s) => {
@@ -1393,7 +1408,7 @@ const U = {
     }
   },
   listProps: {
-    icon: d.listProps,
+    icon: m.listProps,
     label: "List properties",
     type: "action",
     action: (s) => {
@@ -1415,19 +1430,19 @@ const U = {
                         <option value="upper-roman" ${o === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, r = new W(s.wrapper, {
+            `, r = new U(s.wrapper, {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
         onConfirm: (h) => {
-          const l = new FormData(h), a = l.get("start"), m = l.get("type");
-          s.history.push(), a ? t.setAttribute("start", String(a)) : t.removeAttribute("start"), m ? t.style.listStyleType = m : t.style.listStyleType = "", s.emitChange();
+          const c = new FormData(h), a = c.get("start"), l = c.get("type");
+          s.history.push(), a ? t.setAttribute("start", String(a)) : t.removeAttribute("start"), l ? t.style.listStyleType = l : t.style.listStyleType = "", s.emitChange();
         }
       });
       s.selection.save(), r.open();
     }
   }
-}, j = {
+}, $ = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -1492,7 +1507,7 @@ const U = {
   listProps: "List properties",
   blockFormat: "Block format",
   madeBy: "Made by ITkha"
-}, $ = {
+}, j = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1623,8 +1638,8 @@ const U = {
   blockFormat: "Формат блока",
   madeBy: "Сделано в ITkha"
 }, k = /* @__PURE__ */ new Map([
-  ["en", j],
-  ["uk", $],
+  ["en", $],
+  ["uk", j],
   ["ru", X]
 ]), y = {
   /**
@@ -1674,7 +1689,7 @@ class G {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const o = U[n];
+        const o = M[n];
         if (!o) return;
         const i = this.buildControl(n, o);
         i && t.appendChild(i);
@@ -1714,10 +1729,15 @@ class G {
     const n = this.editor.options.locale ?? "en", o = y.t(n, e) !== e ? y.t(n, e) : t.label, i = document.createElement("label");
     i.className = "ife-toolbar__color", i.title = o, i.innerHTML = t.icon;
     const r = document.createElement("input");
-    return r.type = "color", r.setAttribute("aria-label", o), r.addEventListener("pointerdown", () => {
-      this.editor.selection.save();
+    r.type = "color", r.setAttribute("aria-label", o);
+    const h = t.command === "backColor" ? "backgroundColor" : "color", c = () => {
+      const a = this.getCurrentColor(h);
+      a && (r.value = a);
+    };
+    return r.addEventListener("pointerdown", () => {
+      this.editor.selection.save(), c();
     }), r.addEventListener("mousedown", () => {
-      this.editor.selection.save();
+      this.editor.selection.save(), c();
     }), r.addEventListener("input", () => {
       this.editor.selection.restore(), this.editor.commands.exec(t.command, r.value);
     }), i.appendChild(r), this.buttons.set(e, i), i;
@@ -1733,9 +1753,9 @@ class G {
       subscript: "subscript",
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
-    }).forEach(([a, m]) => {
+    }).forEach(([a, l]) => {
       const p = this.buttons.get(a);
-      p instanceof HTMLElement && p.classList.toggle("is-active", this.editor.commands.queryState(m));
+      p instanceof HTMLElement && p.classList.toggle("is-active", this.editor.commands.queryState(l));
     });
     const t = this.editor.selection.getBlockElement();
     let n = "";
@@ -1750,20 +1770,20 @@ class G {
       }
     }
     ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((a) => {
-      const m = this.buttons.get(a);
-      m instanceof HTMLElement && m.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
+      const l = this.buttons.get(a);
+      l instanceof HTMLElement && l.classList.toggle("is-active", n === a.replace("align", "").toLowerCase());
     });
     const o = this.buttons.get("ltr"), i = this.buttons.get("rtl");
     if (o instanceof HTMLElement && i instanceof HTMLElement) {
       let a = "";
       if (t) {
-        let m = t;
-        for (; m && m !== this.editor.root; ) {
-          if (m.dir) {
-            a = m.dir;
+        let l = t;
+        for (; l && l !== this.editor.root; ) {
+          if (l.dir) {
+            a = l.dir;
             break;
           }
-          m = m.parentElement;
+          l = l.parentElement;
         }
       }
       o.classList.toggle("is-active", a === "ltr"), i.classList.toggle("is-active", a === "rtl");
@@ -1774,22 +1794,62 @@ class G {
     if (h instanceof HTMLElement) {
       let a = !1;
       if (t) {
-        let m = t;
-        for (; m && m !== this.editor.root; ) {
-          if (m.tagName === "BLOCKQUOTE") {
+        let l = t;
+        for (; l && l !== this.editor.root; ) {
+          if (l.tagName === "BLOCKQUOTE") {
             a = !0;
             break;
           }
-          m = m.parentElement;
+          l = l.parentElement;
         }
       }
       h.classList.toggle("is-active", a);
     }
-    const l = this.buttons.get("blockFormat");
-    if (l instanceof HTMLSelectElement && t) {
-      const a = t.tagName.toLowerCase(), m = ["p", "h1", "h2", "h3", "h4", "h5", "h6"];
-      l.value = m.includes(a) ? a : "p";
+    const c = this.buttons.get("blockFormat");
+    if (c instanceof HTMLSelectElement && t) {
+      const a = t.tagName.toLowerCase(), l = ["p", "h1", "h2", "h3", "h4", "h5", "h6"];
+      c.value = l.includes(a) ? a : "p";
     }
+    ["forecolor", "backcolor"].forEach((a) => {
+      const l = M[a], p = this.buttons.get(a);
+      if (!l || !(p instanceof HTMLInputElement || p instanceof HTMLLabelElement)) return;
+      const g = p.querySelector('input[type="color"]');
+      if (!g) return;
+      const v = l.command === "backColor" ? "backgroundColor" : "color", u = this.getCurrentColor(v);
+      u && (g.value = u);
+    });
+  }
+  /**
+   * Returns the effective inline color of the current selection for the given
+   * CSS property (e.g. 'color' or 'backgroundColor'), walking up from the
+   * caret to the nearest element that sets it, normalized to '#rrggbb' so it
+   * can be assigned to a native <input type="color"> value.
+   * @param {string} cssProp camelCase CSS property name
+   * @returns {string} normalized hex color, or '' when none is set
+   */
+  getCurrentColor(e) {
+    var i;
+    const t = this.editor.selection.getRange();
+    if (!t) return "";
+    let n = t.commonAncestorContainer;
+    n.nodeType === Node.TEXT_NODE && (n = n.parentElement);
+    let o = n instanceof HTMLElement ? n : null;
+    for (; o && o !== this.editor.root; ) {
+      if ((i = o.style) != null && i[e])
+        return this.normalizeColorValue(o.style[e]);
+      o = o.parentElement;
+    }
+    return "";
+  }
+  /** Normalizes a CSS color ('#ff0000', 'rgb(255, 0, 0)', ...) to '#rrggbb'. */
+  normalizeColorValue(e) {
+    if (!e) return "";
+    const t = String(e).trim(), n = t.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (n) {
+      const o = (i) => parseInt(i, 10).toString(16).padStart(2, "0");
+      return `#${o(n[1])}${o(n[2])}${o(n[3])}`;
+    }
+    return t;
   }
   setEnabled(e, t) {
     const n = this.buttons.get(e);
@@ -1800,19 +1860,19 @@ class G {
   }
 }
 const J = {
-  link: () => import("./LinkModule-RarLYnMp.js"),
-  image: () => import("./ImageModule-CwyqKhkd.js"),
-  table: () => import("./TableModule-Vg1tcppi.js"),
+  link: () => import("./LinkModule-C4l5daeS.js"),
+  image: () => import("./ImageModule-DEDn2q2v.js"),
+  table: () => import("./TableModule-dH2CgEmt.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DpgLopRK.js"),
-  note: () => import("./NoteModule--biU5GPu.js"),
-  media: () => import("./MediaModule-BbYt3Wc1.js"),
+  find: () => import("./FindModule-Vhr5Te8r.js"),
+  note: () => import("./NoteModule-Daj-BMY-.js"),
+  media: () => import("./MediaModule-ClYHlVuK.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-Df59ypu5.js"),
+  statusBar: () => import("./StatusBar-BWisIJq4.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-DC8zmjDw.js")
+  templates: () => import("./TemplateModule-Cp3F5Qje.js")
 };
 Object.entries(J).forEach(([s, e]) => {
   E.registerPlugin(s, async (t) => {
@@ -1820,7 +1880,7 @@ Object.entries(J).forEach(([s, e]) => {
     return new n(t);
   });
 });
-const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), Q = {
+const w = /* @__PURE__ */ new WeakMap(), C = /* @__PURE__ */ new Set(), Q = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1835,8 +1895,8 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), Q = {
     if (w.has(t))
       return w.get(t);
     const n = new E(t, e), o = new G(n, e.toolbar);
-    return n.on("destroy", () => o.destroy()), w.set(t, n), L.add(n), n.on("destroy", () => {
-      w.delete(t), L.delete(n);
+    return n.on("destroy", () => o.destroy()), w.set(t, n), C.add(n), n.on("destroy", () => {
+      w.delete(t), C.delete(n);
     }), n;
   },
   /**
@@ -1849,14 +1909,14 @@ const w = /* @__PURE__ */ new WeakMap(), L = /* @__PURE__ */ new Set(), Q = {
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    L.forEach((s) => s.destroy()), L.clear();
+    C.forEach((s) => s.destroy()), C.clear();
   },
   registerPlugin: E.registerPlugin
 };
 export {
-  W as D,
-  d as I,
+  U as D,
+  m as I,
   y as L,
   Q as W
 };
-//# sourceMappingURL=index-BSFSYvJ8.js.map
+//# sourceMappingURL=index-D3LbNCyQ.js.map

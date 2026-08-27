@@ -185,6 +185,17 @@
     inset: 0;
     opacity: 0;
     cursor: pointer;
+    /*
+     * Chromium renders the native color input with a 50px minimum width no
+     * matter what the button is sized to, so the input overflows its 32px
+     * label and its invisible hit-area spills onto the *next* toolbar button
+     * (e.g. the background color input covers the left edge of Clear
+     * Formatting, so hovering/clicking it highlighted the wrong button).
+     * Because the input is a descendant of its <label>, the label still
+     * activates the picker on click, so we can safely stop the input from
+     * intercepting pointer events entirely and keep the hit-area correct.
+     */
+    pointer-events: none;
 }
 
 /* Contextual table toolbar (shown when the caret is inside a table) */

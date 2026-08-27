@@ -246,6 +246,7 @@ export default class Commands {
         const blockTags = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'DIV']);
         const closestBlock = (node) => {
             let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+            if (el === this.root) return null;
             while (el && el !== this.root) {
                 if (el instanceof HTMLElement && el.parentElement === this.root && blockTags.has(el.tagName)) {
                     return el;
@@ -255,8 +256,21 @@ export default class Commands {
             return null;
         };
 
-        const startBlock = closestBlock(range.startContainer);
-        if (!startBlock) return [];
+        const startContainer = range.startContainer;
+        const startBlock = closestBlock(startContainer);
+        // A range whose common ancestor is the root itself (e.g. Select All)
+        // has no single enclosing block to walk up from, so fall back to
+        // collecting every top-level block the range touches.
+        if (!startBlock) {
+            let node = startContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (node === this.root) {
+                return [...this.root.children].filter(
+                    (el) => el instanceof HTMLElement && blockTags.has(el.tagName)
+                );
+            }
+            return [];
+        }
         const endBlock = closestBlock(range.endContainer) ?? startBlock;
         if (startBlock === endBlock) return [startBlock];
 
@@ -388,26 +402,39 @@ export default class Commands {
 
     /**
      * Changes the block-level element type of the current block(s).
-     * Converts the block containing the caret (and any blocks fully
-     * contained in the selection) to the given tag name, e.g. 'h1' or 'p'.
+     * Converts every block touched by the selection (a single block, several
+     * paragraphs, or a full Select-All range whose common ancestor is the root)
+     * to the given tag name, e.g. 'h1' or 'p'.
      * @param {string} tag the target block tag name (lowercase, e.g. 'p', 'h1'-'h6')
      */
     formatBlock(tag) {
-        const block = this.selection.getBlockElement();
-        if (!block || block === this.root) return;
+        const range = this.selection.getRange();
+        if (!range) return;
 
         const targetTag = tag.toLowerCase();
-        if (block.tagName.toLowerCase() === targetTag) return;
+        const blocks = this.getBlocksInRange(range);
+        if (!blocks.length) return;
+
+        const blocksToConvert = blocks.filter(
+            (block) => block.tagName.toLowerCase() !== targetTag
+        );
+        if (!blocksToConvert.length) return;
 
         this.editor.history.push();
 
-        const replacement = document.createElement(targetTag);
-        replacement.innerHTML = block.innerHTML || '<br>';
-        block.replaceWith(replacement);
+        let lastReplacement = null;
+        blocksToConvert.forEach((block) => {
+            const replacement = document.createElement(targetTag);
+            replacement.innerHTML = block.innerHTML || '<br>';
+            block.replaceWith(replacement);
+            lastReplacement = replacement;
+        });
 
-        const newRange = document.createRange();
-        newRange.selectNodeContents(replacement);
-        newRange.collapse(false);
-        this.selection.setRange(newRange);
+        if (lastReplacement) {
+            const newRange = document.createRange();
+            newRange.selectNodeContents(lastReplacement);
+            newRange.collapse(false);
+            this.selection.setRange(newRange);
+        }
     }
 }
