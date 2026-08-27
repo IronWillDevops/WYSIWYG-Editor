@@ -207,4 +207,76 @@ describe('Sanitizer', () => {
             expect(result).not.toContain('expression');
         });
     });
+
+    describe('theme-neutral color normalization', () => {
+        // The editor must not persist default/neutral colors (black text, white
+        // background) into article HTML, because a site's dark theme cannot
+        // override inline styles. Genuinely non-default colors the author chose
+        // (red, yellow, green, ...) must be preserved.
+
+        it('removes the default black text color written by a default foreColor selection', () => {
+            const result = sanitizer.sanitize('<p><span style="color: rgb(0, 0, 0)">Text</span></p>');
+            expect(result).not.toContain('color');
+        });
+
+        it('removes #000000 and #000 text color', () => {
+            expect(sanitizer.sanitize('<p style="color: #000000;">Text</p>')).toBe('<p>Text</p>');
+            expect(sanitizer.sanitize('<span style="color: #000;">Text</span>')).toBe('<span>Text</span>');
+        });
+
+        it('removes plain `black` text color', () => {
+            expect(sanitizer.sanitize('<p style="color: black;">Text</p>')).toBe('<p>Text</p>');
+        });
+
+        it('removes the default white background-color written by a default backColor selection', () => {
+            const result = sanitizer.sanitize('<p style="background-color: #ffffff;">Text</p>');
+            expect(result).toBe('<p>Text</p>');
+        });
+
+        it('removes a white background shorthand when it is a solid color', () => {
+            expect(sanitizer.sanitize('<span style="background: #ffffff;">Text</span>')).toBe('<span>Text</span>');
+            expect(sanitizer.sanitize('<span style="background: rgb(255, 255, 255);">Text</span>')).toBe('<span>Text</span>');
+        });
+
+        it('preserves a genuinely user-chosen non-default text color', () => {
+            const result = sanitizer.sanitize('<p><span style="color: #ff0000;">Red text</span></p>');
+            expect(result).toContain('color: #ff0000');
+        });
+
+        it('preserves a genuinely user-chosen non-default background color', () => {
+            const result = sanitizer.sanitize('<p><span style="background-color: #ffff00;">Highlight</span></p>');
+            expect(result).toContain('background-color');
+        });
+
+        it('preserves non-default colors when mixed with a default one', () => {
+            const result = sanitizer.sanitize('<span style="color: #ff0000; background-color: #ffffff;">Text</span>');
+            expect(result).not.toContain('background-color');
+            expect(result).toContain('color');
+            expect(result).toContain('#ff0000');
+        });
+
+        it('removes only the empty style attribute when all declarations are stripped', () => {
+            expect(sanitizer.sanitize('<span style="color: black; background-color: white;">Text</span>')).toBe('<span>Text</span>');
+        });
+
+        it('does not strip a background shorthand that contains an image or gradient', () => {
+            const result = sanitizer.sanitize('<span style="background: url(image.png) no-repeat;">Text</span>');
+            expect(result).toContain('background');
+        });
+
+        it('preserves other inline styling (bold) while stripping default color', () => {
+            const result = sanitizer.sanitize('<p style="color: black;"><strong>Bold</strong></p>');
+            expect(result).not.toContain('color: black');
+            expect(result).toContain('<strong>Bold</strong>');
+        });
+
+        it('cleans old articles with hardcoded default colors on load/resave', () => {
+            const oldHtml = '<h2 style="color: #000000;">Title</h2><p style="background-color: white;">Body</p>';
+            const result = sanitizer.sanitize(oldHtml);
+            expect(result).not.toContain('#000000');
+            expect(result).not.toContain('background-color');
+            expect(result).toContain('<h2>Title</h2>');
+            expect(result).toContain('<p>Body</p>');
+        });
+    });
 });

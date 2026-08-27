@@ -52,6 +52,27 @@ const DEFAULT_ALLOWED_ATTRS = {
 const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:', '']);
 
 /**
+ * Color values that should never be persisted into article HTML.
+ *
+ * The editor's contenteditable surface renders plain text via CSS (the
+ * `.ife-content` `--ife-text` variable), and the site's theme is expected to
+ * supply the final colors for the published post. However, when a user picks
+ * a color (or when pasted HTML carries inline colors) the browser/browser
+ * sanitization wraps the selection in `<span style="color: rgb(0, 0, 0)">`
+ * or similar. Black text / white background are exactly what a "default"
+ * selection injects, and persisting them makes the article hard-coded to a
+ * light-on-dark assumption (black text on a white page), which the site's
+ * dark theme cannot override because inline styles win over its CSS.
+ *
+ * Stripping these default/neutral values keeps those colors truly
+ * theme-neutral (they resolve to whatever the current theme declares) while
+ * still preserving any genuinely non-default color the author chose (e.g. a
+ * red or yellow highlight). This keeps the editor theme-agnostic.
+ */
+const DEFAULT_TEXT_COLORS = new Set(['black', '#000', '#000000', 'rgb(0,0,0)', 'rgb(0,0,0,0)', 'rgba(0,0,0,1)', 'rgb(0, 0, 0)', 'rgba(0, 0, 0, 1)']);
+const DEFAULT_BG_COLORS = new Set(['white', '#fff', '#ffffff', 'rgb(255,255,255)', 'rgba(255,255,255,1)', 'rgb(255, 255, 255)', 'rgba(255, 255, 255, 1)']);
+
+/**
  * Whitelist-based HTML sanitizer. Strips <script>, event handler attributes
  * (onclick, onerror, ...), javascript: URLs and any tag/attribute not
  * explicitly allowed. Used both for pasted content and for the editor's
@@ -174,7 +195,12 @@ export default class Sanitizer {
             }
 
             if (name === 'style') {
-                el.setAttribute('style', this.cleanStyle(attr.value));
+                const cleaned = this.cleanStyle(attr.value);
+                if (cleaned) {
+                    el.setAttribute('style', cleaned);
+                } else {
+                    el.removeAttribute('style');
+                }
             }
         });
     }
@@ -204,8 +230,75 @@ export default class Sanitizer {
     cleanStyle(style) {
         return style
             .split(';')
+            .map((decl) => decl.trim())
+            .filter((decl) => decl.length > 0)
             .filter((decl) => !/expression\s*\(|javascript:/i.test(decl))
+            .filter((decl) => !this.isThemeNeutralColor(decl))
             .join(';');
+    }
+
+    /**
+     * Drops an inline CSS declaration when it only sets a default/theme-neutral
+     * color — black text or white background. These are the values a "no
+     * explicit color" selection or a browser paste injects, and letting them
+     * reach the saved article couples the content to a light theme. A
+     * deliberately chosen non-default color (e.g. `color: red`) is preserved.
+     *
+     * @param {string} declaration a single `property: value` declaration
+     * @returns {boolean} true when the declaration should be removed
+     */
+    isThemeNeutralColor(declaration) {
+        const match = /^([a-z-]+)\s*:\s*(.+)$/i.exec(declaration);
+        if (!match) return false;
+
+        const property = match[1].toLowerCase();
+        const value = this.normalizeColor(match[2]);
+
+        if (property === 'color') {
+            return DEFAULT_TEXT_COLORS.has(value);
+        }
+        if (property === 'background-color') {
+            return DEFAULT_BG_COLORS.has(value);
+        }
+        // The `background` shorthand — strip only when it is purely a solid
+        // white color, never when it includes an image but no positional/size
+        // tokens (covered by `isSolidColor`).
+        if (property === 'background') {
+            return this.isSolidBalancedColor(value) && DEFAULT_BG_COLORS.has(value);
+        }
+        return false;
+    }
+
+    /**
+     * Reports whether a value is a single balanced `color(...)` expression —
+     * i.e. the `background` shorthand contains nothing but a color. Gradient
+     * or image backgrounds contain unbalanced parens/`url(` and are skipped.
+     * @param {string} value
+     * @returns {boolean}
+     */
+    isSolidBalancedColor(value) {
+        if (/url\(/i.test(value)) return false;
+        let depth = 0;
+        for (const ch of value) {
+            if (ch === '(') depth += 1;
+            if (ch === ')') depth -= 1;
+            if (depth < 0) return false;
+        }
+        return depth === 0;
+    }
+
+    /**
+     * Lowercases a CSS color and expands 3-digit hex shorthand (#abc) so it
+     * can be compared against the default-neutral color sets.
+     * @param {string} value
+     * @returns {string}
+     */
+    normalizeColor(value) {
+        const trimmed = value.trim().toLowerCase().replace(/\s+/g, ' ');
+        if (/^#[0-9a-f]{3}$/.test(trimmed)) {
+            return `#${trimmed.slice(1).split('').map((c) => `${c}${c}`).join('')}`;
+        }
+        return trimmed;
     }
 
     /** @param {HTMLElement} el */
