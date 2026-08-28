@@ -363,7 +363,7 @@ describe('Commands', () => {
             expect(root.querySelector('h3').textContent).toBe('title');
         });
 
-        it('does nothing if block is the root', () => {
+        it('wraps plain root-level text into the target block', () => {
             root.innerHTML = 'plain text';
             const range = document.createRange();
             range.selectNodeContents(root.firstChild);
@@ -371,7 +371,72 @@ describe('Commands', () => {
 
             commands.formatBlock('h1');
 
-            expect(root.querySelector('h1')).toBeNull();
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('plain text');
+            expect(root.children.length).toBe(1);
+        });
+
+        it('wraps a whole caret line of plain root text into a heading', () => {
+            root.innerHTML = 'line one';
+            const text = root.firstChild;
+            const range = document.createRange();
+            range.setStart(text, 2);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('line one');
+        });
+
+        it('wraps only the line containing a caret in <br>-separated plain text', () => {
+            root.innerHTML = 'intro<br>the heading<br>outro';
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            walker.nextNode(); // intro
+            const headingText = walker.nextNode(); // "the heading"
+            const range = document.createRange();
+            range.setStart(headingText, 4);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            const h2 = root.querySelector('h2');
+            expect(h2).not.toBeNull();
+            expect(h2.textContent).toBe('the heading');
+            expect(root.querySelectorAll('br').length).toBe(2);
+        });
+
+        it('wraps a selected run of plain root text into the target block', () => {
+            root.innerHTML = 'select me';
+            const text = root.firstChild;
+            const range = document.createRange();
+            range.setStart(text, 0);
+            range.setEnd(text, 6); // "select"
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('select');
+        });
+
+        it('converts a nested block to the target tag preserving the wrapper', () => {
+            root.innerHTML = '<div><p>heading content</p></div>';
+            const text = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(text, 1);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            const h1 = root.querySelector('h1');
+            expect(h1).not.toBeNull();
+            expect(h1.textContent).toBe('heading content');
+            expect(root.querySelector('div')).not.toBeNull();
+            expect(root.querySelector('p')).toBeNull();
         });
 
         it('supports all heading levels h1-h6', () => {

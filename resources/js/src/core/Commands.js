@@ -6,6 +6,9 @@
  */
 import { isDefaultTextColor, isDefaultBgColor } from '../utils/colors.js';
 
+/** Block-level elements handled by structural commands (headings, lists, notes, ...). */
+const BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'LI', 'DIV', 'UL', 'OL', 'TABLE', 'FIGURE']);
+
 export default class Commands {
     /**
      * @param {import('./Editor').default} editor
@@ -243,12 +246,27 @@ export default class Commands {
      * @returns {HTMLElement[]}
      */
     getBlocksInRange(range) {
-        const blockTags = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'DIV']);
-        const closestBlock = (node) => {
+        // Guard against ranges that live outside the editor root entirely.
+        if (!this.root.contains(range.commonAncestorContainer)) return [];
+
+        // A range whose common ancestor is the root itself (e.g. Select All,
+        // or a selection spanning several top-level blocks) has no single
+        // enclosing block, so collect every top-level block the range touches.
+        if (range.commonAncestorContainer === this.root) {
+            const topBlocks = [...this.root.children].filter(
+                (el) => el instanceof HTMLElement && BLOCK_TAGS.has(el.tagName)
+            );
+            return topBlocks;
+        }
+
+        // Nearest block-level ancestor of a node at any depth (the block does
+        // not have to be a direct child of the root — nested <p> inside a
+        // <div>, inline wrappers, etc. all resolve to their real block).
+        const nearestBlock = (node) => {
             let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
             if (el === this.root) return null;
             while (el && el !== this.root) {
-                if (el instanceof HTMLElement && el.parentElement === this.root && blockTags.has(el.tagName)) {
+                if (el instanceof HTMLElement && BLOCK_TAGS.has(el.tagName)) {
                     return el;
                 }
                 el = el.parentElement;
@@ -256,32 +274,45 @@ export default class Commands {
             return null;
         };
 
-        const startContainer = range.startContainer;
-        const startBlock = closestBlock(startContainer);
-        // A range whose common ancestor is the root itself (e.g. Select All)
-        // has no single enclosing block to walk up from, so fall back to
-        // collecting every top-level block the range touches.
-        if (!startBlock) {
-            let node = startContainer;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            if (node === this.root) {
-                return [...this.root.children].filter(
-                    (el) => el instanceof HTMLElement && blockTags.has(el.tagName)
-                );
-            }
-            return [];
-        }
-        const endBlock = closestBlock(range.endContainer) ?? startBlock;
+        const startBlock = nearestBlock(range.startContainer);
+        if (!startBlock) return [];
+
+        const endBlock = nearestBlock(range.endContainer) ?? startBlock;
         if (startBlock === endBlock) return [startBlock];
 
-        const blocks = [];
-        let node = startBlock;
-        while (node) {
-            blocks.push(node);
-            if (node === endBlock) break;
-            node = node.nextElementSibling;
+        // Both blocks share a parent (the usual multi-paragraph selection):
+        // walk the siblings between them.
+        if (startBlock.parentNode === endBlock.parentNode) {
+            const blocks = [];
+            let node = startBlock;
+            while (node) {
+                blocks.push(node);
+                if (node === endBlock) break;
+                node = node.nextElementSibling;
+            }
+            return blocks.length ? blocks : [startBlock];
         }
-        return blocks.length ? blocks : [startBlock];
+
+        // Blocks at different nesting levels: collect the top-level blocks
+        // that contain them, in document order.
+        const topLevelOf = (el) => {
+            let cur = el;
+            while (cur && cur.parentNode !== this.root) cur = cur.parentNode;
+            return cur;
+        };
+        const topStart = topLevelOf(startBlock);
+        const topEnd = topLevelOf(endBlock);
+        if (topStart && topEnd) {
+            const blocks = [];
+            let node = topStart;
+            while (node) {
+                blocks.push(node);
+                if (node === topEnd) break;
+                node = node.nextElementSibling;
+            }
+            return blocks.length ? blocks : [startBlock];
+        }
+        return [startBlock];
     }
 
     /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -413,8 +444,27 @@ export default class Commands {
 
         const targetTag = tag.toLowerCase();
         const blocks = this.getBlocksInRange(range);
-        if (!blocks.length) return;
 
+        // No enclosing block means the content is inline directly under the
+        // root (plain text and/or inline elements, possibly separated by <br>).
+        // Without a block to convert, the previous implementation returned
+        // early and applying a heading (or any block format) silently did
+        // nothing. Wrap the caret's line — or the selected run — into the
+        // requested block instead.
+        if (!blocks.length) {
+            const wrapped = this.wrapInlineIntoBlock(range, targetTag);
+            if (!wrapped) return;
+            this.editor.history.push();
+            const newRange = document.createRange();
+            newRange.selectNodeContents(wrapped);
+            newRange.collapse(false);
+            this.selection.setRange(newRange);
+            return;
+        }
+
+        // Convert every block touched by the selection that differs from the
+        // target tag (a single block, several paragraphs, or a full Select-All
+        // range whose common ancestor is the root).
         const blocksToConvert = blocks.filter(
             (block) => block.tagName.toLowerCase() !== targetTag
         );
@@ -436,5 +486,95 @@ export default class Commands {
             newRange.collapse(false);
             this.selection.setRange(newRange);
         }
+    }
+
+    /**
+     * Wraps a caret line or text selection into a block element when the
+     * content has no enclosing block (plain text / inline elements living
+     * directly under the root). If the caret is collapsed, the whole line
+     * bounded by <br>/block edges is wrapped; otherwise only the selected run.
+     * @param {Range} range
+     * @param {string} targetTag lowercase block tag name (e.g. 'h1')
+     * @returns {HTMLElement|null} the created block, or null when nothing to wrap
+     */
+    wrapInlineIntoBlock(range, targetTag) {
+        const block = document.createElement(targetTag);
+        let wrapRange;
+
+        if (range.collapsed) {
+            if (range.startContainer === this.root) {
+                // Caret sits directly in the (empty) root.
+                block.innerHTML = '<br>';
+                const ref = this.root.childNodes[range.startOffset] || null;
+                this.root.insertBefore(block, ref);
+                return block;
+            }
+            wrapRange = this.getInlineLineRange(range);
+            if (!wrapRange) return null;
+        } else {
+            wrapRange = range;
+        }
+
+        const fragment = wrapRange.extractContents();
+        block.appendChild(fragment);
+        wrapRange.insertNode(block);
+        return block;
+    }
+
+    /**
+     * Builds a range covering the whole "line" that contains a collapsed caret
+     * when there is no enclosing block: the maximal run of root-level inline
+     * nodes (text + inline elements) bounded by <br>, block edges or the root.
+     * @param {Range} range a collapsed range
+     * @returns {Range|null}
+     */
+    getInlineLineRange(range) {
+        let node = range.startContainer;
+        // For a caret inside a text node, keep the text node itself as the
+        // anchor when it is a direct child of the root; otherwise ascend to its
+        // inline wrapper so the whole run is captured.
+        if (node.nodeType === Node.TEXT_NODE && node.parentNode && node.parentNode !== this.root) {
+            node = node.parentElement ?? node;
+        }
+        if (!(node instanceof HTMLElement || node.nodeType === Node.TEXT_NODE)) return null;
+        if (node === this.root) return null;
+        // Ascend nodes to the direct child of the root (keep inline wrappers as
+        // the line anchor so the whole run is captured, not just one inner node).
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            while (node.parentNode && node.parentNode !== this.root) {
+                node = node.parentNode;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE || node === this.root) return null;
+        }
+
+        const isBoundary = (n) =>
+            n === this.root
+            || (n.nodeType === Node.ELEMENT_NODE && (n.tagName === 'BR' || BLOCK_TAGS.has(n.tagName)));
+
+        let start = node;
+        let p = start.previousSibling;
+        while (p && !isBoundary(p)) {
+            start = p;
+            p = p.previousSibling;
+        }
+
+        let end = node;
+        let q = end.nextSibling;
+        while (q && !isBoundary(q)) {
+            end = q;
+            q = q.nextSibling;
+        }
+
+        const lineRange = document.createRange();
+        lineRange.setStart(start, 0);
+
+        if (end.nodeType === Node.TEXT_NODE) {
+            lineRange.setEnd(end, end.length);
+        } else {
+            const last = end.lastChild;
+            if (last) lineRange.setEndAfter(last);
+            else lineRange.setEnd(end, 0);
+        }
+        return lineRange;
     }
 }
