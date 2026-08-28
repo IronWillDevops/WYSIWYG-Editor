@@ -43,7 +43,7 @@ class A {
     this.listeners.clear();
   }
 }
-class V {
+class _ {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -140,7 +140,7 @@ class V {
     this.root.focus(), this.restore();
   }
 }
-class I {
+class O {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -209,18 +209,18 @@ const N = /* @__PURE__ */ new Set([
   "rgba(255,255,255,1)",
   "rgba(255, 255, 255, 1)"
 ]);
-function T(s) {
+function S(s) {
   const t = String(s).trim().toLowerCase().replace(/\s+/g, " ");
   return /^#[0-9a-f]{3}$/.test(t) ? `#${t.slice(1).split("").map((e) => `${e}${e}`).join("")}` : t;
 }
+function I(s) {
+  return N.has(S(s));
+}
 function D(s) {
-  return N.has(T(s));
+  return L.has(S(s));
 }
-function O(s) {
-  return L.has(T(s));
-}
-const C = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
-class _ {
+const w = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
+class V {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -274,10 +274,10 @@ class _ {
         this.toggleList("ol");
         break;
       case "foreColor":
-        e && !D(e) ? document.execCommand("foreColor", !1, e) : this.clearColor("color");
+        e && !I(e) ? this.applyColor("color", e) : this.clearColor("color");
         break;
       case "backColor":
-        e && !O(e) ? document.execCommand("hiliteColor", !1, e) : this.clearColor("backgroundColor");
+        e && !D(e) ? this.applyColor("backgroundColor", e) : this.clearColor("backgroundColor");
         break;
       case "lineHeight":
         this.setInlineStyle("lineHeight", e, !0);
@@ -376,13 +376,13 @@ class _ {
     if (!this.root.contains(t.commonAncestorContainer)) return [];
     if (t.commonAncestorContainer === this.root)
       return [...this.root.children].filter(
-        (a) => a instanceof HTMLElement && C.has(a.tagName)
+        (a) => a instanceof HTMLElement && w.has(a.tagName)
       );
     const e = (l) => {
       let a = l.nodeType === Node.TEXT_NODE ? l.parentElement : l;
       if (a === this.root) return null;
       for (; a && a !== this.root; ) {
-        if (a instanceof HTMLElement && C.has(a.tagName))
+        if (a instanceof HTMLElement && w.has(a.tagName))
           return a;
         a = a.parentElement;
       }
@@ -458,6 +458,130 @@ class _ {
         l.removeChild(r);
       }
     });
+  }
+  /**
+   * Applies an inline color (text `color` or `backgroundColor`) to the
+   * current selection by wrapping just the selected text nodes in
+   * `<span style="...">`, splitting text at the selection edges.
+   *
+   * Replaces `document.execCommand('foreColor'/'hiliteColor')`, which is
+   * unreliable for whole‑block / large selections (it can silently no‑op)
+   * and collapses the live selection after applying — both of which made
+   * live recolouring while dragging a selection handle impossible.
+   *
+   * This implementation is:
+   *  - robust for any selection (partial word, whole paragraph, multi-line);
+   *  - idempotent — re‑applying the same color keeps it instead of toggling
+   *    it off (execCommand toggles when the surrounding text is already the
+   *    same color) and merges adjacent equal‑color spans instead of nesting;
+   *  - non‑collapsing — it never touches the native selection, so it can be
+   *    called repeatedly on `selectionchange` while the user drags a handle.
+   * @param {'color'|'backgroundColor'} cssProp
+   * @param {string} value CSS color value
+   */
+  applyColor(t, e) {
+    const n = this.selection.getRange();
+    if (!n || n.collapsed) return;
+    const o = n.startContainer, i = n.startOffset, r = n.endContainer, c = n.endOffset;
+    this.colorTextNodes(t, e, o, i, r, c);
+  }
+  /**
+   * Styles every text node intersecting the given range, splitting the
+   * boundary text nodes so only the in‑range portion is wrapped.
+   * @param {'color'|'backgroundColor'} cssProp
+   * @param {string} value
+   * @param {Node} startNode
+   * @param {number} startOffset
+   * @param {Node} endNode
+   * @param {number} endOffset
+   */
+  colorTextNodes(t, e, n, o, i, r) {
+    const c = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT);
+    let l;
+    for (; l = c.nextNode(); )
+      if (this.rangeIntersectsText(l, n, o, i, r)) {
+        const a = l.textContent.length;
+        let h = 0, u = a;
+        l === n && (h = o), l === i && (u = r), this.wrapTextSegment(l, h, u, t, e);
+      }
+  }
+  /**
+   * Whether a text node's content range intersects the selection range,
+   * computed with `compareDocumentPosition` so it stays valid after splits.
+   * @param {Node} textNode
+   * @param {Node} startNode
+   * @param {number} startOffset
+   * @param {Node} endNode
+   * @param {number} endOffset
+   * @returns {boolean}
+   */
+  rangeIntersectsText(t, e, n, o, i) {
+    const r = t.textContent.length;
+    return this.pointOrderedAtOrBefore(t, 0, o, i) && this.pointOrderedAtOrBefore(e, n, t, r);
+  }
+  /**
+   * Compares two `(node, offset)` points using document order without
+   * mutating any range, so offsets stay valid even after text splits.
+   * @param {Node} aNode
+   * @param {number} aOffset
+   * @param {Node} bNode
+   * @param {number} bOffset
+   * @returns {boolean} true when (aNode,aOffset) is before-or-equal (bNode,bOffset)
+   */
+  pointOrderedAtOrBefore(t, e, n, o) {
+    if (t === n) return e <= o;
+    const i = t.compareDocumentPosition(n);
+    return i & Node.DOCUMENT_POSITION_FOLLOWING ? !0 : i & Node.DOCUMENT_POSITION_PRECEDING ? !1 : e <= o;
+  }
+  /**
+   * Wraps a contiguous segment of a text node — from `from` to `to` — in a
+   * `<span>` carrying the requested color, splitting the text node if the
+   * segment touches its edge and merging equal‑color neighbours.
+   * @param {Text} textNode
+   * @param {number} from
+   * @param {number} to
+   * @param {'color'|'backgroundColor'} cssProp
+   * @param {string} value
+   */
+  wrapTextSegment(t, e, n, o, i) {
+    if (e >= n) return;
+    let r = t, c = e, l = n;
+    c > 0 && (r = t.splitText(c), l -= c), l < r.textContent.length && r.splitText(l), this.colorTextNode(r, o, i);
+  }
+  /**
+   * Ensures a text node is wrapped in a span with the given color, reusing
+   * an existing equal‑color span and merging equal‑color neighbours so the
+   * markup stays flat (idempotent).
+   * @param {Text} textNode
+   * @param {'color'|'backgroundColor'} cssProp
+   * @param {string} value
+   */
+  colorTextNode(t, e, n) {
+    if (!t.textContent) return;
+    const o = t.parentElement;
+    if (o && o.tagName === "SPAN" && this.sameColor(e, o.style[e], n))
+      return;
+    const i = document.createElement("span");
+    i.style[e] = n, t.parentNode.insertBefore(i, t), i.appendChild(t);
+    const r = i.nextElementSibling;
+    r && r.tagName === "SPAN" && this.sameColor(e, r.style[e], n) && (i.appendChild(r.childNodes), r.remove());
+  }
+  /**
+   * Compares two CSS color strings after normalising shorthand/white-space
+   * so `#ff0000` matches `rgb(255, 0, 0)` for span merging.
+   * @param {'color'|'backgroundColor'} cssProp
+   * @param {string} a
+   * @param {string} b
+   * @returns {boolean}
+   */
+  sameColor(t, e, n) {
+    if (!e || !n) return !1;
+    const o = document.createElement("span");
+    o.style[t] = e;
+    const i = o.style[t];
+    o.style[t] = n;
+    const r = o.style[t];
+    return i === r;
   }
   /**
    * Strips leftover inline style attributes (text color, background,
@@ -564,7 +688,7 @@ class _ {
         e = e.parentNode;
       if (e.nodeType !== Node.ELEMENT_NODE || e === this.root) return null;
     }
-    const n = (a) => a === this.root || a.nodeType === Node.ELEMENT_NODE && (a.tagName === "BR" || C.has(a.tagName));
+    const n = (a) => a === this.root || a.nodeType === Node.ELEMENT_NODE && (a.tagName === "BR" || w.has(a.tagName));
     let o = e, i = o.previousSibling;
     for (; i && !n(i); )
       o = i, i = i.previousSibling;
@@ -687,8 +811,8 @@ const P = /* @__PURE__ */ new Set([
   font: /* @__PURE__ */ new Set(["color", "size", "face"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, q = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class W {
+}, W = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class q {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -696,7 +820,7 @@ class W {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(t = {}) {
-    this.allowedTags = t.allowedTags ? new Set(t.allowedTags) : P, this.allowedAttrs = t.allowedAttributes ? Object.fromEntries(Object.entries(t.allowedAttributes).map(([e, n]) => [e, new Set(n)])) : F, this.allowedSchemes = t.allowedUrlSchemes ? new Set(t.allowedUrlSchemes.map((e) => `${e}:`)) : q;
+    this.allowedTags = t.allowedTags ? new Set(t.allowedTags) : P, this.allowedAttrs = t.allowedAttributes ? Object.fromEntries(Object.entries(t.allowedAttributes).map(([e, n]) => [e, new Set(n)])) : F, this.allowedSchemes = t.allowedUrlSchemes ? new Set(t.allowedUrlSchemes.map((e) => `${e}:`)) : W;
   }
   /**
    * @param {string} dirtyHtml
@@ -802,7 +926,7 @@ class W {
   isThemeNeutralColor(t) {
     const e = /^([a-z-]+)\s*:\s*(.+)$/i.exec(t);
     if (!e) return !1;
-    const n = e[1].toLowerCase(), o = T(e[2]);
+    const n = e[1].toLowerCase(), o = S(e[2]);
     return n === "color" ? N.has(o) : n === "background-color" ? L.has(o) : n === "background" ? this.isSolidBalancedColor(o) && L.has(o) : !1;
   }
   /**
@@ -835,14 +959,14 @@ const U = {
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
 }, M = /* @__PURE__ */ new Map();
-class S {
+class T {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(t, e = {}) {
     var n, o;
-    this.textarea = t, this.options = { ...U, ...e }, this.events = new A(), this.sanitizer = new W(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new V(this.root), this.commands = new _(this), this.history = new I({
+    this.textarea = t, this.options = { ...U, ...e }, this.events = new A(), this.sanitizer = new q(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new _(this.root), this.commands = new V(this), this.history = new O({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -997,15 +1121,15 @@ class S {
     }
     if (n) {
       if (!e.textContent.trim()) {
-        const m = document.createElement("p");
-        m.innerHTML = "<br>", n.parentNode.insertBefore(m, n.nextSibling), e.parentNode.removeChild(e), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
+        const p = document.createElement("p");
+        p.innerHTML = "<br>", n.parentNode.insertBefore(p, n.nextSibling), e.parentNode.removeChild(e), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
         const f = document.createRange();
-        f.setStart(m, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+        f.setStart(p, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
         return;
       }
-      const a = document.createElement("p"), { startContainer: h, startOffset: p } = r;
+      const a = document.createElement("p"), { startContainer: h, startOffset: u } = r;
       if (h.nodeType === Node.TEXT_NODE && e.contains(h)) {
-        const m = h.textContent, f = m.slice(0, p), b = m.slice(p);
+        const p = h.textContent, f = p.slice(0, u), b = p.slice(u);
         h.textContent = f, b && (a.textContent = b);
       }
       a.textContent || (a.innerHTML = "<br>"), e.parentNode.insertBefore(a, e.nextSibling);
@@ -1015,15 +1139,15 @@ class S {
     }
     if (i) {
       if (!e.textContent.trim()) {
-        const m = document.createElement("p");
-        m.innerHTML = "<br>", e.parentNode.insertBefore(m, e.nextSibling), e.parentNode.removeChild(e);
+        const p = document.createElement("p");
+        p.innerHTML = "<br>", e.parentNode.insertBefore(p, e.nextSibling), e.parentNode.removeChild(e);
         const f = document.createRange();
-        f.setStart(m, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+        f.setStart(p, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
         return;
       }
-      const a = document.createElement("p"), { startContainer: h, startOffset: p } = r;
+      const a = document.createElement("p"), { startContainer: h, startOffset: u } = r;
       if (h.nodeType === Node.TEXT_NODE && e.contains(h)) {
-        const m = h.textContent, f = m.slice(0, p), b = m.slice(p);
+        const p = h.textContent, f = p.slice(0, u), b = p.slice(u);
         h.textContent = f, b && (a.textContent = b);
       }
       a.textContent || (a.innerHTML = "<br>"), e.parentNode.insertBefore(a, e.nextSibling);
@@ -1038,20 +1162,20 @@ class S {
     if (c) {
       const { startContainer: l, startOffset: a } = r;
       if (l.nodeType === Node.TEXT_NODE && e.contains(l)) {
-        const h = l.textContent, p = h.slice(0, a), g = h.slice(a);
-        l.textContent = p;
+        const h = l.textContent, u = h.slice(0, a), g = h.slice(a);
+        l.textContent = u;
         const v = document.createElement("p");
         if (g ? v.textContent = g : v.innerHTML = "<br>", e.parentNode.insertBefore(v, e.nextSibling), !c.textContent.trim()) {
           const b = c.parentNode, x = document.createTextNode("");
           b.replaceChild(x, c);
         }
-        const m = document.createRange(), f = v.firstChild || v;
-        m.setStart(f, 0), m.collapse(!0), this.selection.setRange(m);
+        const p = document.createRange(), f = v.firstChild || v;
+        p.setStart(f, 0), p.collapse(!0), this.selection.setRange(p);
       } else {
         const h = document.createElement("p");
         h.innerHTML = "<br>", e.parentNode.insertBefore(h, e.nextSibling);
-        const p = document.createRange();
-        p.setStart(h, 0), p.collapse(!0), this.selection.setRange(p);
+        const u = document.createRange();
+        u.setStart(h, 0), u.collapse(!0), this.selection.setRange(u);
       }
       this.emitChange();
     }
@@ -1178,7 +1302,7 @@ class S {
     M.set(t, e);
   }
 }
-const d = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, u = {
+const d = (s) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${s}</svg>`, m = {
   undo: d('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
   redo: d('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
   bold: d('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
@@ -1291,7 +1415,7 @@ class $ {
 }
 const z = {
   blockFormat: {
-    icon: u.paragraph,
+    icon: m.paragraph,
     label: "Block format",
     type: "select",
     options: [
@@ -1307,39 +1431,39 @@ const z = {
       s.commands.exec("formatBlock", t);
     }
   },
-  undo: { icon: u.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
-  redo: { icon: u.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
-  bold: { icon: u.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: u.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: u.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: u.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: u.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: u.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: u.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: u.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+  undo: { icon: m.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (s) => s.undo() },
+  redo: { icon: m.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (s) => s.redo() },
+  bold: { icon: m.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: m.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: m.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: m.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: m.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: m.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: m.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: m.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: u.clearFormat,
+    icon: m.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: u.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: u.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: u.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: u.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: u.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: u.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: m.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: m.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: m.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: m.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: m.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: m.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: u.checklist,
+    icon: m.checklist,
     label: "Checklist",
     type: "action",
     action: (s) => s.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: u.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: u.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: u.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
+  indent: { icon: m.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: m.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: m.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (s) => s.module("link").open() },
   unlink: {
-    icon: u.unlink,
+    icon: m.unlink,
     label: "Remove link",
     type: "action",
     action: (s) => {
@@ -1347,12 +1471,12 @@ const z = {
       t && s.module("link").remove(t);
     }
   },
-  image: { icon: u.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
-  video: { icon: u.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
-  audio: { icon: u.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
-  table: { icon: u.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
-  hr: { icon: u.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
-  blockquote: { icon: u.blockquote, label: "Blockquote", type: "action", action: (s) => {
+  image: { icon: m.image, label: "Insert image", type: "action", action: (s) => s.module("image").open() },
+  video: { icon: m.videocam, label: "Insert video", type: "action", action: (s) => s.module("media").openVideo() },
+  audio: { icon: m.audiotrack, label: "Insert audio", type: "action", action: (s) => s.module("media").openAudio() },
+  table: { icon: m.table, label: "Insert table", type: "action", action: (s) => s.module("table").openInsertDialog() },
+  hr: { icon: m.hr, label: "Horizontal rule", type: "action", action: (s) => s.module("media").insertHorizontalRule() },
+  blockquote: { icon: m.blockquote, label: "Blockquote", type: "action", action: (s) => {
     const t = s.selection.getBlockElement();
     if (!t || t === s.root) return;
     if (t.tagName === "BLOCKQUOTE" || t.closest("blockquote")) {
@@ -1368,12 +1492,12 @@ const z = {
     s.emitChange();
   } },
   codeInline: {
-    icon: u.code,
+    icon: m.code,
     label: "Inline code",
     type: "action",
     action: (s) => s.selection.wrap("code") && s.emitChange()
   },
-  codeBlock: { icon: u.codeBlock, label: "Code block", type: "action", action: (s) => {
+  codeBlock: { icon: m.codeBlock, label: "Code block", type: "action", action: (s) => {
     const t = s.selection.getBlockElement();
     if (!t || t === s.root) return;
     const e = t.tagName === "PRE" || t.closest("pre");
@@ -1386,50 +1510,50 @@ const z = {
     }
     s.emitChange();
   } },
-  note: { icon: u.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
+  note: { icon: m.note, label: "Insert note", type: "action", action: (s) => s.module("note").open() },
   emoji: {
-    icon: u.emoji,
+    icon: m.emoji,
     label: "Emoji",
     type: "action",
     action: (s, t) => s.module("emoji").open(t)
   },
   specialChars: {
-    icon: u.specialChars,
+    icon: m.specialChars,
     label: "Special characters",
     type: "action",
     action: (s) => s.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: u.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
+  find: { icon: m.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (s) => s.module("find").open() },
   sourceCode: {
-    icon: u.sourceCode,
+    icon: m.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
     action: (s) => s.module("codeView").toggle()
   },
   fullscreen: {
-    icon: u.fullscreen,
+    icon: m.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
     action: (s) => s.module("fullscreen").toggle()
   },
   ltr: {
-    icon: u.ltr,
+    icon: m.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: u.rtl,
+    icon: m.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
     action: (s) => s.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: u.markdown,
+    icon: m.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
@@ -1445,7 +1569,7 @@ const z = {
     }
   },
   date: {
-    icon: u.date,
+    icon: m.date,
     label: "Insert date",
     type: "action",
     action: (s) => {
@@ -1454,7 +1578,7 @@ const z = {
     }
   },
   time: {
-    icon: u.time,
+    icon: m.time,
     label: "Insert time",
     type: "action",
     action: (s) => {
@@ -1463,7 +1587,7 @@ const z = {
     }
   },
   anchor: {
-    icon: u.anchor,
+    icon: m.anchor,
     label: "Insert anchor",
     type: "action",
     action: (s) => {
@@ -1477,7 +1601,7 @@ const z = {
     }
   },
   templates: {
-    icon: u.template,
+    icon: m.template,
     label: "Content templates",
     type: "action",
     action: (s) => {
@@ -1486,7 +1610,7 @@ const z = {
     }
   },
   listProps: {
-    icon: u.listProps,
+    icon: m.listProps,
     label: "List properties",
     type: "action",
     action: (s) => {
@@ -1650,7 +1774,7 @@ const z = {
   listProps: "Властивості списку",
   blockFormat: "Формат блоку",
   madeBy: "Зроблено в ITkha"
-}, K = {
+}, G = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1718,7 +1842,7 @@ const z = {
 }, k = /* @__PURE__ */ new Map([
   ["en", j],
   ["uk", X],
-  ["ru", K]
+  ["ru", G]
 ]), y = {
   /**
    * @param {string} code
@@ -1738,7 +1862,7 @@ const z = {
   available() {
     return [...k.keys()];
   }
-}, G = [
+}, K = [
   ["undo", "redo"],
   ["blockFormat"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -1759,7 +1883,19 @@ class J {
    * @param {Array<string[]>|null} [layout]
    */
   constructor(t, e = null) {
-    this.editor = t, this.layout = e ?? G, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this.el.addEventListener("mousedown", () => {
+    this.editor = t, this.layout = e ?? K, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
+      if (!this._liveColor) return;
+      const n = this.editor.selection.getNativeSelection();
+      if (!n || n.rangeCount === 0 || n.isCollapsed) return;
+      const o = n.getRangeAt(0);
+      if (!this.editor.root.contains(o.commonAncestorContainer)) return;
+      const i = n.toString();
+      i.trim() && (i !== this._liveLastSelection && (clearTimeout(this._liveTimer), this._liveTimer = setTimeout(() => {
+        this._liveLastSelection = i;
+        const { command: r, value: c } = this._liveColor;
+        this.editor.commands.exec(r, c);
+      }, 40)), clearTimeout(this._liveIdleTimer), this._liveIdleTimer = setTimeout(() => this.disarmLiveColor(), 1500));
+    }, document.addEventListener("selectionchange", this._handleLiveSelection), document.addEventListener("mouseup", this._handleLiveSelection), this.el.addEventListener("mousedown", () => {
       this.editor.selection.save();
     }, !0);
   }
@@ -1818,7 +1954,7 @@ class J {
     }), r.addEventListener("mousedown", () => {
       this.editor.selection.save(), l();
     }), r.addEventListener("input", () => {
-      this.editor.selection.restore(), this.editor.commands.exec(e.command, r.value);
+      this.editor.selection.restore(), this.editor.commands.exec(e.command, r.value), this.armLiveColor({ command: e.command, value: r.value });
     }), i.appendChild(r), this.buttons.set(t, i), i;
   }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
@@ -1833,8 +1969,8 @@ class J {
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
     }).forEach(([a, h]) => {
-      const p = this.buttons.get(a);
-      p instanceof HTMLElement && p.classList.toggle("is-active", this.editor.commands.queryState(h));
+      const u = this.buttons.get(a);
+      u instanceof HTMLElement && u.classList.toggle("is-active", this.editor.commands.queryState(h));
     });
     const e = this.editor.selection.getBlockElement();
     let n = "";
@@ -1890,12 +2026,12 @@ class J {
       l.value = h.includes(a) ? a : "p";
     }
     ["forecolor", "backcolor"].forEach((a) => {
-      const h = z[a], p = this.buttons.get(a);
-      if (!h || !(p instanceof HTMLInputElement || p instanceof HTMLLabelElement)) return;
-      const g = p.querySelector('input[type="color"]');
+      const h = z[a], u = this.buttons.get(a);
+      if (!h || !(u instanceof HTMLInputElement || u instanceof HTMLLabelElement)) return;
+      const g = u.querySelector('input[type="color"]');
       if (!g) return;
-      const v = h.command === "backColor" ? "backgroundColor" : "color", m = this.getCurrentColor(v);
-      m && (g.value = m);
+      const v = h.command === "backColor" ? "backgroundColor" : "color", p = this.getCurrentColor(v);
+      p && (g.value = p);
     });
   }
   /**
@@ -1934,32 +2070,44 @@ class J {
     const n = this.buttons.get(t);
     (n instanceof HTMLButtonElement || n instanceof HTMLSelectElement) && (n.disabled = !e);
   }
+  /**
+   * Remembers the colour so dragging a selection handle recolours
+   * newly-selected text with it (see the document selectionchange hook).
+   * @param {{command: string, value: string}} live
+   */
+  armLiveColor(t) {
+    this._liveColor = t, this._liveLastSelection = "";
+  }
+  /** Stops automatic recolouring on selection changes. */
+  disarmLiveColor() {
+    this._liveColor = null, this._liveLastSelection = "", clearTimeout(this._liveTimer), clearTimeout(this._liveIdleTimer);
+  }
   destroy() {
-    this.el.remove();
+    this.disarmLiveColor(), document.removeEventListener("selectionchange", this._handleLiveSelection), document.removeEventListener("mouseup", this._handleLiveSelection), this.el.remove();
   }
 }
 const Y = {
-  link: () => import("./LinkModule-lezKQStz.js"),
-  image: () => import("./ImageModule-BWmFxD4h.js"),
-  table: () => import("./TableModule-DaIQZl8h.js"),
+  link: () => import("./LinkModule-DD9U7XFd.js"),
+  image: () => import("./ImageModule-C_kAC55l.js"),
+  table: () => import("./TableModule-BMC66Map.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-A4fqjCfA.js"),
-  note: () => import("./NoteModule-e4L5Vp-f.js"),
-  media: () => import("./MediaModule-DCR4vgph.js"),
+  find: () => import("./FindModule-Bw4Uqgew.js"),
+  note: () => import("./NoteModule-Cqvjc6v0.js"),
+  media: () => import("./MediaModule-xSQAJUwS.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-CC6kKe95.js"),
+  statusBar: () => import("./StatusBar-CA91URdh.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-Bc5_gsC0.js")
+  templates: () => import("./TemplateModule-B1Z0lskr.js")
 };
 Object.entries(Y).forEach(([s, t]) => {
-  S.registerPlugin(s, async (e) => {
+  T.registerPlugin(s, async (e) => {
     const { default: n } = await t();
     return new n(e);
   });
 });
-const w = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new Set(), Z = {
+const C = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new Set(), Z = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -1971,11 +2119,11 @@ const w = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new Set(), Z = {
       throw new Error(`WYSIWYG Editor: target "${s}" not found`);
     if (e.tagName !== "TEXTAREA")
       throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
-    if (w.has(e))
-      return w.get(e);
-    const n = new S(e, t), o = new J(n, t.toolbar);
-    return n.on("destroy", () => o.destroy()), w.set(e, n), E.add(n), n.on("destroy", () => {
-      w.delete(e), E.delete(n);
+    if (C.has(e))
+      return C.get(e);
+    const n = new T(e, t), o = new J(n, t.toolbar);
+    return n.on("destroy", () => o.destroy()), C.set(e, n), E.add(n), n.on("destroy", () => {
+      C.delete(e), E.delete(n);
     }), n;
   },
   /**
@@ -1984,18 +2132,18 @@ const w = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new Set(), Z = {
    */
   get(s) {
     const t = typeof s == "string" ? document.querySelector(s) : s;
-    return t ? w.get(t) : void 0;
+    return t ? C.get(t) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
     E.forEach((s) => s.destroy()), E.clear();
   },
-  registerPlugin: S.registerPlugin
+  registerPlugin: T.registerPlugin
 };
 export {
   $ as D,
-  u as I,
+  m as I,
   y as L,
   Z as W
 };
-//# sourceMappingURL=index-XTqynit6.js.map
+//# sourceMappingURL=index-BugmEnEX.js.map

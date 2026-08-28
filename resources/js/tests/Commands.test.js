@@ -160,7 +160,7 @@ describe('Commands', () => {
             expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, true);
         });
 
-        it('foreColor with value calls execCommand foreColor', () => {
+        it('foreColor with value applies the color via the DOM', () => {
             const textNode = root.querySelector('p').firstChild;
             const range = document.createRange();
             range.selectNodeContents(textNode);
@@ -168,7 +168,10 @@ describe('Commands', () => {
 
             commands.exec('foreColor', 'red');
 
-            expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, 'red');
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.color).toBe('red');
+            expect(span.textContent).toBe('hello world');
         });
 
         it('foreColor without value calls clearColor', () => {
@@ -183,7 +186,7 @@ describe('Commands', () => {
             expect(commands.clearColor).toHaveBeenCalledWith('color');
         });
 
-        it('backColor with value calls execCommand hiliteColor', () => {
+        it('backColor with value applies the background via the DOM', () => {
             const textNode = root.querySelector('p').firstChild;
             const range = document.createRange();
             range.selectNodeContents(textNode);
@@ -191,7 +194,10 @@ describe('Commands', () => {
 
             commands.exec('backColor', 'yellow');
 
-            expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, 'yellow');
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.backgroundColor).toBe('yellow');
+            expect(span.textContent).toBe('hello world');
         });
 
         it('backColor without value calls clearColor', () => {
@@ -216,7 +222,7 @@ describe('Commands', () => {
             commands.exec('foreColor', '#000000');
 
             expect(commands.clearColor).toHaveBeenCalledWith('color');
-            expect(document.execCommand).not.toHaveBeenCalledWith('foreColor', false, '#000000');
+            expect(root.querySelector('p span')).toBeNull();
         });
 
         it('foreColor with a custom non-default color is applied', () => {
@@ -227,7 +233,7 @@ describe('Commands', () => {
 
             commands.exec('foreColor', '#00ff00');
 
-            expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, '#00ff00');
+            expect(root.querySelector('p span').style.color).toBe('rgb(0, 255, 0)');
         });
 
         it('backColor with the default white background clears instead of applying it', () => {
@@ -240,7 +246,7 @@ describe('Commands', () => {
             commands.exec('backColor', '#ffffff');
 
             expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
-            expect(document.execCommand).not.toHaveBeenCalledWith('hiliteColor', false, '#ffffff');
+            expect(root.querySelector('p span')).toBeNull();
         });
 
         it('backColor with a custom non-default background is applied', () => {
@@ -251,7 +257,7 @@ describe('Commands', () => {
 
             commands.exec('backColor', '#ffcc00');
 
-            expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, '#ffcc00');
+            expect(root.querySelector('p span').style.backgroundColor).toBe('rgb(255, 204, 0)');
         });
 
         it('removeFormat calls execCommand removeFormat and clearInlineStyles', () => {
@@ -278,6 +284,78 @@ describe('Commands', () => {
             commands.exec('lineHeight', '2');
 
             expect(p.style.lineHeight).toBe('2');
+        });
+    });
+
+    describe('applyColor', () => {
+        it('colours a whole block selection', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.textContent).toBe('The quick brown fox');
+            // The browser may normalise shorthand but jsdom keeps the exact value set.
+            expect(span.style.color).toBe('rgb(255, 0, 0)');
+        });
+
+        it('colors only the selected portion of a text node', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);   // "quick"
+            range.setEnd(textNode, 15);    // "brown"
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p>The <span style="color: rgb(0, 0, 255);">quick brown</span> fox</p>'
+            );
+        });
+
+        it('is idempotent: re-applying the same color does not nest spans', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const select = (from, to) => {
+                const range = document.createRange();
+                range.setStart(textNode, from);
+                range.setEnd(textNode, to);
+                editor.selection.setRange(range);
+            };
+
+            select(0, textNode.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+            const afterFirst = root.innerHTML;
+            // reapply over the same (now wrapped) content
+            const span = root.querySelector('p span');
+            select(0, span.firstChild.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+
+            expect(root.innerHTML).toBe(afterFirst);
+            expect(root.querySelectorAll('span').length).toBe(1);
+        });
+
+        it('leaves the native selection intact after applying', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);
+            range.setEnd(textNode, 9);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#00ff00');
+
+            const sel = window.getSelection();
+            expect(sel.rangeCount).toBe(1);
+            expect(sel.toString()).toBe('quick');
+            expect(sel.isCollapsed).toBe(false);
         });
     });
 

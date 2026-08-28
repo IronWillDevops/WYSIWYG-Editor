@@ -39,6 +39,39 @@ export default class Toolbar {
         this.editor.on('selectionchange', () => this.syncActiveStates());
         this.editor.on('focus', () => this.syncActiveStates());
 
+        // Live recolouring: while the user picks a color the toolbar remembers it
+        // as "pending"; as they then drag a selection handle to expand the
+        // selection, every selectionchange re-applies that color to the growing
+        // text (idempotently, without collapsing the live selection) so the new
+        // portion is tinted as it is selected.
+        this._liveColor = null;
+        this._liveTimer = null;
+        this._liveIdleTimer = null;
+        this._liveLastSelection = '';
+        this._handleLiveSelection = () => {
+            if (!this._liveColor) return;
+            const sel = this.editor.selection.getNativeSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+            const range = sel.getRangeAt(0);
+            if (!this.editor.root.contains(range.commonAncestorContainer)) return;
+            const text = sel.toString();
+            if (!text.trim()) return;
+            if (text !== this._liveLastSelection) {
+                clearTimeout(this._liveTimer);
+                this._liveTimer = setTimeout(() => {
+                    this._liveLastSelection = text;
+                    const { command, value } = this._liveColor;
+                    this.editor.commands.exec(command, value);
+                }, 40);
+            }
+            // Stop live recolouring shortly after the drag settles so a later,
+            // unrelated selection isn't tinted automatically.
+            clearTimeout(this._liveIdleTimer);
+            this._liveIdleTimer = setTimeout(() => this.disarmLiveColor(), 1500);
+        };
+        document.addEventListener('selectionchange', this._handleLiveSelection);
+        document.addEventListener('mouseup', this._handleLiveSelection);
+
         // Capture the selection at the toolbar level (capture phase, before any
         // child control's default behavior) so that interacting with native
         // controls that steal focus — the block-format <select>, color inputs,
@@ -169,6 +202,11 @@ export default class Toolbar {
         input.addEventListener('input', () => {
             this.editor.selection.restore();
             this.editor.commands.exec(def.command, input.value);
+            // Arm live recolouring. If the user now drags a selection handle to
+            // select more text, each newly selected portion is automatically
+            // tinted with the colour they just chose (idempotently, without
+            // collapsing the live selection).
+            this.armLiveColor({ command: def.command, value: input.value });
         });
 
         wrapper.appendChild(input);
@@ -321,7 +359,28 @@ export default class Toolbar {
         }
     }
 
+    /**
+     * Remembers the colour so dragging a selection handle recolours
+     * newly-selected text with it (see the document selectionchange hook).
+     * @param {{command: string, value: string}} live
+     */
+    armLiveColor(live) {
+        this._liveColor = live;
+        this._liveLastSelection = '';
+    }
+
+    /** Stops automatic recolouring on selection changes. */
+    disarmLiveColor() {
+        this._liveColor = null;
+        this._liveLastSelection = '';
+        clearTimeout(this._liveTimer);
+        clearTimeout(this._liveIdleTimer);
+    }
+
     destroy() {
+        this.disarmLiveColor();
+        document.removeEventListener('selectionchange', this._handleLiveSelection);
+        document.removeEventListener('mouseup', this._handleLiveSelection);
         this.el.remove();
     }
 }

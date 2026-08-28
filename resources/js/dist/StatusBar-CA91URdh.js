@@ -1,4 +1,4 @@
-import { I as n, L as h } from "./index-XTqynit6.js";
+import { I as n, L as h } from "./index-BugmEnEX.js";
 const o = {
   p: "paragraph",
   h1: "heading1",
@@ -54,4 +54,4 @@ class u {
 export {
   u as default
 };
-//# sourceMappingURL=StatusBar-CC6kKe95.js.map
+//# sourceMappingURL=StatusBar-CA91URdh.js.map

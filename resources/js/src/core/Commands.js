@@ -102,7 +102,7 @@ export default class Commands {
                 // hard-coded value) controls the color, avoiding invisible
                 // text in dark themes.
                 if (value && !isDefaultTextColor(value)) {
-                    document.execCommand('foreColor', false, value);
+                    this.applyColor('color', value);
                 } else {
                     this.clearColor('color');
                 }
@@ -112,7 +112,7 @@ export default class Commands {
                 // Likewise, the default background (white) clears the
                 // highlights so no hard-coded white box is persisted.
                 if (value && !isDefaultBgColor(value)) {
-                    document.execCommand('hiliteColor', false, value);
+                    this.applyColor('backgroundColor', value);
                 } else {
                     this.clearColor('backgroundColor');
                 }
@@ -379,6 +379,167 @@ export default class Commands {
                 parent.removeChild(el);
             }
         });
+    }
+
+    /**
+     * Applies an inline color (text `color` or `backgroundColor`) to the
+     * current selection by wrapping just the selected text nodes in
+     * `<span style="...">`, splitting text at the selection edges.
+     *
+     * Replaces `document.execCommand('foreColor'/'hiliteColor')`, which is
+     * unreliable for whole‑block / large selections (it can silently no‑op)
+     * and collapses the live selection after applying — both of which made
+     * live recolouring while dragging a selection handle impossible.
+     *
+     * This implementation is:
+     *  - robust for any selection (partial word, whole paragraph, multi-line);
+     *  - idempotent — re‑applying the same color keeps it instead of toggling
+     *    it off (execCommand toggles when the surrounding text is already the
+     *    same color) and merges adjacent equal‑color spans instead of nesting;
+     *  - non‑collapsing — it never touches the native selection, so it can be
+     *    called repeatedly on `selectionchange` while the user drags a handle.
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} value CSS color value
+     */
+    applyColor(cssProp, value) {
+        const range = this.selection.getRange();
+        if (!range || range.collapsed) return;
+
+        const startNode = range.startContainer;
+        const startOffset = range.startOffset;
+        const endNode = range.endContainer;
+        const endOffset = range.endOffset;
+
+        this.colorTextNodes(cssProp, value, startNode, startOffset, endNode, endOffset);
+        // The native selection is left untouched, so a drag handle keeps going.
+    }
+
+    /**
+     * Styles every text node intersecting the given range, splitting the
+     * boundary text nodes so only the in‑range portion is wrapped.
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} value
+     * @param {Node} startNode
+     * @param {number} startOffset
+     * @param {Node} endNode
+     * @param {number} endOffset
+     */
+    colorTextNodes(cssProp, value, startNode, startOffset, endNode, endOffset) {
+        const walker = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT);
+        let textNode;
+        while ((textNode = walker.nextNode())) {
+            if (this.rangeIntersectsText(textNode, startNode, startOffset, endNode, endOffset)) {
+                const length = textNode.textContent.length;
+                let from = 0;
+                let to = length;
+                if (textNode === startNode) from = startOffset;
+                if (textNode === endNode) to = endOffset;
+                this.wrapTextSegment(textNode, from, to, cssProp, value);
+            }
+        }
+    }
+
+    /**
+     * Whether a text node's content range intersects the selection range,
+     * computed with `compareDocumentPosition` so it stays valid after splits.
+     * @param {Node} textNode
+     * @param {Node} startNode
+     * @param {number} startOffset
+     * @param {Node} endNode
+     * @param {number} endOffset
+     * @returns {boolean}
+     */
+    rangeIntersectsText(textNode, startNode, startOffset, endNode, endOffset) {
+        const length = textNode.textContent.length;
+        return (
+            this.pointOrderedAtOrBefore(textNode, 0, endNode, endOffset)
+            && this.pointOrderedAtOrBefore(startNode, startOffset, textNode, length)
+        );
+    }
+
+    /**
+     * Compares two `(node, offset)` points using document order without
+     * mutating any range, so offsets stay valid even after text splits.
+     * @param {Node} aNode
+     * @param {number} aOffset
+     * @param {Node} bNode
+     * @param {number} bOffset
+     * @returns {boolean} true when (aNode,aOffset) is before-or-equal (bNode,bOffset)
+     */
+    pointOrderedAtOrBefore(aNode, aOffset, bNode, bOffset) {
+        if (aNode === bNode) return aOffset <= bOffset;
+        const relation = aNode.compareDocumentPosition(bNode);
+        if (relation & Node.DOCUMENT_POSITION_FOLLOWING) return true;
+        if (relation & Node.DOCUMENT_POSITION_PRECEDING) return false;
+        return aOffset <= bOffset;
+    }
+
+    /**
+     * Wraps a contiguous segment of a text node — from `from` to `to` — in a
+     * `<span>` carrying the requested color, splitting the text node if the
+     * segment touches its edge and merging equal‑color neighbours.
+     * @param {Text} textNode
+     * @param {number} from
+     * @param {number} to
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} value
+     */
+    wrapTextSegment(textNode, from, to, cssProp, value) {
+        if (from >= to) return;
+        let node = textNode;
+        let start = from;
+        let end = to;
+        if (start > 0) {
+            node = textNode.splitText(start);
+            end -= start;
+        }
+        if (end < node.textContent.length) {
+            node.splitText(end);
+        }
+        this.colorTextNode(node, cssProp, value);
+    }
+
+    /**
+     * Ensures a text node is wrapped in a span with the given color, reusing
+     * an existing equal‑color span and merging equal‑color neighbours so the
+     * markup stays flat (idempotent).
+     * @param {Text} textNode
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} value
+     */
+    colorTextNode(textNode, cssProp, value) {
+        if (!textNode.textContent) return;
+        const parent = textNode.parentElement;
+        if (parent && parent.tagName === 'SPAN' && this.sameColor(cssProp, parent.style[cssProp], value)) {
+            return;
+        }
+        const span = document.createElement('span');
+        span.style[cssProp] = value;
+        textNode.parentNode.insertBefore(span, textNode);
+        span.appendChild(textNode);
+        const next = span.nextElementSibling;
+        if (next && next.tagName === 'SPAN' && this.sameColor(cssProp, next.style[cssProp], value)) {
+            span.appendChild(next.childNodes);
+            next.remove();
+        }
+    }
+
+    /**
+     * Compares two CSS color strings after normalising shorthand/white-space
+     * so `#ff0000` matches `rgb(255, 0, 0)` for span merging.
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} a
+     * @param {string} b
+     * @returns {boolean}
+     */
+    sameColor(cssProp, a, b) {
+        if (!a || !b) return false;
+        const el = document.createElement('span');
+        el.style[cssProp] = a;
+        const na = el.style[cssProp];
+        el.style[cssProp] = b;
+        const nb = el.style[cssProp];
+        return na === nb;
     }
 
     /**

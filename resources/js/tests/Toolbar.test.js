@@ -126,6 +126,69 @@ describe('Toolbar', () => {
         expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#ff0000');
     });
 
+    it('picking a color arms live recolouring for selection changes', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.value = '#ff0000';
+        input.dispatchEvent(new Event('input'));
+
+        expect(toolbar._liveColor).toEqual({ command: 'foreColor', value: '#ff0000' });
+    });
+
+    it('live recolouring re-applies the chosen color as the selection grows', () => {
+        vi.useFakeTimers();
+        try {
+            editor.root.innerHTML = '<p>The quick brown fox</p>';
+
+            // native selection mock that reports a growing selection
+            const textNode = editor.root.querySelector('p').firstChild;
+            let start = 4;
+            let end = 9;
+            editor.selection.getNativeSelection = vi.fn(() => ({
+                rangeCount: 1,
+                isCollapsed: false,
+                getRangeAt: () => {
+                    const r = document.createRange();
+                    r.setStart(textNode, start);
+                    r.setEnd(textNode, end);
+                    return r;
+                },
+                toString: () => textNode.textContent.slice(start, end),
+            }));
+
+            toolbar = new Toolbar(editor);
+            const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+            input.value = '#ff0000';
+            input.dispatchEvent(new Event('input'));
+            // simulate the drag expanding the selection
+            end = 18;
+            const handler = toolbar._handleLiveSelection;
+            handler();
+            vi.advanceTimersByTime(50);
+            expect(editor.commands.exec).toHaveBeenLastCalledWith('foreColor', '#ff0000');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not live recolor a collapsed selection', () => {
+        vi.useFakeTimers();
+        try {
+            editor.selection.getNativeSelection = vi.fn(() => null);
+            toolbar = new Toolbar(editor);
+            const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+            input.value = '#00ff00';
+            input.dispatchEvent(new Event('input'));
+            editor.commands.exec.mockClear();
+
+            toolbar._handleLiveSelection();
+            vi.advanceTimersByTime(100);
+            expect(editor.commands.exec).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('captures the selection on any toolbar mousedown (e.g. native select) so commands keep the text selection', () => {
         toolbar = new Toolbar(editor);
         const select = toolbar.buttons.get('blockFormat');
