@@ -123,8 +123,14 @@ export default class Toolbar {
             this.editor.selection.save();
         });
         select.addEventListener('change', () => {
+            // Capture the user's chosen value *before* restore(). Restoring the
+            // text selection fires a selectionchange that re-runs
+            // syncActiveStates(), which rewrites this select to the current
+            // block tag. Reading select.value after restore() would therefore
+            // apply the stale block tag instead of the format the user picked.
+            const value = select.value;
             this.editor.selection.restore();
-            def.onChange(this.editor, select.value);
+            def.onChange(this.editor, value);
             this.syncActiveStates();
         });
 

@@ -1800,7 +1800,8 @@ class J {
     }), o.addEventListener("mousedown", () => {
       this.editor.selection.save();
     }), o.addEventListener("change", () => {
-      this.editor.selection.restore(), e.onChange(this.editor, o.value), this.syncActiveStates();
+      const i = o.value;
+      this.editor.selection.restore(), e.onChange(this.editor, i), this.syncActiveStates();
     }), this.buttons.set(t, o), o;
   }
   buildColorPicker(t, e) {
@@ -1938,19 +1939,19 @@ class J {
   }
 }
 const Y = {
-  link: () => import("./LinkModule-DAr7R9F4.js"),
-  image: () => import("./ImageModule-DtlD1ZS6.js"),
-  table: () => import("./TableModule-BHrpijY-.js"),
+  link: () => import("./LinkModule-lezKQStz.js"),
+  image: () => import("./ImageModule-BWmFxD4h.js"),
+  table: () => import("./TableModule-DaIQZl8h.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-BfXV4ASr.js"),
-  note: () => import("./NoteModule-BO0t8vZ7.js"),
-  media: () => import("./MediaModule-DctRdH7H.js"),
+  find: () => import("./FindModule-A4fqjCfA.js"),
+  note: () => import("./NoteModule-e4L5Vp-f.js"),
+  media: () => import("./MediaModule-DCR4vgph.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-B1gRKvUv.js"),
+  statusBar: () => import("./StatusBar-CC6kKe95.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BKSluB7-.js")
+  templates: () => import("./TemplateModule-Bc5_gsC0.js")
 };
 Object.entries(Y).forEach(([s, t]) => {
   S.registerPlugin(s, async (e) => {
@@ -1997,4 +1998,4 @@ export {
   y as L,
   Z as W
 };
-//# sourceMappingURL=index-o_cpqee2.js.map
+//# sourceMappingURL=index-XTqynit6.js.map

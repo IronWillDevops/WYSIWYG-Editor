@@ -270,4 +270,26 @@ describe('Toolbar', () => {
         expect(editor.commands.exec).toHaveBeenCalledWith('formatBlock', 'h1');
     });
 
+    it('blockFormat select change applies the user-chosen value, not the stale block tag', () => {
+        toolbar = new Toolbar(editor);
+        const select = toolbar.buttons.get('blockFormat');
+        const p = document.createElement('p');
+        p.textContent = 'Six heading';
+        editor.selection.getBlockElement = vi.fn(() => p);
+
+        // Simulate the real-browser failure: restoring the selection during the
+        // change handler fires a selectionchange that re-runs syncActiveStates,
+        // which rewrites the select to the current block tag (p) before
+        // onChange reads it. The handler must still apply what the user picked.
+        const origRestore = editor.selection.restore;
+        editor.selection.restore = vi.fn(() => {
+            origRestore();
+            select.value = 'p'; // clobber, exactly like the resync would
+        });
+
+        select.value = 'h1';
+        select.dispatchEvent(new Event('change'));
+        expect(editor.commands.exec).toHaveBeenCalledWith('formatBlock', 'h1');
+    });
+
 });
