@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restoring the saved selection no longer gets corrupted by the first formatting command: `Selection.restore()` now applies a clone of the saved range so repeated operations (repeat color drags, applying a heading, ...) don't silently no-op on an emptied selection.
 - Text/background color now applies to the whole selection reliably and survives re-application: `Commands.applyColor()` replaces the unreliable `execCommand('foreColor'/'hiliteColor')` (which could no-op on whole-block/large selections and collapses the live selection) with a DOM-based, idempotent, non-collapsing span wrapper.
 - Live recolouring while selecting: after picking a text or background color, dragging a selection handle tints each newly-selected portion with that color as you drag — no need to re-open the picker.
+- The selection highlight inside the editor is now clearly visible and theme-aware: `::selection` no longer falls back to the browser's default (hard to see white-on-blue) and adapts to the editor's dark theme via new `--ife-selection-bg` / `--ife-selection-fg` variables.
 - Superscript/subscript no longer nest a new wrapper on every click instead of toggling off.
 - Numbered and bulleted lists are now created/removed with a dedicated DOM-based implementation instead of the unreliable `execCommand('insertUnorderedList'/'insertOrderedList')`, which could silently no-op or fail to toggle off depending on the browser.
 
