@@ -55,6 +55,27 @@ describe('Selection', () => {
         expect(restored).not.toBeNull();
     });
 
+    it('restore does not let the live range mutate the saved range', () => {
+        const textNode = root.querySelector('strong').firstChild;
+        const nativeRange = document.createRange();
+        nativeRange.selectNodeContents(textNode);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        // Simulate a command (e.g. execCommand('foreColor')) collapsing the
+        // active selection range. This must NOT corrupt the saved range,
+        // otherwise the next restore() would restore an empty selection.
+        selection.restore();
+        const active = selection.getNativeSelection().getRangeAt(0);
+        active.setStart(active.endContainer, active.endOffset);
+        active.collapse(true);
+
+        expect(selection.savedRange.toString()).toBe('world');
+
+        selection.restore();
+        expect(selection.getRange().toString()).toBe('world');
+    });
+
     it('collapseToEnd moves caret to end of root', () => {
         const nativeRange = document.createRange();
         nativeRange.setStart(root.firstChild, 0);

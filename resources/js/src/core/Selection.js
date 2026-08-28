@@ -42,7 +42,13 @@ export default class Selection {
     restore() {
         if (this.savedRange) {
             this.root.focus({preventScroll: true});
-            this.setRange(this.savedRange);
+            // Apply a *clone* of the saved range, never the saved range itself.
+            // execCommand mutates the live selection's range (e.g. foreColor
+            // collapses it to the end), and if that range is also the one we
+            // keep in `savedRange`, the very first command empties it — so every
+            // later operation (repeat color drags, applying a heading, ...)
+            // restores a dead, collapsed selection and silently no-ops.
+            this.setRange(this.savedRange.cloneRange());
         }
     }
 

@@ -72,7 +72,7 @@ class A {
     return this.savedRange = e ? e.cloneRange() : null, this.savedRange;
   }
   restore() {
-    this.savedRange && (this.root.focus({ preventScroll: !0 }), this.setRange(this.savedRange));
+    this.savedRange && (this.root.focus({ preventScroll: !0 }), this.setRange(this.savedRange.cloneRange()));
   }
   collapseToEnd() {
     const e = document.createRange();
@@ -1860,19 +1860,19 @@ class G {
   }
 }
 const J = {
-  link: () => import("./LinkModule-C4l5daeS.js"),
-  image: () => import("./ImageModule-DEDn2q2v.js"),
-  table: () => import("./TableModule-dH2CgEmt.js"),
+  link: () => import("./LinkModule-C8u_9v7D.js"),
+  image: () => import("./ImageModule-CwmABwyL.js"),
+  table: () => import("./TableModule-CMMfV3AH.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-Vhr5Te8r.js"),
-  note: () => import("./NoteModule-Daj-BMY-.js"),
-  media: () => import("./MediaModule-ClYHlVuK.js"),
+  find: () => import("./FindModule-Dpj7z3bP.js"),
+  note: () => import("./NoteModule-D31_ochP.js"),
+  media: () => import("./MediaModule-BCO-gk6v.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-BWisIJq4.js"),
+  statusBar: () => import("./StatusBar-DYo52v2s.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-Cp3F5Qje.js")
+  templates: () => import("./TemplateModule-DiL4YwXo.js")
 };
 Object.entries(J).forEach(([s, e]) => {
   E.registerPlugin(s, async (t) => {
@@ -1919,4 +1919,4 @@ export {
   y as L,
   Q as W
 };
-//# sourceMappingURL=index-D3LbNCyQ.js.map
+//# sourceMappingURL=index-BE_7SC6X.js.map

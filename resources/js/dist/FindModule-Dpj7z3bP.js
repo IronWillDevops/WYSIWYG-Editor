@@ -1,4 +1,4 @@
-import { D as g } from "./index-D3LbNCyQ.js";
+import { D as g } from "./index-BE_7SC6X.js";
 class x {
   constructor(e) {
     this.editor = e, this.matches = [], this.currentIndex = -1;
@@ -83,4 +83,4 @@ class x {
 export {
   x as default
 };
-//# sourceMappingURL=FindModule-Vhr5Te8r.js.map
+//# sourceMappingURL=FindModule-Dpj7z3bP.js.map
