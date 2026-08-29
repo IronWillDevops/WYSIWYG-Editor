@@ -13,6 +13,11 @@ function createMockEditor() {
         selection: {
             save: vi.fn(),
             restore: vi.fn(),
+            restoreSavedOffsets: vi.fn(),
+            getSavedRange: vi.fn(() => null),
+            getSavedOffsets: vi.fn(() => null),
+            setRange: vi.fn(),
+            setRangeByOffsets: vi.fn(),
             getBlockElement: vi.fn(() => null),
             getNativeSelection: vi.fn(() => null),
             getRange: vi.fn(() => null),
@@ -119,10 +124,15 @@ describe('Toolbar', () => {
 
     it('color picker restores selection and applies the chosen color on input', () => {
         toolbar = new Toolbar(editor);
+
+        // The saved selection is restored (by character offsets) without focusing
+        // the editor so the native color dialog stays open for real-time picks.
         const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
         input.value = '#ff0000';
         input.dispatchEvent(new Event('input'));
-        expect(editor.selection.restore).toHaveBeenCalled();
+
+        expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
+        expect(editor.selection.restore).not.toHaveBeenCalled();
         expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#ff0000');
     });
 
@@ -160,12 +170,18 @@ describe('Toolbar', () => {
             const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
             input.value = '#ff0000';
             input.dispatchEvent(new Event('input'));
+            editor.selection.save.mockClear();
+            editor.commands.exec.mockClear();
             // simulate the drag expanding the selection
             end = 18;
             const handler = toolbar._handleLiveSelection;
             handler();
             vi.advanceTimersByTime(50);
             expect(editor.commands.exec).toHaveBeenLastCalledWith('foreColor', '#ff0000');
+            // The grown selection must be re-saved before exec, otherwise exec()'s
+            // restore() clobbers it back to the original pick and never recolours
+            // the newly selected text.
+            expect(editor.selection.save).toHaveBeenCalled();
         } finally {
             vi.useRealTimers();
         }

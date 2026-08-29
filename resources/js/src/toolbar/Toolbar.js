@@ -61,6 +61,10 @@ export default class Toolbar {
                 this._liveTimer = setTimeout(() => {
                     this._liveLastSelection = text;
                     const { command, value } = this._liveColor;
+                    // Re-save the grown selection before exec: exec() restores
+                    // the saved selection, so without this it would clobber the
+                    // grown text back to the original pick and never colour it.
+                    this.editor.selection.save();
                     this.editor.commands.exec(command, value);
                 }, 40);
             }
@@ -200,7 +204,13 @@ export default class Toolbar {
             syncValue();
         });
         input.addEventListener('input', () => {
-            this.editor.selection.restore();
+            // Apply the chosen color to the saved selection WITHOUT calling the
+            // focusing `selection.restore()`: `.focus()` while the native color
+            // dialog is open dismisses it, so only one color could ever be
+            // picked. Restoring by character offsets (robust to the DOM splits
+            // colouring performs) keeps the dialog open so the color updates in
+            // real time as the user drags in the picker.
+            this.editor.selection.restoreSavedOffsets();
             this.editor.commands.exec(def.command, input.value);
             // Arm live recolouring. If the user now drags a selection handle to
             // select more text, each newly selected portion is automatically

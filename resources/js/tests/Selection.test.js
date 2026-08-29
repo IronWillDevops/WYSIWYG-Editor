@@ -76,6 +76,27 @@ describe('Selection', () => {
         expect(selection.getRange().toString()).toBe('world');
     });
 
+    it('save stores offsets that survive DOM mutation re-targeting a live range', () => {
+        // Select the middle of a text node, save, then split that text node the
+        // way colouring does. A live Range is re-targeted/collapsed by the
+        // browser on such a mutation; the offset snapshot must still restore the
+        // same text.
+        const p = root.querySelector('p');
+        const textNode = p.firstChild; // "hello "
+        const nativeRange = document.createRange();
+        nativeRange.setStart(textNode, 0);
+        nativeRange.setEnd(textNode, 5);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        // Mutate the DOM: split the boundary text node (like applyColor does).
+        textNode.splitText(3);
+        expect(selection.getSavedOffsets()).toEqual([0, 5]);
+
+        selection.restore();
+        expect(selection.getRange().toString()).toBe('hello');
+    });
+
     it('collapseToEnd moves caret to end of root', () => {
         const nativeRange = document.createRange();
         nativeRange.setStart(root.firstChild, 0);

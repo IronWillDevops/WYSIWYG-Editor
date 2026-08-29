@@ -405,13 +405,21 @@ export default class Commands {
         const range = this.selection.getRange();
         if (!range || range.collapsed) return;
 
+        // Snapshot the selection as character offsets in the root's text stream
+        // before mutating the DOM. The wrapping below splits and moves the
+        // boundary text nodes, which makes real browsers collapse the live
+        // selection; re-selecting by offset keeps the same text selected so a
+        // subsequent color change (from the live picker) still targets it.
+        const start = this.selection.offsetOf(range.startContainer, range.startOffset);
+        const end = this.selection.offsetOf(range.endContainer, range.endOffset);
+
         const startNode = range.startContainer;
         const startOffset = range.startOffset;
         const endNode = range.endContainer;
         const endOffset = range.endOffset;
 
         this.colorTextNodes(cssProp, value, startNode, startOffset, endNode, endOffset);
-        // The native selection is left untouched, so a drag handle keeps going.
+        this.selection.setRangeByOffsets(start, end);
     }
 
     /**
@@ -511,15 +519,81 @@ export default class Commands {
         if (!textNode.textContent) return;
         const parent = textNode.parentElement;
         if (parent && parent.tagName === 'SPAN' && this.sameColor(cssProp, parent.style[cssProp], value)) {
+            this.mergeColorSpan(parent, cssProp, value);
             return;
+        }
+        if (parent && parent.tagName === 'SPAN' && parent.style[cssProp]) {
+            // The text node sits inside a span of a *different* colour for this
+            // cssProp. Re-colouring must replace that colour rather than wrap a
+            // nested span, and must not re-colour any non-selected neighbours
+            // sharing the span. Split the text node out (its neighbours keep
+            // their own colour) and wrap it fresh below.
+            this.splitSpanAroundNode(parent, textNode);
         }
         const span = document.createElement('span');
         span.style[cssProp] = value;
         textNode.parentNode.insertBefore(span, textNode);
         span.appendChild(textNode);
-        const next = span.nextElementSibling;
+        this.mergeColorSpan(span, cssProp, value);
+    }
+
+    /**
+     * Pulls a single child out of a span, preserving the span's colour (and any
+     * other inline styles) on the content that remains before and after, so the
+     * extracted node becomes a plain sibling between them.
+     * @param {HTMLSpanElement} span
+     * @param {Text} node direct child of `span`
+     */
+    splitSpanAroundNode(span, node) {
+        const css = span.style.cssText;
+        const parent = span.parentNode;
+
+        const fragmentBefore = document.createDocumentFragment();
+        while (span.firstChild && span.firstChild !== node) {
+            fragmentBefore.appendChild(span.firstChild);
+        }
+        span.removeChild(node);
+
+        const fragmentAfter = document.createDocumentFragment();
+        while (span.firstChild) {
+            fragmentAfter.appendChild(span.firstChild);
+        }
+
+        const wrap = (fragment) => {
+            if (!fragment.firstChild) return null;
+            const el = document.createElement('span');
+            el.style.cssText = css;
+            el.appendChild(fragment);
+            return el;
+        };
+
+        const elBefore = wrap(fragmentBefore);
+        const elAfter = wrap(fragmentAfter);
+
+        if (elBefore) parent.insertBefore(elBefore, span);
+        parent.insertBefore(node, span);
+        if (elAfter) parent.insertBefore(elAfter, span);
+        parent.removeChild(span);
+    }
+
+    /**
+     * Merges a freshly coloured span with any equal-coloured element siblings so
+     * the markup stays flat (idempotent re-colouring).
+     * @param {HTMLSpanElement} span
+     * @param {'color'|'backgroundColor'} cssProp
+     * @param {string} value
+     */
+    mergeColorSpan(span, cssProp, value) {
+        const prev = span.previousElementSibling;
+        let target = span;
+        if (prev && prev.tagName === 'SPAN' && this.sameColor(cssProp, prev.style[cssProp], value)) {
+            prev.appendChild(span.childNodes);
+            span.remove();
+            target = prev;
+        }
+        const next = target.nextElementSibling;
         if (next && next.tagName === 'SPAN' && this.sameColor(cssProp, next.style[cssProp], value)) {
-            span.appendChild(next.childNodes);
+            target.appendChild(next.childNodes);
             next.remove();
         }
     }

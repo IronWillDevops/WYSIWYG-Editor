@@ -342,6 +342,59 @@ describe('Commands', () => {
             expect(root.querySelectorAll('span').length).toBe(1);
         });
 
+        it('re-applying a different color over the same selection switches the color (real-time picker)', () => {
+            // Regression: a previous applyColor wrapped and moved the selection's
+            // boundary text node, which collapses the live selection in real
+            // browsers, so the next color change silently no-oped. Re-applying a
+            // different color must re-target the same text and switch it.
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);
+            range.setEnd(textNode, 15);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+            commands.exec('foreColor', '#00ff00');
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p>The <span style="color: rgb(0, 0, 255);">quick brown</span> fox</p>'
+            );
+        });
+
+        it('re-applying a different background color over the same selection switches it', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ff0000');
+            commands.exec('backColor', '#0000ff');
+
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
+        it('re-colouring a subset of a larger coloured span does not re-colour its neighbours', () => {
+            root.innerHTML = '<p><span style="color: rgb(255, 0, 0);">quick brown</span> fox</p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, 5);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p><span style="color: rgb(0, 0, 255);">quick</span><span style="color: rgb(255, 0, 0);"> brown</span> fox</p>'
+            );
+        });
+
         it('leaves the native selection intact after applying', () => {
             root.innerHTML = '<p>The quick brown fox</p>';
             const textNode = root.querySelector('p').firstChild;
