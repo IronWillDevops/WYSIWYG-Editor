@@ -2020,16 +2020,14 @@ function E(r, e, t) {
 }
 function S(r) {
   const e = /^#([0-9a-f]{6})$/i.exec((r || "").trim());
-  if (!e) return [0, 100, 50];
-  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, o = parseInt(e[1].slice(4, 6), 16) / 255, i = Math.max(t, n, o), s = Math.min(t, n, o), c = (i + s) / 2;
-  if (i === s) return [0, 0, Math.round(c * 100)];
-  const a = i - s, l = c > 0.5 ? a / (2 - i - s) : a / (i + s);
-  let h;
-  return i === t ? h = (n - o) / a + (n < o ? 6 : 0) : i === n ? h = (o - t) / a + 2 : h = (t - n) / a + 4, [Math.round(h * 60), Math.round(l * 100), Math.round(c * 100)];
+  if (!e) return [0, 0, 0];
+  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, o = parseInt(e[1].slice(4, 6), 16) / 255, i = Math.max(t, n, o), s = Math.min(t, n, o), c = i - s, a = i;
+  let l = 0, h = 0;
+  return c !== 0 && (h = c / i, i === t ? l = (n - o) / c + (n < o ? 6 : 0) : i === n ? l = (o - t) / c + 2 : l = (t - n) / c + 4), [Math.round(l * 60), Math.round(h * 100), Math.round(a * 100)];
 }
 function T(r, e, t) {
   r = (r % 360 + 360) % 360, e = E(e, 0, 100) / 100, t = E(t, 0, 100) / 100;
-  const n = (1 - Math.abs(2 * t - 1)) * e, o = n * (1 - Math.abs(r / 60 % 2 - 1)), i = t - n / 2;
+  const n = t * e, o = n * (1 - Math.abs(r / 60 % 2 - 1)), i = t - n;
   let s = 0, c = 0, a = 0;
   r < 60 ? (s = n, c = o) : r < 120 ? (s = o, c = n) : r < 180 ? (c = n, a = o) : r < 240 ? (c = o, a = n) : r < 300 ? (s = o, a = n) : (s = n, a = o);
   const l = (h) => Math.round((h + i) * 255).toString(16).padStart(2, "0");
@@ -2042,7 +2040,7 @@ class Z {
    * @param {ColorPickerOptions} options
    */
   constructor(e, t, n) {
-    this.editor = e, this.triggerEl = t, this.id = n.id, this.cssProp = n.cssProp, this.label = n.label, this.onChange = n.onChange, this.onClear = n.onClear, this.picker = null, this.hue = 0, this.sat = 100, this.lum = 50, this._squareDrag = !1, this._hueDrag = !1, this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null, this._boundKeydown = null, this._boundPointerMove = null, this._boundPointerUp = null;
+    this.editor = e, this.triggerEl = t, this.id = n.id, this.cssProp = n.cssProp, this.label = n.label, this.onChange = n.onChange, this.onClear = n.onClear, this.picker = null, this.hue = 0, this.sat = 100, this.value = 100, this._squareDrag = !1, this._hueDrag = !1, this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null, this._boundKeydown = null, this._boundPointerMove = null, this._boundPointerUp = null;
   }
   toggle() {
     this.picker ? this.close() : this.open();
@@ -2051,7 +2049,7 @@ class Z {
     if (this.picker) return;
     this.editor.selection.save();
     const e = this.getCurrentColor(), [t, n, o] = e ? S(e) : [0, 0, 0];
-    this.hue = t, this.sat = n, this.lum = o, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
+    this.hue = t, this.sat = n, this.value = o, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
     const i = this.editor.wrapper;
     ["--ife-bg", "--ife-text", "--ife-border", "--ife-btn-hover", "--ife-btn-active"].forEach((s) => {
       this.picker.style.setProperty(s, getComputedStyle(i).getPropertyValue(s));
@@ -2075,11 +2073,11 @@ class Z {
     const i = document.createElement("span");
     i.className = "ife-color-picker__field-label", i.textContent = this.label;
     const s = document.createElement("input");
-    s.type = "text", s.className = "ife-color-picker__hex", s.value = T(this.hue, this.sat, this.lum), s.setAttribute("aria-label", `${this.label} hex`), s.addEventListener("input", () => {
+    s.type = "text", s.className = "ife-color-picker__hex", s.value = T(this.hue, this.sat, this.value), s.setAttribute("aria-label", `${this.label} hex`), s.addEventListener("input", () => {
       const h = /^#?([0-9a-f]{6})$/i.exec(s.value.trim());
       if (!h) return;
       const [m, f, g] = S(`#${h[1]}`);
-      this.hue = m, this.sat = f, this.lum = g, this.render(), this.emit();
+      this.hue = m, this.sat = f, this.value = g, this.render(), this.emit();
     }), s.addEventListener("mousedown", (h) => h.stopPropagation());
     const c = document.createElement("span");
     c.className = "ife-color-picker__preview", c.setAttribute("aria-hidden", "true");
@@ -2092,7 +2090,7 @@ class Z {
       const m = document.createElement("button");
       m.type = "button", m.className = "ife-color-picker__swatch", m.style.backgroundColor = h, m.title = h, m.setAttribute("aria-label", h), m.setAttribute("data-color", h), m.addEventListener("mousedown", (f) => f.preventDefault()), m.addEventListener("click", () => {
         const [f, g, p] = S(h);
-        this.hue = f, this.sat = g, this.lum = p, this.render(), this.emit(h);
+        this.hue = f, this.sat = g, this.value = p, this.render(), this.emit(h);
       }), l.appendChild(m);
     }), n.appendChild(e), n.appendChild(t), n.appendChild(o), n.appendChild(l), this.picker.appendChild(n), this.square = t, this.hueEl = e, this.hexEl = s, this.previewEl = c, this.square.addEventListener("pointerdown", (h) => this.onSquareDown(h)), this.hueEl.addEventListener("pointerdown", (h) => this.onHueDown(h)), this._boundPointerMove = (h) => this.onPointerMove(h), this._boundPointerUp = () => {
       this._squareDrag = !1, this._hueDrag = !1;
@@ -2102,13 +2100,13 @@ class Z {
   }
   render() {
     if (!this.picker) return;
-    const e = T(this.hue, this.sat, this.lum);
-    this.square.style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to left, #fff, hsl(${this.hue}, 100%, 50%))`;
+    const e = T(this.hue, this.sat, this.value);
+    this.square.style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${this.hue}, 100%, 50%))`;
     const t = this.square.querySelector(".ife-color-picker__square-handle") || (() => {
       const o = document.createElement("span");
       return o.className = "ife-color-picker__square-handle", this.square.appendChild(o), o;
     })();
-    t.style.left = `${this.sat}%`, t.style.top = `${100 - this.lum}%`, this.hueEl.style.background = "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)";
+    t.style.left = `${this.sat}%`, t.style.top = `${100 - this.value}%`, this.hueEl.style.background = "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)";
     const n = this.hueEl.querySelector(".ife-color-picker__hue-handle") || (() => {
       const o = document.createElement("span");
       return o.className = "ife-color-picker__hue-handle", this.hueEl.appendChild(o), o;
@@ -2116,7 +2114,7 @@ class Z {
     n.style.left = `${this.hue / 360 * 100}%`, this.hexEl.value = e, this.previewEl.style.backgroundColor = e;
   }
   emit(e) {
-    const t = e || T(this.hue, this.sat, this.lum);
+    const t = e || T(this.hue, this.sat, this.value);
     this.hexEl.value = t, this.previewEl.style.backgroundColor = t, this.onChange && this.onChange(t);
   }
   onSquareDown(e) {
@@ -2130,7 +2128,7 @@ class Z {
   }
   _squareFromPointer(e) {
     const t = this.square.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1) * 100, o = E((e.clientY - t.top) / t.height, 0, 1) * 100;
-    this.sat = Math.round(n), this.lum = Math.round(100 - o), this.render(), this.emit();
+    this.sat = Math.round(n), this.value = Math.round(100 - o), this.render(), this.emit();
   }
   _hueFromPointer(e) {
     const t = this.hueEl.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1);
@@ -2358,19 +2356,19 @@ class te {
   }
 }
 const ne = {
-  link: () => import("./LinkModule-DEyZFTnS.js"),
-  image: () => import("./ImageModule-BzH_MbcV.js"),
-  table: () => import("./TableModule-5IqVXF4f.js"),
+  link: () => import("./LinkModule-BIueF2ZD.js"),
+  image: () => import("./ImageModule-K65mW6Vv.js"),
+  table: () => import("./TableModule-DZrra21z.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-D3FJnwcD.js"),
-  note: () => import("./NoteModule-_7kETM4Y.js"),
-  media: () => import("./MediaModule-CEqOzpSc.js"),
+  find: () => import("./FindModule-w0qxs0Sb.js"),
+  note: () => import("./NoteModule-hL6lcc7T.js"),
+  media: () => import("./MediaModule-KEitlZ-p.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-DTiShI9B.js"),
+  statusBar: () => import("./StatusBar-CS7CkoQs.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BJbEuVPO.js")
+  templates: () => import("./TemplateModule-BJueunin.js")
 };
 Object.entries(ne).forEach(([r, e]) => {
   H.registerPlugin(r, async (t) => {
@@ -2417,4 +2415,4 @@ export {
   y as L,
   ie as W
 };
-//# sourceMappingURL=index-vzuzJ_Fn.js.map
+//# sourceMappingURL=index-DZXl3GUk.js.map

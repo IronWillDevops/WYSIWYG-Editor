@@ -95,7 +95,7 @@ describe('Toolbar', () => {
         const picker = toolbar._colorPickers.get('forecolor');
         picker.open();
         // A live pick (preset/hue/hex) flows through emit() -> the wired onChange.
-        picker.hue = 0; picker.sat = 100; picker.lum = 50;
+        picker.hue = 0; picker.sat = 100; picker.value = 100;
         picker.emit();
         expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
         expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#ff0000');
@@ -107,7 +107,7 @@ describe('Toolbar', () => {
         toolbar = new Toolbar(editor);
         const picker = toolbar._colorPickers.get('forecolor');
         picker.open();
-        picker.hue = 0; picker.sat = 0; picker.lum = 0;
+        picker.hue = 0; picker.sat = 0; picker.value = 0;
         picker.emit();
         expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#000000');
     });
@@ -160,7 +160,7 @@ describe('Toolbar', () => {
             toolbar = new Toolbar(editor);
             const picker = toolbar._colorPickers.get('forecolor');
             picker.open();
-            picker.hue = 0; picker.sat = 100; picker.lum = 50;
+            picker.hue = 0; picker.sat = 100; picker.value = 100;
             picker.emit();
             editor.selection.save.mockClear();
             editor.commands.exec.mockClear();
@@ -186,7 +186,7 @@ describe('Toolbar', () => {
             toolbar = new Toolbar(editor);
             const picker = toolbar._colorPickers.get('forecolor');
             picker.open();
-            picker.hue = 120; picker.sat = 100; picker.lum = 50;
+            picker.hue = 120; picker.sat = 100; picker.value = 100;
             picker.emit();
             editor.commands.exec.mockClear();
 

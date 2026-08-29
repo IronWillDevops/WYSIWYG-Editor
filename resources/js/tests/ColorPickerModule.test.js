@@ -57,9 +57,9 @@ describe('ColorPickerModule', () => {
     });
 
     describe('state conversions', () => {
-        it('derives and applies the hex from the current hue/sat/lum state via emit', () => {
+        it('derives and applies the hex from the current hue/sat/value state via emit', () => {
             module.open();
-            module.hue = 0; module.sat = 100; module.lum = 50;
+            module.hue = 0; module.sat = 100; module.value = 100;
             module.emit();
             expect(onChange).toHaveBeenLastCalledWith('#ff0000');
         });
@@ -131,23 +131,24 @@ describe('ColorPickerModule', () => {
             el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
         }
 
-        it('dragging the saturation/luminance square emits a live colour update', () => {
+        it('dragging the saturation/value square emits a live colour update', () => {
             module.open();
             const square = module.picker.querySelector('.ife-color-picker__square');
             Object.defineProperty(square, 'getBoundingClientRect', {
                 configurable: true,
                 value: () => ({ left: 0, top: 0, width: 100, height: 100, right: 100, bottom: 100 }),
             });
-            // pointer x -> saturation, pointer y -> (100 - lightness), so the
-            // mid-right edge picks the fully saturated hue (sat 100, lum 50).
-            firePointer(square, 'pointerdown', 100, 50);
+            // pointer x -> saturation, pointer y -> (100 - value), so the
+            // top-right edge picks the fully saturated, full-value hue
+            // (sat 100, value 100 = the pure hue).
+            firePointer(square, 'pointerdown', 100, 0);
             expect(module.sat).toBe(100);
-            expect(module.lum).toBe(50);
+            expect(module.value).toBe(100);
             expect(onChange.mock.calls[onChange.mock.calls.length - 1][0]).toBe('#ff0000');
             // drag toward bottom-left -> lower saturation + black
             firePointer(document, 'pointermove', 0, 100);
             expect(module.sat).toBe(0);
-            expect(module.lum).toBe(0);
+            expect(module.value).toBe(0);
             expect(onChange.mock.calls[onChange.mock.calls.length - 1][0]).toBe('#000000');
             // pointerup ends the drag; further movement is ignored
             firePointer(document, 'pointerup', 0, 100);
@@ -158,7 +159,7 @@ describe('ColorPickerModule', () => {
 
         it('dragging the hue slider changes hue and emits live', () => {
             module.open();
-            module.sat = 100; module.lum = 50;
+            module.sat = 100; module.value = 100;
             const hue = module.picker.querySelector('.ife-color-picker__hue');
             Object.defineProperty(hue, 'getBoundingClientRect', {
                 configurable: true,
@@ -233,7 +234,7 @@ describe('ColorPickerModule', () => {
     });
 
     describe('seeding', () => {
-        it('seeds hue/sat/lum from the current selection colour', () => {
+        it('seeds hue/sat/value from the current selection colour', () => {
             editor.root.innerHTML = '<p><span style="color: rgb(255, 0, 0)">x</span></p>';
             const span = editor.root.querySelector('span');
             const range = document.createRange();

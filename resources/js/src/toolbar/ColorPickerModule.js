@@ -31,34 +31,39 @@ const PRESETS = [
 
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-/** @returns {[number, number, number]} [h, s, l] in [0,360),[0,100],[0,100] from '#rrggbb' */
-function hexToHsl(hex) {
+/**
+ * @returns {[number, number, number]} [h, s, v] in [0,360),[0,100],[0,100]
+ * from '#rrggbb'. Hue-saturation-value (the "SV square" colour model).
+ */
+function hexToHsv(hex) {
     const m = /^#([0-9a-f]{6})$/i.exec((hex || '').trim());
-    if (!m) return [0, 100, 50];
+    if (!m) return [0, 0, 0];
     const r = parseInt(m[1].slice(0, 2), 16) / 255;
     const g = parseInt(m[1].slice(2, 4), 16) / 255;
     const b = parseInt(m[1].slice(4, 6), 16) / 255;
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    const l = (max + min) / 2;
-    if (max === min) return [0, 0, Math.round(l * 100)];
     const d = max - min;
-    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    let h;
-    if (max === r) h = ((g - b) / d) + (g < b ? 6 : 0);
-    else if (max === g) h = (b - r) / d + 2;
-    else h = (r - g) / d + 4;
-    return [Math.round(h * 60), Math.round(s * 100), Math.round(l * 100)];
+    const v = max;
+    let h = 0;
+    let s = 0;
+    if (d !== 0) {
+        s = d / max;
+        if (max === r) h = ((g - b) / d) + (g < b ? 6 : 0);
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+    }
+    return [Math.round(h * 60), Math.round(s * 100), Math.round(v * 100)];
 }
 
-/** @returns {string} '#rrggbb' from hue/saturation/lightness */
-function hslToHex(h, s, l) {
+/** @returns {string} '#rrggbb' from hue/saturation/value (0-100 each) */
+function hsvToHex(h, s, v) {
     h = ((h % 360) + 360) % 360;
     s = clamp(s, 0, 100) / 100;
-    l = clamp(l, 0, 100) / 100;
-    const c = (1 - Math.abs(2 * l - 1)) * s;
+    v = clamp(v, 0, 100) / 100;
+    const c = v * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-    const m = l - c / 2;
+    const m = v - c;
     let r = 0; let g = 0; let b = 0;
     if (h < 60) { r = c; g = x; }
     else if (h < 120) { r = x; g = c; }
@@ -88,7 +93,7 @@ export default class ColorPickerModule {
         this.picker = null;
         this.hue = 0;
         this.sat = 100;
-        this.lum = 50;
+        this.value = 100;
 
         this._squareDrag = false;
         this._hueDrag = false;
@@ -110,8 +115,8 @@ export default class ColorPickerModule {
         this.editor.selection.save();
 
         const current = this.getCurrentColor();
-        const [h, s, l] = current ? hexToHsl(current) : [0, 0, 0];
-        this.hue = h; this.sat = s; this.lum = l;
+        const [h, s, v] = current ? hexToHsv(current) : [0, 0, 0];
+        this.hue = h; this.sat = s; this.value = v;
 
         this.picker = document.createElement('div');
         this.picker.className = 'ife-color-picker';
@@ -170,13 +175,13 @@ export default class ColorPickerModule {
         const hex = document.createElement('input');
         hex.type = 'text';
         hex.className = 'ife-color-picker__hex';
-        hex.value = hslToHex(this.hue, this.sat, this.lum);
+        hex.value = hsvToHex(this.hue, this.sat, this.value);
         hex.setAttribute('aria-label', `${this.label} hex`);
         hex.addEventListener('input', () => {
             const m = /^#?([0-9a-f]{6})$/i.exec(hex.value.trim());
             if (!m) return;
-            const [hh, ss, ll] = hexToHsl(`#${m[1]}`);
-            this.hue = hh; this.sat = ss; this.lum = ll;
+            const [hh, ss, vv] = hexToHsv(`#${m[1]}`);
+            this.hue = hh; this.sat = ss; this.value = vv;
             this.render();
             this.emit();
         });
@@ -217,10 +222,10 @@ export default class ColorPickerModule {
             sw.setAttribute('data-color', color);
             sw.addEventListener('mousedown', (e) => e.preventDefault());
             sw.addEventListener('click', () => {
-                const [hh, ss, ll] = hexToHsl(color);
-                this.hue = hh; this.sat = ss; this.lum = ll;
+                const [hh, ss, vv] = hexToHsv(color);
+                this.hue = hh; this.sat = ss; this.value = vv;
                 // Presets apply their EXACT colour (a preset hex may not survive a
-                // round-trip through hue/sat/lum unscathed), while the drag handles
+                // round-trip through hue/sat/value unscathed), while the drag handles
                 // still move to the preset's position.
                 this.render();
                 this.emit(color);
@@ -258,13 +263,14 @@ export default class ColorPickerModule {
 
     render() {
         if (!this.picker) return;
-        const hex = hslToHex(this.hue, this.sat, this.lum);
+        const hex = hsvToHex(this.hue, this.sat, this.value);
 
-        // Square background: left = white (sat 0), right = saturated hue,
-        // bottom = black (lum 0), top = full (lum 100).
+        // SV square: X = saturation (left 0 -> right 100), Y = value (bottom 0 ->
+        // top 100). The pure hue is at the top-RIGHT corner; left = white,
+        // bottom = black. This matches where the user clicks.
         this.square.style.background =
             `linear-gradient(to top, #000, transparent), ` +
-            `linear-gradient(to left, #fff, hsl(${this.hue}, 100%, 50%))`;
+            `linear-gradient(to right, #fff, hsl(${this.hue}, 100%, 50%))`;
 
         const squareHandle = this.square.querySelector('.ife-color-picker__square-handle')
             || (() => {
@@ -274,7 +280,7 @@ export default class ColorPickerModule {
                 return h;
             })();
         squareHandle.style.left = `${this.sat}%`;
-        squareHandle.style.top = `${100 - this.lum}%`;
+        squareHandle.style.top = `${100 - this.value}%`;
 
         this.hueEl.style.background =
             'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)';
@@ -292,7 +298,7 @@ export default class ColorPickerModule {
     }
 
     emit(hexOverride) {
-        const hex = hexOverride || hslToHex(this.hue, this.sat, this.lum);
+        const hex = hexOverride || hsvToHex(this.hue, this.sat, this.value);
         this.hexEl.value = hex;
         this.previewEl.style.backgroundColor = hex;
         if (this.onChange) this.onChange(hex);
@@ -320,7 +326,7 @@ export default class ColorPickerModule {
         const x = clamp((e.clientX - rect.left) / rect.width, 0, 1) * 100;
         const y = clamp((e.clientY - rect.top) / rect.height, 0, 1) * 100;
         this.sat = Math.round(x);
-        this.lum = Math.round(100 - y);
+        this.value = Math.round(100 - y);
         this.render();
         this.emit();
     }

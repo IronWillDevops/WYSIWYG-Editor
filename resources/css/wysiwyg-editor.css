@@ -563,6 +563,7 @@
     border-radius: 7px;
     cursor: crosshair;
     border: 1px solid rgba(0, 0, 0, 0.12);
+    touch-action: none;
 }
 
 .ife-color-picker__hue-handle {
@@ -583,6 +584,7 @@
     border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.12);
     cursor: crosshair;
+    touch-action: none;
 }
 
 .ife-color-picker__square-handle {
