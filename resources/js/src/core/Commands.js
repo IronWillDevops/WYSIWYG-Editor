@@ -358,6 +358,14 @@ export default class Commands {
         const range = this.selection.getRange();
         if (!range) return;
 
+        // Snapshot the selection as character offsets before mutating the DOM.
+        // Removing/unwrapping the colour spans below moves the boundary text
+        // nodes, which makes real browsers collapse the live selection; re-selecting
+        // by offset (same as applyColor) keeps the same text selected so a later
+        // live pick still targets it.
+        const start = this.selection.offsetOf(range.startContainer, range.startOffset);
+        const end = this.selection.offsetOf(range.endContainer, range.endOffset);
+
         let container = range.commonAncestorContainer;
         if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
         if (!(container instanceof HTMLElement)) return;
@@ -379,6 +387,8 @@ export default class Commands {
                 parent.removeChild(el);
             }
         });
+
+        this.selection.setRangeByOffsets(start, end);
     }
 
     /**

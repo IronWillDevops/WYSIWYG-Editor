@@ -22,7 +22,7 @@ function createMockEditor() {
             getNativeSelection: vi.fn(() => null),
             getRange: vi.fn(() => null),
         },
-        commands: { queryState: vi.fn(() => false), exec: vi.fn(), applyColor: vi.fn() },
+        commands: { queryState: vi.fn(() => false), exec: vi.fn(), applyColor: vi.fn(), clearColor: vi.fn() },
         on: vi.fn(),
     };
 }
@@ -55,45 +55,29 @@ describe('Toolbar', () => {
         expect(btn.tagName).toBe('BUTTON');
     });
 
-    it('renders a color picker for forecolor', () => {
+    it('renders a color picker for forecolor as a button holding an in-page picker', () => {
         toolbar = new Toolbar(editor);
-        const wrapper = toolbar.buttons.get('forecolor');
-        expect(wrapper).not.toBeNull();
-        expect(wrapper.classList.contains('ife-toolbar__color')).toBe(true);
-        expect(wrapper.querySelector('input[type="color"]')).not.toBeNull();
+        const button = toolbar.buttons.get('forecolor');
+        expect(button).not.toBeNull();
+        expect(button.tagName).toBe('BUTTON');
+        expect(button.classList.contains('ife-toolbar__color')).toBe(true);
+        expect(button.querySelector('input[type="color"]')).toBeNull();
+        expect(toolbar._colorPickers.get('forecolor')).toBeDefined();
     });
 
-    it('syncs the color input value to the current text color on selection change', () => {
-        editor.root.innerHTML = '<p><span style="color: rgb(255, 0, 0)">hello</span></p>';
-        const span = editor.root.querySelector('span');
-        const range = document.createRange();
-        range.selectNodeContents(span.firstChild);
-        editor.selection.getRange = vi.fn(() => range);
-        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+    it('saves the editor selection and opens the in-page picker on button click', () => {
         toolbar = new Toolbar(editor);
-
-        toolbar.syncActiveStates();
-
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        expect(input.value).toBe('#ff0000');
+        const button = toolbar.buttons.get('forecolor');
+        button.click();
+        const picker = toolbar._colorPickers.get('forecolor');
+        expect(editor.selection.save).toHaveBeenCalled();
+        expect(picker.picker).not.toBeNull();
+        expect(document.body.contains(picker.picker)).toBe(true);
+        // The in-page popover keeps editor focus, so no native focus is stolen.
+        expect(editor.selection.restore).not.toHaveBeenCalled();
     });
 
-    it('syncs the background color input value from the current selection', () => {
-        editor.root.innerHTML = '<p><span style="background-color: rgb(0, 128, 255)">hi</span></p>';
-        const span = editor.root.querySelector('span');
-        const range = document.createRange();
-        range.selectNodeContents(span.firstChild);
-        editor.selection.getRange = vi.fn(() => range);
-        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
-        toolbar = new Toolbar(editor);
-
-        toolbar.syncActiveStates();
-
-        const input = toolbar.buttons.get('backcolor').querySelector('input[type="color"]');
-        expect(input.value).toBe('#0080ff');
-    });
-
-    it('opens the color picker on the current selection color so the first pick is not a stale default', () => {
+    it('seeds the in-page picker from the current selection color', () => {
         editor.root.innerHTML = '<p><span style="color: rgb(255, 255, 0)">text</span></p>';
         const span = editor.root.querySelector('span');
         const range = document.createRange();
@@ -101,125 +85,55 @@ describe('Toolbar', () => {
         editor.selection.getRange = vi.fn(() => range);
         editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
         toolbar = new Toolbar(editor);
-
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('pointerdown'));
-
-        expect(input.value).toBe('#ffff00');
+        const picker = toolbar._colorPickers.get('forecolor');
+        picker.open();
+        expect(picker.hexEl.value).toBe('#ffff00');
     });
 
-    it('color picker saves the selection on pointerdown before focus is stolen', () => {
+    it('picking a color in the in-page picker restores the selection and applies it live', () => {
         toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('pointerdown'));
-        expect(editor.selection.save).toHaveBeenCalled();
-    });
-
-    it('color picker saves the selection on mousedown (mirrors block-format select)', () => {
-        toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('mousedown'));
-        expect(editor.selection.save).toHaveBeenCalled();
-    });
-
-    it('color picker restores selection and applies the chosen color on input (live)', () => {
-        toolbar = new Toolbar(editor);
-
-        // The saved selection is restored (by character offsets) without focusing
-        // the editor so the native color dialog stays open for real-time picks.
-        // The live `input` path applies the color unconditionally (like the
-        // background picker) so an intermediate picker value is previewed live.
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.value = '#ff0000';
-        input.dispatchEvent(new Event('input'));
-
+        const picker = toolbar._colorPickers.get('forecolor');
+        picker.open();
+        // A live pick (preset/hue/hex) flows through emit() -> the wired onChange.
+        picker.hue = 0; picker.sat = 100; picker.lum = 50;
+        picker.emit();
         expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
-        expect(editor.selection.restore).not.toHaveBeenCalled();
         expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#ff0000');
-        expect(editor.commands.exec).not.toHaveBeenCalled();
+        // Live colour also arms recolouring as the selection grows.
+        expect(toolbar._liveColor).toEqual({ command: 'foreColor', value: '#ff0000' });
     });
 
-    it('color picker input applies the text color live even when the value is the default black', () => {
-        // The background picker only treats WHITE as neutral, so black values land
-        // live; the text picker must behave the same during a drag (it clears the
-        // colour only on the committed `change`, not on each intermediate `input`).
+    it('picking a literal colour in the in-page picker applies it without clearing', () => {
         toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.value = '#000000';
-        input.dispatchEvent(new Event('input'));
-
+        const picker = toolbar._colorPickers.get('forecolor');
+        picker.open();
+        picker.hue = 0; picker.sat = 0; picker.lum = 0;
+        picker.emit();
         expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#000000');
     });
 
-    it('color picker change applies the committed color with normal command semantics', () => {
-        // On dialog close the committed color goes through exec(), so text black /
-        // background white are still treated as "no colour" (theme-agnostic output).
+    it('clicking a preset swatch recolours the selected text live', () => {
         toolbar = new Toolbar(editor);
-        const textInput = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        const bgInput = toolbar.buttons.get('backcolor').querySelector('input[type="color"]');
-
-        textInput.value = '#000000';
-        textInput.dispatchEvent(new Event('change'));
-        expect(editor.commands.exec).toHaveBeenLastCalledWith('foreColor', '#000000');
-
-        editor.commands.exec.mockClear();
-        bgInput.value = '#ffffff';
-        bgInput.dispatchEvent(new Event('change'));
-        expect(editor.commands.exec).toHaveBeenLastCalledWith('backColor', '#ffffff');
+        const picker = toolbar._colorPickers.get('forecolor');
+        picker.open();
+        const swatch = picker.picker.querySelector('.ife-color-picker__swatch[data-color="#1b5e20"]');
+        // green preset
+        swatch.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        swatch.click();
+        expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#1b5e20');
     });
 
-    it('does not overwrite a color input value while its native dialog is open', () => {
-        // While the dialog is open the browser owns input.value; writing to it
-        // (via syncActiveStates selectionchange sync) would commit the pick and
-        // stop live `input` events, so it must be guarded.
-        editor.root.innerHTML = '<p><span style="color: rgb(0, 255, 0)">hello</span></p>';
-        const span = editor.root.querySelector('span');
-        const range = document.createRange();
-        range.selectNodeContents(span.firstChild);
-        editor.selection.getRange = vi.fn(() => range);
-        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+    it('clearing the colour in the in-page picker clears the selection colour', () => {
         toolbar = new Toolbar(editor);
-
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('pointerdown'));
-        // The user has dragged the picker to red, but the editor still thinks the
-        // selection is green; syncActiveStates must NOT overwrite the open pick.
-        input.value = '#ff0000';
-        toolbar.syncActiveStates();
-        expect(input.value).toBe('#ff0000');
-    });
-
-    it('color picker change applies the chosen color and releases the open-dialog guard', () => {
-        toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('pointerdown'));
-        expect(toolbar._openColorPickers.has(input)).toBe(true);
-
-        input.value = '#00ffff';
-        input.dispatchEvent(new Event('change'));
-
+        const picker = toolbar._colorPickers.get('forecolor');
+        picker.open();
+        const clear = picker.picker.querySelector('.ife-color-picker__clear');
+        clear.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+        clear.click();
         expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
-        expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#00ffff');
-        expect(toolbar._openColorPickers.has(input)).toBe(false);
-    });
-
-    it('blur releases the color picker open-dialog guard', () => {
-        toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.dispatchEvent(new Event('pointerdown'));
-        expect(toolbar._openColorPickers.has(input)).toBe(true);
-
-        input.dispatchEvent(new Event('blur'));
-        expect(toolbar._openColorPickers.has(input)).toBe(false);
-    });
-
-    it('picking a color arms live recolouring for selection changes', () => {
-        toolbar = new Toolbar(editor);
-        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-        input.value = '#ff0000';
-        input.dispatchEvent(new Event('input'));
-
-        expect(toolbar._liveColor).toEqual({ command: 'foreColor', value: '#ff0000' });
+        expect(editor.commands.clearColor).toHaveBeenCalledWith('color');
+        expect(toolbar._liveColor).toBeNull();
+        expect(picker.picker).toBeNull();
     });
 
     it('live recolouring re-applies the chosen color as the selection grows', () => {
@@ -244,9 +158,10 @@ describe('Toolbar', () => {
             }));
 
             toolbar = new Toolbar(editor);
-            const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-            input.value = '#ff0000';
-            input.dispatchEvent(new Event('input'));
+            const picker = toolbar._colorPickers.get('forecolor');
+            picker.open();
+            picker.hue = 0; picker.sat = 100; picker.lum = 50;
+            picker.emit();
             editor.selection.save.mockClear();
             editor.commands.exec.mockClear();
             // simulate the drag expanding the selection
@@ -269,9 +184,10 @@ describe('Toolbar', () => {
         try {
             editor.selection.getNativeSelection = vi.fn(() => null);
             toolbar = new Toolbar(editor);
-            const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
-            input.value = '#00ff00';
-            input.dispatchEvent(new Event('input'));
+            const picker = toolbar._colorPickers.get('forecolor');
+            picker.open();
+            picker.hue = 120; picker.sat = 100; picker.lum = 50;
+            picker.emit();
             editor.commands.exec.mockClear();
 
             toolbar._handleLiveSelection();

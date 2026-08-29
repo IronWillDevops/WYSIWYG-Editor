@@ -1,4 +1,4 @@
-import { D as i } from "./index-CJCwRLik.js";
+import { D as i } from "./index-vzuzJ_Fn.js";
 const n = ["info", "warning", "danger", "success", "quote", "tip"];
 class r {
   constructor(o) {
@@ -40,4 +40,4 @@ class r {
 export {
   r as default
 };
-//# sourceMappingURL=NoteModule-Ci9tIwe2.js.map
+//# sourceMappingURL=NoteModule-_7kETM4Y.js.map

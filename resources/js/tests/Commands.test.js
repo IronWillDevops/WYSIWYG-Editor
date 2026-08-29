@@ -436,6 +436,22 @@ describe('Commands', () => {
 
             expect(root.querySelector('span')).toBeNull();
         });
+
+        it('preserves the selection by re-selecting the cleared range by offsets', () => {
+            root.innerHTML = '<p><span style="color: red;">red text</span> normal</p>';
+            const span = root.querySelector('span');
+            const range = document.createRange();
+            range.selectNodeContents(span.firstChild);
+            editor.selection.setRange(range);
+            const spy = vi.spyOn(editor.selection, 'setRangeByOffsets');
+
+            commands.clearColor('color');
+
+            expect(spy).toHaveBeenCalled();
+            expect(span.style.color).toBe('');
+            const sel = editor.selection.getRange();
+            expect(sel.toString()).toBe('red text');
+        });
     });
 
     describe('clearInlineStyles', () => {

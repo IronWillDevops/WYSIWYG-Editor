@@ -1,5 +1,6 @@
 import ToolbarConfig from './ToolbarConfig.js';
 import Localization from '../i18n/Localization.js';
+import ColorPickerModule from './ColorPickerModule.js';
 
 const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
@@ -27,6 +28,7 @@ export default class Toolbar {
         this.editor = editor;
         this.layout = layout ?? DEFAULT_LAYOUT;
         this.buttons = new Map();
+        this._colorPickers = new Map();
 
         this.el = document.createElement('div');
         this.el.className = 'ife-toolbar';
@@ -48,12 +50,6 @@ export default class Toolbar {
         this._liveTimer = null;
         this._liveIdleTimer = null;
         this._liveLastSelection = '';
-        // Color inputs whose native dialog is open. While a dialog is open the
-        // browser owns `input.value`: writing to it programmatically (e.g. in
-        // syncActiveStates) forces the dialog to commit the current pick and
-        // stop emitting live `input` events, so only the final `change` on close
-        // would apply. These are guarded against any `.value` write while open.
-        this._openColorPickers = new Set();
         this._handleLiveSelection = () => {
             if (!this._liveColor) return;
             const sel = this.editor.selection.getNativeSelection();
@@ -184,79 +180,48 @@ export default class Toolbar {
     buildColorPicker(id, def) {
         const locale = this.editor.options.locale ?? 'en';
         const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
-        const wrapper = document.createElement('label');
-        wrapper.className = 'ife-toolbar__color';
-        wrapper.title = label;
-        wrapper.innerHTML = def.icon;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ife-toolbar__btn ife-toolbar__color';
+        button.dataset.command = id;
+        button.title = label;
+        button.setAttribute('aria-label', label);
+        button.setAttribute('aria-haspopup', 'dialog');
+        button.innerHTML = def.icon;
 
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.setAttribute('aria-label', label);
-        // Save the current editor selection before the native color dialog can
-        // steal focus (pointerdown + mousedown, mirroring the block-format
-        // select) so the chosen color is applied back to the original text
-        // selection rather than to a lost/empty one.
         const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
-        const syncValue = () => {
-            if (this._openColorPickers.has(input)) return;
-            const color = this.getCurrentColor(cssProp);
-            if (color) input.value = color;
-        };
-        input.addEventListener('pointerdown', () => {
-            this.editor.selection.save();
-            syncValue();
-            // Mark the dialog as open AFTER syncing, so the very first sync (the
-            // one that opens the dialog at the current color) still runs, but any
-            // later selectionchange-driven sync cannot overwrite the value while
-            // the browser is dragging.
-            this._openColorPickers.add(input);
-        });
-        input.addEventListener('mousedown', () => {
-            this.editor.selection.save();
-            syncValue();
-            this._openColorPickers.add(input);
-        });
-        input.addEventListener('input', () => {
-            // Apply the chosen color to the saved selection WITHOUT calling the
-            // focusing `selection.restore()`: `.focus()` while the native color
-            // dialog is open dismisses it, so only one color could ever be
-            // picked. Restoring by character offsets (robust to the DOM splits
-            // colouring performs) keeps the dialog open so the color updates in
-            // real time as the user drags in the picker.
-            this.editor.selection.restoreSavedOffsets();
-            // Live preview: apply the color UNCONDITIONALLY, like the background
-            // picker. The committed `change` path treats the picker's default
-            // black as "no colour" (theme-agnostic output), but during a live
-            // drag the saturation/luminance square passes through black values;
-            // clearing on those would wipe the text mid-drag so it only "sticks"
-            // on a definite colour at release. Applying it keeps text tracking
-            // the drag live, exactly as the background picker does; the neutral
-            // clearing still happens on commit (change), so picking a default
-            // black text colour still clears it.
-            this.editor.commands.applyColor(cssProp, input.value);
-            // Arm live recolouring. If the user now drags a selection handle to
-            // select more text, each newly selected portion is automatically
-            // tinted with the colour they just chose (idempotently, without
-            // collapsing the live selection).
-            this.armLiveColor({ command: def.command, value: input.value });
-        });
-        input.addEventListener('change', () => {
-            // The native dialog closed with an accepted color. Apply it here
-            // with the normal command semantics (so the picker's default black
-            // for text / white for background clears the colour, keeping article
-            // output theme-agnostic) as a safety net for browsers that fire only
-            // one (or coalesced) `input` events, then release the dialog so
-            // syncActiveStates can resume syncing input.value again.
-            this.editor.selection.restoreSavedOffsets();
-            this.editor.commands.exec(def.command, input.value);
-            this.armLiveColor({ command: def.command, value: input.value });
-            this._openColorPickers.delete(input);
-        });
-        input.addEventListener('blur', () => this._openColorPickers.delete(input));
 
-        wrapper.appendChild(input);
-        this.buttons.set(id, wrapper);
-        return wrapper;
+        const picker = new ColorPickerModule(this.editor, button, {
+            id,
+            cssProp,
+            label,
+            onChange: (hex) => {
+                // Live recolouring: the in-page picker keeps the editor focused,
+                // so the selection highlight never drops and each hue/saturation
+                // drag, preset click and hex entry recolours the selected text
+                // immediately (same live behaviour as the selection-handle
+                // recolouring below). The colour is applied unconditionally to
+                // preserve a literal preview; clearing is an explicit action.
+                this.editor.selection.restoreSavedOffsets();
+                this.editor.commands.applyColor(cssProp, hex);
+                this.armLiveColor({ command: def.command, value: hex });
+            },
+            onClear: () => {
+                this.editor.selection.restoreSavedOffsets();
+                this.editor.commands.clearColor(cssProp);
+                this.disarmLiveColor();
+            },
+        });
+        this._colorPickers.set(id, picker);
+        button.addEventListener('click', () => {
+            // Capture the selection before the picker opens so colour is applied
+            // back to exactly the text the user selected.
+            this.editor.selection.save();
+            picker.toggle();
+        });
+
+        this.buttons.set(id, button);
+        return button;
     }
 
     /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
@@ -344,60 +309,6 @@ export default class Toolbar {
             const validValues = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
             blockFormatSelect.value = validValues.includes(tagName) ? tagName : 'p';
         }
-
-        // Keep the native color inputs in step with the current selection so the
-        // picker opens on the color that is actually applied (instead of always
-        // defaulting to black/white). Without this, the first interaction reports
-        // the stale default (#000000), which the command layer treats as "no
-        // color" and wrongly clears the selection instead of applying the color.
-        // While a color dialog is open this sync is skipped so the browser's
-        // ownership of `input.value` during the drag is never disturbed (which
-        // would stop live `input` events and apply only on close).
-        ['forecolor', 'backcolor'].forEach((id) => {
-            const def = ToolbarConfig[id];
-            const wrapper = this.buttons.get(id);
-            if (!def || !(wrapper instanceof HTMLInputElement || wrapper instanceof HTMLLabelElement)) return;
-            const input = wrapper.querySelector('input[type="color"]');
-            if (!input || this._openColorPickers.has(input)) return;
-            const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
-            const color = this.getCurrentColor(cssProp);
-            if (color) input.value = color;
-        });
-    }
-
-    /**
-     * Returns the effective inline color of the current selection for the given
-     * CSS property (e.g. 'color' or 'backgroundColor'), walking up from the
-     * caret to the nearest element that sets it, normalized to '#rrggbb' so it
-     * can be assigned to a native <input type="color"> value.
-     * @param {string} cssProp camelCase CSS property name
-     * @returns {string} normalized hex color, or '' when none is set
-     */
-    getCurrentColor(cssProp) {
-        const range = this.editor.selection.getRange();
-        if (!range) return '';
-        let node = range.commonAncestorContainer;
-        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-        let el = node instanceof HTMLElement ? node : null;
-        while (el && el !== this.editor.root) {
-            if (el.style?.[cssProp]) {
-                return this.normalizeColorValue(el.style[cssProp]);
-            }
-            el = el.parentElement;
-        }
-        return '';
-    }
-
-    /** Normalizes a CSS color ('#ff0000', 'rgb(255, 0, 0)', ...) to '#rrggbb'. */
-    normalizeColorValue(value) {
-        if (!value) return '';
-        const trimmed = String(value).trim();
-        const match = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-        if (match) {
-            const toHex = (n) => parseInt(n, 10).toString(16).padStart(2, '0');
-            return `#${toHex(match[1])}${toHex(match[2])}${toHex(match[3])}`;
-        }
-        return trimmed;
     }
 
     setEnabled(id, enabled) {
@@ -427,6 +338,8 @@ export default class Toolbar {
 
     destroy() {
         this.disarmLiveColor();
+        this._colorPickers.forEach((picker) => picker.destroy());
+        this._colorPickers.clear();
         document.removeEventListener('selectionchange', this._handleLiveSelection);
         document.removeEventListener('mouseup', this._handleLiveSelection);
         this.el.remove();
