@@ -102,6 +102,16 @@
     text-shadow: none;
 }
 
+/* While a colour picker is open the selected text must show the colour being
+   chosen live, rather than the themed selection colour (white in dark mode)
+   painting over it. Inherit the text's own colour under the selection so the
+   applied colour stays visible; the selection highlight remains as the
+   indicator that text is selected. Only applies during picking, so ordinary
+   selection outside the picker is unaffected. */
+.ife-wrapper.ife-color-picking .ife-content ::selection {
+    color: inherit;
+}
+
 @media (max-width: 640px) {
     .ife-content {
         padding: 12px 8px;

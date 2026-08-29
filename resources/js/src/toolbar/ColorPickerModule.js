@@ -113,6 +113,12 @@ export default class ColorPickerModule {
     open() {
         if (this.picker) return;
         this.editor.selection.save();
+        // While the picker is open the selected text must stay visibly recoloured
+        // live. A themed `::selection` (white text in dark mode) would otherwise
+        // paint over the applied colour under the still-active selection; this
+        // class lets CSS show the chosen text colour while keeping the selection
+        // highlight (see `.ife-wrapper.ife-color-picking` in the stylesheet).
+        this.editor.wrapper.classList.add('ife-color-picking');
 
         const current = this.getCurrentColor();
         const [h, s, v] = current ? hexToHsv(current) : [0, 0, 0];
@@ -384,6 +390,7 @@ export default class ColorPickerModule {
             this.picker.remove();
             this.picker = null;
         }
+        this.editor.wrapper.classList.remove('ife-color-picking');
         if (this._boundOnResize) window.removeEventListener('resize', this._boundOnResize);
         if (this._boundOnScroll) window.removeEventListener('scroll', this._boundOnScroll);
         if (this._boundOnClickOutside) document.removeEventListener('click', this._boundOnClickOutside);

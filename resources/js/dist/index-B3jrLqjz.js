@@ -2053,7 +2053,7 @@ class Z {
   }
   open() {
     if (this.picker) return;
-    this.editor.selection.save();
+    this.editor.selection.save(), this.editor.wrapper.classList.add("ife-color-picking");
     const e = this.getCurrentColor(), [t, n, o] = e ? S(e) : [0, 0, 0];
     this.hue = t, this.sat = n, this.value = o, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
     const i = this.editor.wrapper;
@@ -2170,7 +2170,7 @@ class Z {
     isNaN(s) || (this.picker.style.zIndex = s + 1), this.picker.style.top = `${o}px`, this.picker.style.left = `${i}px`;
   }
   close() {
-    this.picker && (this.picker.remove(), this.picker = null), this._boundOnResize && window.removeEventListener("resize", this._boundOnResize), this._boundOnScroll && window.removeEventListener("scroll", this._boundOnScroll), this._boundOnClickOutside && document.removeEventListener("click", this._boundOnClickOutside), this._boundKeydown && document.removeEventListener("keydown", this._boundKeydown), this._boundPointerMove && document.removeEventListener("pointermove", this._boundPointerMove), this._boundPointerUp && document.removeEventListener("pointerup", this._boundPointerUp), this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null, this._boundKeydown = null, this._boundPointerMove = null, this._boundPointerUp = null;
+    this.picker && (this.picker.remove(), this.picker = null), this.editor.wrapper.classList.remove("ife-color-picking"), this._boundOnResize && window.removeEventListener("resize", this._boundOnResize), this._boundOnScroll && window.removeEventListener("scroll", this._boundOnScroll), this._boundOnClickOutside && document.removeEventListener("click", this._boundOnClickOutside), this._boundKeydown && document.removeEventListener("keydown", this._boundKeydown), this._boundPointerMove && document.removeEventListener("pointermove", this._boundPointerMove), this._boundPointerUp && document.removeEventListener("pointerup", this._boundPointerUp), this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null, this._boundKeydown = null, this._boundPointerMove = null, this._boundPointerUp = null;
   }
   destroy() {
     this.close();
@@ -2362,19 +2362,19 @@ class te {
   }
 }
 const ne = {
-  link: () => import("./LinkModule-FKkjtizn.js"),
-  image: () => import("./ImageModule-CfOG4RIl.js"),
-  table: () => import("./TableModule-C5RxqKHS.js"),
+  link: () => import("./LinkModule-45rHF5Cq.js"),
+  image: () => import("./ImageModule-BuXstJwM.js"),
+  table: () => import("./TableModule-V3fOW7hn.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-qhq5Vjd5.js"),
-  note: () => import("./NoteModule-EcwIwEZR.js"),
-  media: () => import("./MediaModule-erJQ5_pX.js"),
+  find: () => import("./FindModule-Bnt5gza4.js"),
+  note: () => import("./NoteModule-rd8L3dl8.js"),
+  media: () => import("./MediaModule-CQ-kQCoj.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-BiExNqT_.js"),
+  statusBar: () => import("./StatusBar-CrjeC5gE.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-DZeVlHVq.js")
+  templates: () => import("./TemplateModule-CkJfyuEh.js")
 };
 Object.entries(ne).forEach(([r, e]) => {
   H.registerPlugin(r, async (t) => {
@@ -2421,4 +2421,4 @@ export {
   y as L,
   ie as W
 };
-//# sourceMappingURL=index-CgnIpLUg.js.map
+//# sourceMappingURL=index-B3jrLqjz.js.map

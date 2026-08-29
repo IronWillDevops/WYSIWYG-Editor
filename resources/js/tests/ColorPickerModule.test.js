@@ -74,6 +74,14 @@ describe('ColorPickerModule', () => {
             expect(editor.selection.restore).not.toHaveBeenCalled();
         });
 
+        it('marks the wrapper while open so the selected text shows its colour live, then unmarks it on close', () => {
+            expect(editor.wrapper.classList.contains('ife-color-picking')).toBe(false);
+            module.open();
+            expect(editor.wrapper.classList.contains('ife-color-picking')).toBe(true);
+            module.close();
+            expect(editor.wrapper.classList.contains('ife-color-picking')).toBe(false);
+        });
+
         it('saves the selection when it opens', () => {
             module.open();
             expect(editor.selection.save).toHaveBeenCalled();
