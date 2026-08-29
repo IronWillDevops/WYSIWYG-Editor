@@ -48,6 +48,12 @@ export default class Toolbar {
         this._liveTimer = null;
         this._liveIdleTimer = null;
         this._liveLastSelection = '';
+        // Color inputs whose native dialog is open. While a dialog is open the
+        // browser owns `input.value`: writing to it programmatically (e.g. in
+        // syncActiveStates) forces the dialog to commit the current pick and
+        // stop emitting live `input` events, so only the final `change` on close
+        // would apply. These are guarded against any `.value` write while open.
+        this._openColorPickers = new Set();
         this._handleLiveSelection = () => {
             if (!this._liveColor) return;
             const sel = this.editor.selection.getNativeSelection();
@@ -192,16 +198,23 @@ export default class Toolbar {
         // selection rather than to a lost/empty one.
         const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
         const syncValue = () => {
+            if (this._openColorPickers.has(input)) return;
             const color = this.getCurrentColor(cssProp);
             if (color) input.value = color;
         };
         input.addEventListener('pointerdown', () => {
             this.editor.selection.save();
             syncValue();
+            // Mark the dialog as open AFTER syncing, so the very first sync (the
+            // one that opens the dialog at the current color) still runs, but any
+            // later selectionchange-driven sync cannot overwrite the value while
+            // the browser is dragging.
+            this._openColorPickers.add(input);
         });
         input.addEventListener('mousedown', () => {
             this.editor.selection.save();
             syncValue();
+            this._openColorPickers.add(input);
         });
         input.addEventListener('input', () => {
             // Apply the chosen color to the saved selection WITHOUT calling the
@@ -218,6 +231,17 @@ export default class Toolbar {
             // collapsing the live selection).
             this.armLiveColor({ command: def.command, value: input.value });
         });
+        input.addEventListener('change', () => {
+            // The native dialog closed with an accepted color. Apply it here as
+            // a safety net for browsers that fire only one (or coalesced) `input`
+            // events, then release the dialog so syncActiveStates can resume
+            // syncing input.value again.
+            this.editor.selection.restoreSavedOffsets();
+            this.editor.commands.exec(def.command, input.value);
+            this.armLiveColor({ command: def.command, value: input.value });
+            this._openColorPickers.delete(input);
+        });
+        input.addEventListener('blur', () => this._openColorPickers.delete(input));
 
         wrapper.appendChild(input);
         this.buttons.set(id, wrapper);
@@ -315,12 +339,15 @@ export default class Toolbar {
         // defaulting to black/white). Without this, the first interaction reports
         // the stale default (#000000), which the command layer treats as "no
         // color" and wrongly clears the selection instead of applying the color.
+        // While a color dialog is open this sync is skipped so the browser's
+        // ownership of `input.value` during the drag is never disturbed (which
+        // would stop live `input` events and apply only on close).
         ['forecolor', 'backcolor'].forEach((id) => {
             const def = ToolbarConfig[id];
             const wrapper = this.buttons.get(id);
             if (!def || !(wrapper instanceof HTMLInputElement || wrapper instanceof HTMLLabelElement)) return;
             const input = wrapper.querySelector('input[type="color"]');
-            if (!input) return;
+            if (!input || this._openColorPickers.has(input)) return;
             const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
             const color = this.getCurrentColor(cssProp);
             if (color) input.value = color;

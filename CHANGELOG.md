@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Text color now updates live while dragging in the native colour picker, matching the background-color picker, instead of applying only when the dialog closes. While a colour dialog is open the browser owns `input.value`, so the toolbar no longer rewrites it on selection changes (which forced the dialog to commit the current pick and stop emitting live `input` events); a `change`-handler safety net still applies the final colour, and the open-dialog guard is released on close/blur so the picker resumes syncing to the current selection.
 - Applying a block format (headings H1-H6 / paragraph) no longer silently does nothing when the caret is in content that has no enclosing block wrapper (e.g. plain text living directly under the editor root). `formatBlock()` now wraps the caret's whole line — or only the selected run — into the target block, and block detection no longer depends on a block being a direct child of the root.
 - Choosing a heading (or paragraph) from the block-format dropdown is no longer a no-op. The `change` handler now applies the format the user picked rather than the block tag that a selectionchange-driven toolbar resync rewrites onto the dropdown before the command runs.
 - Restoring the saved selection no longer gets corrupted by the first formatting command: `Selection.restore()` now applies a clone of the saved range so repeated operations (repeat color drags, applying a heading, ...) don't silently no-op on an emptied selection.

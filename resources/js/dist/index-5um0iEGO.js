@@ -43,7 +43,7 @@ class O {
     this.listeners.clear();
   }
 }
-class A {
+class _ {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -222,7 +222,7 @@ class A {
     this.root.focus(), this.restore();
   }
 }
-class _ {
+class A {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -273,7 +273,7 @@ class _ {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const z = /* @__PURE__ */ new Set([
+const x = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -296,7 +296,7 @@ function S(r) {
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
 function I(r) {
-  return z.has(S(r));
+  return x.has(S(r));
 }
 function D(r) {
   return T.has(S(r));
@@ -824,7 +824,7 @@ class V {
     return l;
   }
 }
-const F = /* @__PURE__ */ new Set([
+const P = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -892,7 +892,7 @@ const F = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), P = {
+]), F = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -939,7 +939,7 @@ class q {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : F, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : P, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : W;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : P, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : F, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : W;
   }
   /**
    * @param {string} dirtyHtml
@@ -1046,7 +1046,7 @@ class q {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
     const n = t[1].toLowerCase(), o = S(t[2]);
-    return n === "color" ? z.has(o) : n === "background-color" ? T.has(o) : n === "background" ? this.isSolidBalancedColor(o) && T.has(o) : !1;
+    return n === "color" ? x.has(o) : n === "background-color" ? T.has(o) : n === "background" ? this.isSolidBalancedColor(o) && T.has(o) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1085,7 +1085,7 @@ class L {
    */
   constructor(e, t = {}) {
     var n, o;
-    this.textarea = e, this.options = { ...U, ...t }, this.events = new O(), this.sanitizer = new q(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new A(this.root), this.commands = new V(this), this.history = new _({
+    this.textarea = e, this.options = { ...U, ...t }, this.events = new O(), this.sanitizer = new q(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new _(this.root), this.commands = new V(this), this.history = new A({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -1285,8 +1285,8 @@ class L {
         l.textContent = m;
         const v = document.createElement("p");
         if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !c.textContent.trim()) {
-          const b = c.parentNode, x = document.createTextNode("");
-          b.replaceChild(x, c);
+          const b = c.parentNode, z = document.createTextNode("");
+          b.replaceChild(z, c);
         }
         const p = document.createRange(), g = v.firstChild || v;
         p.setStart(g, 0), p.collapse(!0), this.selection.setRange(p);
@@ -2002,7 +2002,7 @@ class J {
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? K, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
+    this.editor = e, this.layout = t ?? K, this.buttons = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._openColorPickers = /* @__PURE__ */ new Set(), this._handleLiveSelection = () => {
       if (!this._liveColor) return;
       const n = this.editor.selection.getNativeSelection();
       if (!n || n.rangeCount === 0 || n.isCollapsed) return;
@@ -2065,16 +2065,19 @@ class J {
     const s = document.createElement("input");
     s.type = "color", s.setAttribute("aria-label", o);
     const c = t.command === "backColor" ? "backgroundColor" : "color", l = () => {
+      if (this._openColorPickers.has(s)) return;
       const a = this.getCurrentColor(c);
       a && (s.value = a);
     };
     return s.addEventListener("pointerdown", () => {
-      this.editor.selection.save(), l();
+      this.editor.selection.save(), l(), this._openColorPickers.add(s);
     }), s.addEventListener("mousedown", () => {
-      this.editor.selection.save(), l();
+      this.editor.selection.save(), l(), this._openColorPickers.add(s);
     }), s.addEventListener("input", () => {
       this.editor.selection.restoreSavedOffsets(), this.editor.commands.exec(t.command, s.value), this.armLiveColor({ command: t.command, value: s.value });
-    }), i.appendChild(s), this.buttons.set(e, i), i;
+    }), s.addEventListener("change", () => {
+      this.editor.selection.restoreSavedOffsets(), this.editor.commands.exec(t.command, s.value), this.armLiveColor({ command: t.command, value: s.value }), this._openColorPickers.delete(s);
+    }), s.addEventListener("blur", () => this._openColorPickers.delete(s)), i.appendChild(s), this.buttons.set(e, i), i;
   }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
   syncActiveStates() {
@@ -2148,7 +2151,7 @@ class J {
       const h = N[a], m = this.buttons.get(a);
       if (!h || !(m instanceof HTMLInputElement || m instanceof HTMLLabelElement)) return;
       const f = m.querySelector('input[type="color"]');
-      if (!f) return;
+      if (!f || this._openColorPickers.has(f)) return;
       const v = h.command === "backColor" ? "backgroundColor" : "color", p = this.getCurrentColor(v);
       p && (f.value = p);
     });
@@ -2206,19 +2209,19 @@ class J {
   }
 }
 const Y = {
-  link: () => import("./LinkModule-lMgkVeQv.js"),
-  image: () => import("./ImageModule-BZAHlz5O.js"),
-  table: () => import("./TableModule-BdV4ypL-.js"),
+  link: () => import("./LinkModule-DxQbCEeK.js"),
+  image: () => import("./ImageModule-flrpx_D2.js"),
+  table: () => import("./TableModule-DbsFfe5o.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DG2K03BG.js"),
-  note: () => import("./NoteModule-BzIwMwtK.js"),
-  media: () => import("./MediaModule-DbfGvLzr.js"),
+  find: () => import("./FindModule-DeVyzghv.js"),
+  note: () => import("./NoteModule-DwFH_mpE.js"),
+  media: () => import("./MediaModule-CtpNGNi-.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-BS8oVdRI.js"),
+  statusBar: () => import("./StatusBar-DA4u-9TW.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BJajwdBZ.js")
+  templates: () => import("./TemplateModule-B4WQ-mM9.js")
 };
 Object.entries(Y).forEach(([r, e]) => {
   L.registerPlugin(r, async (t) => {
@@ -2265,4 +2268,4 @@ export {
   y as L,
   Z as W
 };
-//# sourceMappingURL=index-DPTeJ23S.js.map
+//# sourceMappingURL=index-5um0iEGO.js.map

@@ -136,6 +136,51 @@ describe('Toolbar', () => {
         expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#ff0000');
     });
 
+    it('does not overwrite a color input value while its native dialog is open', () => {
+        // While the dialog is open the browser owns input.value; writing to it
+        // (via syncActiveStates selectionchange sync) would commit the pick and
+        // stop live `input` events, so it must be guarded.
+        editor.root.innerHTML = '<p><span style="color: rgb(0, 255, 0)">hello</span></p>';
+        const span = editor.root.querySelector('span');
+        const range = document.createRange();
+        range.selectNodeContents(span.firstChild);
+        editor.selection.getRange = vi.fn(() => range);
+        editor.selection.getBlockElement = vi.fn(() => span.closest('p'));
+        toolbar = new Toolbar(editor);
+
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.dispatchEvent(new Event('pointerdown'));
+        // The user has dragged the picker to red, but the editor still thinks the
+        // selection is green; syncActiveStates must NOT overwrite the open pick.
+        input.value = '#ff0000';
+        toolbar.syncActiveStates();
+        expect(input.value).toBe('#ff0000');
+    });
+
+    it('color picker change applies the chosen color and releases the open-dialog guard', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.dispatchEvent(new Event('pointerdown'));
+        expect(toolbar._openColorPickers.has(input)).toBe(true);
+
+        input.value = '#00ffff';
+        input.dispatchEvent(new Event('change'));
+
+        expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
+        expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#00ffff');
+        expect(toolbar._openColorPickers.has(input)).toBe(false);
+    });
+
+    it('blur releases the color picker open-dialog guard', () => {
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.dispatchEvent(new Event('pointerdown'));
+        expect(toolbar._openColorPickers.has(input)).toBe(true);
+
+        input.dispatchEvent(new Event('blur'));
+        expect(toolbar._openColorPickers.has(input)).toBe(false);
+    });
+
     it('picking a color arms live recolouring for selection changes', () => {
         toolbar = new Toolbar(editor);
         const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
