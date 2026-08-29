@@ -240,6 +240,45 @@ it drops into either design system without class collisions. Note/callout
 blocks render as `<div class="note note-info">…</div>`, which maps cleanly
 onto Bootstrap's alert color palette or a Tailwind `@apply` equivalent.
 
+## Rendering published content
+
+Editor-generated HTML is structured so the same content looks identical inside
+the editor and when published. The styles that describe that HTML (headings,
+tables, blockquotes, lists, code, images, note blocks) live in one place:
+
+- [`resources/css/wysiwyg-content.css`](resources/css/wysiwyg-content.css) —
+  the **single source of truth** for content/prose styles. It defines its own
+  `--ife-*` fallbacks and styles every element generically under `.ife-content`.
+- [`resources/css/wysiwyg-editor.css`](resources/css/wysiwyg-editor.css) —
+  editor **UI only** (toolbar, dialogs, emoji picker, contexts menus, resize
+  handles, status bar). It is never required to render a post and contains no
+  content styles, so it cannot leak UI styles onto a normal page.
+
+The editor imports both files; a published post needs only the content file.
+
+Editor page (auto-loaded by `<x-editor>`):
+```blade
+<link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+<script type="module" src="{{ asset('vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js') }}"></script>
+```
+
+Published post:
+```blade
+<link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-content.css') }}">
+
+<div class="ife-content max-w-none">
+    {!! $post->content?->content !!}
+</div>
+```
+
+The `.ife-content` wrapper is what the content selectors target, so wrap post
+HTML in the same class the editor uses. Because the content CSS ships its own
+variable defaults it works with no JS and no wrapper, and it never conflicts
+with Tailwind `max-w-none` or Preflight resets (`prose` is not required and
+deliberately not injected). To reuse a site theme, set the `--ife-*` custom
+properties on `.ife-content` (or an ancestor) exactly as the editor's
+`.ife-wrapper` does for dark mode.
+
 ## Configuration reference
 
 See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,

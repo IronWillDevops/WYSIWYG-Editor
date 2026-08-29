@@ -72,10 +72,23 @@ describe('TableModule', () => {
             expect(root.style.maxHeight).toMatch(/^\d+px$/);
         });
 
+        it('bounds the editor to the viewport on construction (init may fire before async module load)', () => {
+            vi.useFakeTimers();
+            root.innerHTML = '<p>some content</p>';
+
+            new TableModule(editor);
+            expect(root.style.maxHeight).toBe('');
+
+            vi.advanceTimersByTime(0);
+            expect(root.style.maxHeight).toBeTruthy();
+            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+
+            vi.useRealTimers();
+        });
+
         it('sets maxHeight clamped to minimum of 200px', () => {
             const module = new TableModule(editor);
 
-            const originalHeight = window.innerHeight;
             vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(50);
 
             module.adjustTableHeight();

@@ -160,7 +160,7 @@ describe('Commands', () => {
             expect(document.execCommand).toHaveBeenCalledWith('styleWithCSS', false, true);
         });
 
-        it('foreColor with value calls execCommand foreColor', () => {
+        it('foreColor with value applies the color via the DOM', () => {
             const textNode = root.querySelector('p').firstChild;
             const range = document.createRange();
             range.selectNodeContents(textNode);
@@ -168,7 +168,10 @@ describe('Commands', () => {
 
             commands.exec('foreColor', 'red');
 
-            expect(document.execCommand).toHaveBeenCalledWith('foreColor', false, 'red');
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.color).toBe('red');
+            expect(span.textContent).toBe('hello world');
         });
 
         it('foreColor without value calls clearColor', () => {
@@ -183,7 +186,7 @@ describe('Commands', () => {
             expect(commands.clearColor).toHaveBeenCalledWith('color');
         });
 
-        it('backColor with value calls execCommand hiliteColor', () => {
+        it('backColor with value applies the background via the DOM', () => {
             const textNode = root.querySelector('p').firstChild;
             const range = document.createRange();
             range.selectNodeContents(textNode);
@@ -191,7 +194,10 @@ describe('Commands', () => {
 
             commands.exec('backColor', 'yellow');
 
-            expect(document.execCommand).toHaveBeenCalledWith('hiliteColor', false, 'yellow');
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.backgroundColor).toBe('yellow');
+            expect(span.textContent).toBe('hello world');
         });
 
         it('backColor without value calls clearColor', () => {
@@ -204,6 +210,54 @@ describe('Commands', () => {
             commands.exec('backColor', null);
 
             expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
+        });
+
+        it('foreColor with the default black color clears instead of applying it', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#000000');
+
+            expect(commands.clearColor).toHaveBeenCalledWith('color');
+            expect(root.querySelector('p span')).toBeNull();
+        });
+
+        it('foreColor with a custom non-default color is applied', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#00ff00');
+
+            expect(root.querySelector('p span').style.color).toBe('rgb(0, 255, 0)');
+        });
+
+        it('backColor with the default white background clears instead of applying it', () => {
+            vi.spyOn(commands, 'clearColor');
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ffffff');
+
+            expect(commands.clearColor).toHaveBeenCalledWith('backgroundColor');
+            expect(root.querySelector('p span')).toBeNull();
+        });
+
+        it('backColor with a custom non-default background is applied', () => {
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.selectNodeContents(textNode);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ffcc00');
+
+            expect(root.querySelector('p span').style.backgroundColor).toBe('rgb(255, 204, 0)');
         });
 
         it('removeFormat calls execCommand removeFormat and clearInlineStyles', () => {
@@ -233,6 +287,182 @@ describe('Commands', () => {
         });
     });
 
+    describe('applyColor', () => {
+        it('colours a whole block selection', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.textContent).toBe('The quick brown fox');
+            // The browser may normalise shorthand but jsdom keeps the exact value set.
+            expect(span.style.color).toBe('rgb(255, 0, 0)');
+        });
+
+        it('colors only the selected portion of a text node', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);   // "quick"
+            range.setEnd(textNode, 15);    // "brown"
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p>The <span style="color: rgb(0, 0, 255);">quick brown</span> fox</p>'
+            );
+        });
+
+        it('is idempotent: re-applying the same color does not nest spans', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const select = (from, to) => {
+                const range = document.createRange();
+                range.setStart(textNode, from);
+                range.setEnd(textNode, to);
+                editor.selection.setRange(range);
+            };
+
+            select(0, textNode.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+            const afterFirst = root.innerHTML;
+            // reapply over the same (now wrapped) content
+            const span = root.querySelector('p span');
+            select(0, span.firstChild.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+
+            expect(root.innerHTML).toBe(afterFirst);
+            expect(root.querySelectorAll('span').length).toBe(1);
+        });
+
+        it('re-applying a different color over the same selection switches the color (real-time picker)', () => {
+            // Regression: a previous applyColor wrapped and moved the selection's
+            // boundary text node, which collapses the live selection in real
+            // browsers, so the next color change silently no-oped. Re-applying a
+            // different color must re-target the same text and switch it.
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);
+            range.setEnd(textNode, 15);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+            commands.exec('foreColor', '#00ff00');
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p>The <span style="color: rgb(0, 0, 255);">quick brown</span> fox</p>'
+            );
+        });
+
+        it('re-applying a different background color over the same selection switches it', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('backColor', '#ff0000');
+            commands.exec('backColor', '#0000ff');
+
+            const span = root.querySelector('p span');
+            expect(span).not.toBeNull();
+            expect(span.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
+        it('re-colouring a subset of a larger coloured span does not re-colour its neighbours', () => {
+            root.innerHTML = '<p><span style="color: rgb(255, 0, 0);">quick brown</span> fox</p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, 5);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#0000ff');
+
+            expect(root.innerHTML).toBe(
+                '<p><span style="color: rgb(0, 0, 255);">quick</span><span style="color: rgb(255, 0, 0);"> brown</span> fox</p>'
+            );
+        });
+
+        it('applying a foreground colour to text inside a background span folds, not nests', () => {
+            // Regression: applying a text colour to text that already carries a
+            // background colour used to wrap a fresh nested span every time,
+            // growing the markup. It must fold the colour into the existing span.
+            root.innerHTML = '<p><span style="background-color: rgb(0, 0, 255);">hello</span></p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+
+            const result = root.querySelector('p > span');
+            expect(root.querySelectorAll('span').length).toBe(1);
+            expect(result).not.toBeNull();
+            expect(result.style.color).toBe('rgb(255, 0, 0)');
+            expect(result.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
+        it('re-colouring text keeps an existing background colour on the span', () => {
+            // Regression: re-applying a foreground colour to text that also
+            // carries a background colour used to drop the background (the split
+            // re-wrap carried only the new foreground). The other inline styles
+            // must survive.
+            root.innerHTML = '<p><span style="background-color: rgb(0, 0, 255);">hello</span></p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const select = (from, to) => {
+                const range = document.createRange();
+                range.setStart(textNode, from);
+                range.setEnd(textNode, to);
+                editor.selection.setRange(range);
+            };
+
+            select(0, textNode.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+            expect(root.innerHTML).toBe(
+                '<p><span style="background-color: rgb(0, 0, 255); color: rgb(255, 0, 0);">hello</span></p>'
+            );
+
+            const spanAfter = root.querySelector('p span');
+            select(0, spanAfter.firstChild.textContent.length);
+            commands.exec('foreColor', '#00ff00');
+
+            const result = root.querySelector('p > span');
+            expect(result.style.color).toBe('rgb(0, 255, 0)');
+            expect(result.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
+        it('leaves the native selection intact after applying', () => {
+            root.innerHTML = '<p>The quick brown fox</p>';
+            const textNode = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 4);
+            range.setEnd(textNode, 9);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#00ff00');
+
+            const sel = window.getSelection();
+            expect(sel.rangeCount).toBe(1);
+            expect(sel.toString()).toBe('quick');
+            expect(sel.isCollapsed).toBe(false);
+        });
+    });
+
     describe('clearColor', () => {
         it('removes color style from elements in range', () => {
             root.innerHTML = '<p><span style="color: red;">red</span> normal</p>';
@@ -256,6 +486,22 @@ describe('Commands', () => {
             commands.clearColor('color');
 
             expect(root.querySelector('span')).toBeNull();
+        });
+
+        it('preserves the selection by re-selecting the cleared range by offsets', () => {
+            root.innerHTML = '<p><span style="color: red;">red text</span> normal</p>';
+            const span = root.querySelector('span');
+            const range = document.createRange();
+            range.selectNodeContents(span.firstChild);
+            editor.selection.setRange(range);
+            const spy = vi.spyOn(editor.selection, 'setRangeByOffsets');
+
+            commands.clearColor('color');
+
+            expect(spy).toHaveBeenCalled();
+            expect(span.style.color).toBe('');
+            const sel = editor.selection.getRange();
+            expect(sel.toString()).toBe('red text');
         });
     });
 
@@ -315,7 +561,7 @@ describe('Commands', () => {
             expect(root.querySelector('h3').textContent).toBe('title');
         });
 
-        it('does nothing if block is the root', () => {
+        it('wraps plain root-level text into the target block', () => {
             root.innerHTML = 'plain text';
             const range = document.createRange();
             range.selectNodeContents(root.firstChild);
@@ -323,7 +569,72 @@ describe('Commands', () => {
 
             commands.formatBlock('h1');
 
-            expect(root.querySelector('h1')).toBeNull();
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('plain text');
+            expect(root.children.length).toBe(1);
+        });
+
+        it('wraps a whole caret line of plain root text into a heading', () => {
+            root.innerHTML = 'line one';
+            const text = root.firstChild;
+            const range = document.createRange();
+            range.setStart(text, 2);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('line one');
+        });
+
+        it('wraps only the line containing a caret in <br>-separated plain text', () => {
+            root.innerHTML = 'intro<br>the heading<br>outro';
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            walker.nextNode(); // intro
+            const headingText = walker.nextNode(); // "the heading"
+            const range = document.createRange();
+            range.setStart(headingText, 4);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            const h2 = root.querySelector('h2');
+            expect(h2).not.toBeNull();
+            expect(h2.textContent).toBe('the heading');
+            expect(root.querySelectorAll('br').length).toBe(2);
+        });
+
+        it('wraps a selected run of plain root text into the target block', () => {
+            root.innerHTML = 'select me';
+            const text = root.firstChild;
+            const range = document.createRange();
+            range.setStart(text, 0);
+            range.setEnd(text, 6); // "select"
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1')).not.toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('select');
+        });
+
+        it('converts a nested block to the target tag preserving the wrapper', () => {
+            root.innerHTML = '<div><p>heading content</p></div>';
+            const text = root.querySelector('p').firstChild;
+            const range = document.createRange();
+            range.setStart(text, 1);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            const h1 = root.querySelector('h1');
+            expect(h1).not.toBeNull();
+            expect(h1.textContent).toBe('heading content');
+            expect(root.querySelector('div')).not.toBeNull();
+            expect(root.querySelector('p')).toBeNull();
         });
 
         it('supports all heading levels h1-h6', () => {
@@ -354,6 +665,48 @@ describe('Commands', () => {
             expect(h1).not.toBeNull();
             expect(h1.querySelector('strong')).not.toBeNull();
             expect(h1.querySelector('strong').textContent).toBe('bold');
+        });
+
+        it('converts every block touched by a multi-block selection', () => {
+            root.innerHTML = '<p>one</p><p>two</p><p>three</p>';
+            const ps = root.querySelectorAll('p');
+            const range = document.createRange();
+            range.setStart(ps[0].firstChild, 0);
+            range.setEnd(ps[2].firstChild, 5);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            expect(root.querySelectorAll('h2').length).toBe(3);
+            expect(root.querySelectorAll('p').length).toBe(0);
+            expect([...root.querySelectorAll('h2')].map((h) => h.textContent)).toEqual(['one', 'two', 'three']);
+        });
+
+        it('converts all blocks when the range common ancestor is the root (Select All)', () => {
+            root.innerHTML = '<p>first</p><p>second</p><p>third</p>';
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelectorAll('h1').length).toBe(3);
+            expect(root.querySelectorAll('p').length).toBe(0);
+        });
+
+        it('only converts blocks that differ from the target tag', () => {
+            root.innerHTML = '<h1>one</h1><p>two</p>';
+            const h1 = root.querySelector('h1');
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.setStart(h1.firstChild, 0);
+            range.setEnd(p.firstChild, 3);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelectorAll('h1').length).toBe(2);
+            expect(root.querySelectorAll('p').length).toBe(0);
         });
     });
 });

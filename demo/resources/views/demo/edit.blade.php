@@ -28,6 +28,8 @@
         <button type="submit" style="margin-top:16px;padding:8px 20px;">
             Save
         </button>
+
+        <a href="{{ route('demo.post') }}" style="margin-left:12px;">View published post &rarr;</a>
     </form>
 </body>
 </html>

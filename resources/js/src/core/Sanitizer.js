@@ -49,6 +49,8 @@ const DEFAULT_ALLOWED_ATTRS = {
     ul: new Set(['class', 'style']),
 };
 
+import { DEFAULT_TEXT_COLORS, DEFAULT_BG_COLORS, normalizeColor } from '../utils/colors.js';
+
 const ALLOWED_URL_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:', '']);
 
 /**
@@ -174,7 +176,12 @@ export default class Sanitizer {
             }
 
             if (name === 'style') {
-                el.setAttribute('style', this.cleanStyle(attr.value));
+                const cleaned = this.cleanStyle(attr.value);
+                if (cleaned) {
+                    el.setAttribute('style', cleaned);
+                } else {
+                    el.removeAttribute('style');
+                }
             }
         });
     }
@@ -204,8 +211,61 @@ export default class Sanitizer {
     cleanStyle(style) {
         return style
             .split(';')
+            .map((decl) => decl.trim())
+            .filter((decl) => decl.length > 0)
             .filter((decl) => !/expression\s*\(|javascript:/i.test(decl))
+            .filter((decl) => !this.isThemeNeutralColor(decl))
             .join(';');
+    }
+
+    /**
+     * Drops an inline CSS declaration when it only sets a default/theme-neutral
+     * color — black text or white background. These are the values a "no
+     * explicit color" selection or a browser paste injects, and letting them
+     * reach the saved article couples the content to a light theme. A
+     * deliberately chosen non-default color (e.g. `color: red`) is preserved.
+     *
+     * @param {string} declaration a single `property: value` declaration
+     * @returns {boolean} true when the declaration should be removed
+     */
+    isThemeNeutralColor(declaration) {
+        const match = /^([a-z-]+)\s*:\s*(.+)$/i.exec(declaration);
+        if (!match) return false;
+
+        const property = match[1].toLowerCase();
+        const value = normalizeColor(match[2]);
+
+        if (property === 'color') {
+            return DEFAULT_TEXT_COLORS.has(value);
+        }
+        if (property === 'background-color') {
+            return DEFAULT_BG_COLORS.has(value);
+        }
+        // The `background` shorthand — strip only when it is purely a solid
+        // white color, never when it includes an image (a gradient or
+        // background image contains something other than a single color).
+        if (property === 'background') {
+            return this.isSolidBalancedColor(value) && DEFAULT_BG_COLORS.has(value);
+        }
+        return false;
+    }
+
+    /**
+     * Reports whether a value is a single balanced `color(...)` expression —
+     * i.e. the `background` shorthand contains nothing but a color. Gradient
+     * or image backgrounds contain unbalanced parens/`url(` and are skipped.
+     * @param {string} value
+     * @returns {boolean}
+     */
+    isSolidBalancedColor(value) {
+        if (/url\(/i.test(value)) return false;
+        let depth = 0;
+        for (const ch of value) {
+            if (ch === '(') depth += 1;
+            if (ch === ')') depth -= 1;
+            if (depth < 0) return false;
+        }
+        return depth === 0;
     }
 
     /** @param {HTMLElement} el */

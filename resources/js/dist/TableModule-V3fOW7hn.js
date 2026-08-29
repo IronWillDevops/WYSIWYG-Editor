@@ -1,7 +1,7 @@
-import { D as H } from "./index-C0XXTwbu.js";
+import { D as H } from "./index-B3jrLqjz.js";
 class A {
   constructor(e) {
-    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight), this.editor.root.addEventListener("mousedown", (t) => this.handleColumnResizeStart(t)), this.editor.on("paste", () => this.addColumnResizeHandles());
+    this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight), setTimeout(this.adjustTableHeight, 0), this.editor.root.addEventListener("mousedown", (t) => this.handleColumnResizeStart(t)), this.editor.on("paste", () => this.addColumnResizeHandles());
   }
   /**
    * Builds the floating mini-toolbar that appears whenever the caret is
@@ -280,10 +280,10 @@ class A {
     m.forEach((p) => {
       let x = 0, b = p.previousElementSibling;
       for (; b; ) {
-        const T = getComputedStyle(b);
-        x += b.offsetHeight + (parseFloat(T.marginTop) || 0) + (parseFloat(T.marginBottom) || 0), b = b.previousElementSibling;
+        const y = getComputedStyle(b);
+        x += b.offsetHeight + (parseFloat(y.marginTop) || 0) + (parseFloat(y.marginBottom) || 0), b = b.previousElementSibling;
       }
-      const y = getComputedStyle(p), E = parseFloat(y.marginTop) || 0, R = parseFloat(y.marginBottom) || 0, S = h - w - x - E - R - v;
+      const T = getComputedStyle(p), E = parseFloat(T.marginTop) || 0, R = parseFloat(T.marginBottom) || 0, S = h - w - x - E - R - v;
       p.style.maxHeight = `${Math.max(200, Math.floor(S))}px`;
     });
   }
@@ -295,4 +295,4 @@ class A {
 export {
   A as default
 };
-//# sourceMappingURL=TableModule-5TKxRdR2.js.map
+//# sourceMappingURL=TableModule-V3fOW7hn.js.map
