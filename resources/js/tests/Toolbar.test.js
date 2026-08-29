@@ -22,7 +22,7 @@ function createMockEditor() {
             getNativeSelection: vi.fn(() => null),
             getRange: vi.fn(() => null),
         },
-        commands: { queryState: vi.fn(() => false), exec: vi.fn() },
+        commands: { queryState: vi.fn(() => false), exec: vi.fn(), applyColor: vi.fn() },
         on: vi.fn(),
     };
 }
@@ -122,18 +122,50 @@ describe('Toolbar', () => {
         expect(editor.selection.save).toHaveBeenCalled();
     });
 
-    it('color picker restores selection and applies the chosen color on input', () => {
+    it('color picker restores selection and applies the chosen color on input (live)', () => {
         toolbar = new Toolbar(editor);
 
         // The saved selection is restored (by character offsets) without focusing
         // the editor so the native color dialog stays open for real-time picks.
+        // The live `input` path applies the color unconditionally (like the
+        // background picker) so an intermediate picker value is previewed live.
         const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
         input.value = '#ff0000';
         input.dispatchEvent(new Event('input'));
 
         expect(editor.selection.restoreSavedOffsets).toHaveBeenCalled();
         expect(editor.selection.restore).not.toHaveBeenCalled();
-        expect(editor.commands.exec).toHaveBeenCalledWith('foreColor', '#ff0000');
+        expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#ff0000');
+        expect(editor.commands.exec).not.toHaveBeenCalled();
+    });
+
+    it('color picker input applies the text color live even when the value is the default black', () => {
+        // The background picker only treats WHITE as neutral, so black values land
+        // live; the text picker must behave the same during a drag (it clears the
+        // colour only on the committed `change`, not on each intermediate `input`).
+        toolbar = new Toolbar(editor);
+        const input = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        input.value = '#000000';
+        input.dispatchEvent(new Event('input'));
+
+        expect(editor.commands.applyColor).toHaveBeenCalledWith('color', '#000000');
+    });
+
+    it('color picker change applies the committed color with normal command semantics', () => {
+        // On dialog close the committed color goes through exec(), so text black /
+        // background white are still treated as "no colour" (theme-agnostic output).
+        toolbar = new Toolbar(editor);
+        const textInput = toolbar.buttons.get('forecolor').querySelector('input[type="color"]');
+        const bgInput = toolbar.buttons.get('backcolor').querySelector('input[type="color"]');
+
+        textInput.value = '#000000';
+        textInput.dispatchEvent(new Event('change'));
+        expect(editor.commands.exec).toHaveBeenLastCalledWith('foreColor', '#000000');
+
+        editor.commands.exec.mockClear();
+        bgInput.value = '#ffffff';
+        bgInput.dispatchEvent(new Event('change'));
+        expect(editor.commands.exec).toHaveBeenLastCalledWith('backColor', '#ffffff');
     });
 
     it('does not overwrite a color input value while its native dialog is open', () => {

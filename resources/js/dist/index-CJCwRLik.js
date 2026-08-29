@@ -273,7 +273,7 @@ class A {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const x = /* @__PURE__ */ new Set([
+const z = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -296,7 +296,7 @@ function S(r) {
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
 function I(r) {
-  return x.has(S(r));
+  return z.has(S(r));
 }
 function D(r) {
   return T.has(S(r));
@@ -1046,7 +1046,7 @@ class q {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
     const n = t[1].toLowerCase(), o = S(t[2]);
-    return n === "color" ? x.has(o) : n === "background-color" ? T.has(o) : n === "background" ? this.isSolidBalancedColor(o) && T.has(o) : !1;
+    return n === "color" ? z.has(o) : n === "background-color" ? T.has(o) : n === "background" ? this.isSolidBalancedColor(o) && T.has(o) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1285,8 +1285,8 @@ class L {
         l.textContent = m;
         const v = document.createElement("p");
         if (f ? v.textContent = f : v.innerHTML = "<br>", t.parentNode.insertBefore(v, t.nextSibling), !c.textContent.trim()) {
-          const b = c.parentNode, z = document.createTextNode("");
-          b.replaceChild(z, c);
+          const b = c.parentNode, x = document.createTextNode("");
+          b.replaceChild(x, c);
         }
         const p = document.createRange(), g = v.firstChild || v;
         p.setStart(g, 0), p.collapse(!0), this.selection.setRange(p);
@@ -2074,7 +2074,7 @@ class J {
     }), s.addEventListener("mousedown", () => {
       this.editor.selection.save(), l(), this._openColorPickers.add(s);
     }), s.addEventListener("input", () => {
-      this.editor.selection.restoreSavedOffsets(), this.editor.commands.exec(t.command, s.value), this.armLiveColor({ command: t.command, value: s.value });
+      this.editor.selection.restoreSavedOffsets(), this.editor.commands.applyColor(c, s.value), this.armLiveColor({ command: t.command, value: s.value });
     }), s.addEventListener("change", () => {
       this.editor.selection.restoreSavedOffsets(), this.editor.commands.exec(t.command, s.value), this.armLiveColor({ command: t.command, value: s.value }), this._openColorPickers.delete(s);
     }), s.addEventListener("blur", () => this._openColorPickers.delete(s)), i.appendChild(s), this.buttons.set(e, i), i;
@@ -2209,19 +2209,19 @@ class J {
   }
 }
 const Y = {
-  link: () => import("./LinkModule-DxQbCEeK.js"),
-  image: () => import("./ImageModule-flrpx_D2.js"),
-  table: () => import("./TableModule-DbsFfe5o.js"),
+  link: () => import("./LinkModule-DCWjFMEo.js"),
+  image: () => import("./ImageModule-BeVoYGRg.js"),
+  table: () => import("./TableModule-fahGEWCF.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-DeVyzghv.js"),
-  note: () => import("./NoteModule-DwFH_mpE.js"),
-  media: () => import("./MediaModule-CtpNGNi-.js"),
+  find: () => import("./FindModule-UmgLhut8.js"),
+  note: () => import("./NoteModule-Ci9tIwe2.js"),
+  media: () => import("./MediaModule-CTOCgnxm.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-DA4u-9TW.js"),
+  statusBar: () => import("./StatusBar-Dnm9rtaz.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-B4WQ-mM9.js")
+  templates: () => import("./TemplateModule-Di2twZhN.js")
 };
 Object.entries(Y).forEach(([r, e]) => {
   L.registerPlugin(r, async (t) => {
@@ -2268,4 +2268,4 @@ export {
   y as L,
   Z as W
 };
-//# sourceMappingURL=index-5um0iEGO.js.map
+//# sourceMappingURL=index-CJCwRLik.js.map

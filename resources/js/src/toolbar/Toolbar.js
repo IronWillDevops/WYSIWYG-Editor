@@ -224,7 +224,16 @@ export default class Toolbar {
             // colouring performs) keeps the dialog open so the color updates in
             // real time as the user drags in the picker.
             this.editor.selection.restoreSavedOffsets();
-            this.editor.commands.exec(def.command, input.value);
+            // Live preview: apply the color UNCONDITIONALLY, like the background
+            // picker. The committed `change` path treats the picker's default
+            // black as "no colour" (theme-agnostic output), but during a live
+            // drag the saturation/luminance square passes through black values;
+            // clearing on those would wipe the text mid-drag so it only "sticks"
+            // on a definite colour at release. Applying it keeps text tracking
+            // the drag live, exactly as the background picker does; the neutral
+            // clearing still happens on commit (change), so picking a default
+            // black text colour still clears it.
+            this.editor.commands.applyColor(cssProp, input.value);
             // Arm live recolouring. If the user now drags a selection handle to
             // select more text, each newly selected portion is automatically
             // tinted with the colour they just chose (idempotently, without
@@ -232,10 +241,12 @@ export default class Toolbar {
             this.armLiveColor({ command: def.command, value: input.value });
         });
         input.addEventListener('change', () => {
-            // The native dialog closed with an accepted color. Apply it here as
-            // a safety net for browsers that fire only one (or coalesced) `input`
-            // events, then release the dialog so syncActiveStates can resume
-            // syncing input.value again.
+            // The native dialog closed with an accepted color. Apply it here
+            // with the normal command semantics (so the picker's default black
+            // for text / white for background clears the colour, keeping article
+            // output theme-agnostic) as a safety net for browsers that fire only
+            // one (or coalesced) `input` events, then release the dialog so
+            // syncActiveStates can resume syncing input.value again.
             this.editor.selection.restoreSavedOffsets();
             this.editor.commands.exec(def.command, input.value);
             this.armLiveColor({ command: def.command, value: input.value });
