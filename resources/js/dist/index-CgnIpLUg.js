@@ -646,9 +646,15 @@ class F {
       this.mergeColorSpan(o, t, n);
       return;
     }
-    o && o.tagName === "SPAN" && o.style[t] && this.splitSpanAroundNode(o, e);
-    const i = document.createElement("span");
-    i.style[t] = n, e.parentNode.insertBefore(i, e), i.appendChild(e), this.mergeColorSpan(i, t, n);
+    let i = null;
+    if (o && o.tagName === "SPAN" && o.style[t])
+      i = o.style.cssText, this.splitSpanAroundNode(o, e);
+    else if (o && o.tagName === "SPAN" && !o.style[t] && o.childNodes.length === 1 && o.firstChild === e) {
+      o.style[t] = n, this.mergeColorSpan(o, t, n);
+      return;
+    }
+    const s = document.createElement("span");
+    i && (s.style.cssText = i), s.style[t] = n, e.parentNode.insertBefore(s, e), s.appendChild(e), this.mergeColorSpan(s, t, n);
   }
   /**
    * Pulls a single child out of a span, preserving the span's colour (and any
@@ -2356,19 +2362,19 @@ class te {
   }
 }
 const ne = {
-  link: () => import("./LinkModule-BIueF2ZD.js"),
-  image: () => import("./ImageModule-K65mW6Vv.js"),
-  table: () => import("./TableModule-DZrra21z.js"),
+  link: () => import("./LinkModule-FKkjtizn.js"),
+  image: () => import("./ImageModule-CfOG4RIl.js"),
+  table: () => import("./TableModule-C5RxqKHS.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-w0qxs0Sb.js"),
-  note: () => import("./NoteModule-hL6lcc7T.js"),
-  media: () => import("./MediaModule-KEitlZ-p.js"),
+  find: () => import("./FindModule-qhq5Vjd5.js"),
+  note: () => import("./NoteModule-EcwIwEZR.js"),
+  media: () => import("./MediaModule-erJQ5_pX.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-CS7CkoQs.js"),
+  statusBar: () => import("./StatusBar-BiExNqT_.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BJueunin.js")
+  templates: () => import("./TemplateModule-DZeVlHVq.js")
 };
 Object.entries(ne).forEach(([r, e]) => {
   H.registerPlugin(r, async (t) => {
@@ -2415,4 +2421,4 @@ export {
   y as L,
   ie as W
 };
-//# sourceMappingURL=index-DZXl3GUk.js.map
+//# sourceMappingURL=index-CgnIpLUg.js.map

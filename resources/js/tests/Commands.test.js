@@ -395,6 +395,57 @@ describe('Commands', () => {
             );
         });
 
+        it('applying a foreground colour to text inside a background span folds, not nests', () => {
+            // Regression: applying a text colour to text that already carries a
+            // background colour used to wrap a fresh nested span every time,
+            // growing the markup. It must fold the colour into the existing span.
+            root.innerHTML = '<p><span style="background-color: rgb(0, 0, 255);">hello</span></p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const range = document.createRange();
+            range.setStart(textNode, 0);
+            range.setEnd(textNode, textNode.textContent.length);
+            editor.selection.setRange(range);
+
+            commands.exec('foreColor', '#ff0000');
+
+            const result = root.querySelector('p > span');
+            expect(root.querySelectorAll('span').length).toBe(1);
+            expect(result).not.toBeNull();
+            expect(result.style.color).toBe('rgb(255, 0, 0)');
+            expect(result.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
+        it('re-colouring text keeps an existing background colour on the span', () => {
+            // Regression: re-applying a foreground colour to text that also
+            // carries a background colour used to drop the background (the split
+            // re-wrap carried only the new foreground). The other inline styles
+            // must survive.
+            root.innerHTML = '<p><span style="background-color: rgb(0, 0, 255);">hello</span></p>';
+            const span = root.querySelector('p span');
+            const textNode = span.firstChild;
+            const select = (from, to) => {
+                const range = document.createRange();
+                range.setStart(textNode, from);
+                range.setEnd(textNode, to);
+                editor.selection.setRange(range);
+            };
+
+            select(0, textNode.textContent.length);
+            commands.exec('foreColor', '#ff0000');
+            expect(root.innerHTML).toBe(
+                '<p><span style="background-color: rgb(0, 0, 255); color: rgb(255, 0, 0);">hello</span></p>'
+            );
+
+            const spanAfter = root.querySelector('p span');
+            select(0, spanAfter.firstChild.textContent.length);
+            commands.exec('foreColor', '#00ff00');
+
+            const result = root.querySelector('p > span');
+            expect(result.style.color).toBe('rgb(0, 255, 0)');
+            expect(result.style.backgroundColor).toBe('rgb(0, 0, 255)');
+        });
+
         it('leaves the native selection intact after applying', () => {
             root.innerHTML = '<p>The quick brown fox</p>';
             const textNode = root.querySelector('p').firstChild;

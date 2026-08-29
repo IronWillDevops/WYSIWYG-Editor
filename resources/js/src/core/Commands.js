@@ -532,15 +532,35 @@ export default class Commands {
             this.mergeColorSpan(parent, cssProp, value);
             return;
         }
+        let preservedCss = null;
         if (parent && parent.tagName === 'SPAN' && parent.style[cssProp]) {
             // The text node sits inside a span of a *different* colour for this
             // cssProp. Re-colouring must replace that colour rather than wrap a
             // nested span, and must not re-colour any non-selected neighbours
             // sharing the span. Split the text node out (its neighbours keep
-            // their own colour) and wrap it fresh below.
+            // their own colour) and wrap it fresh below. Capture the span's other
+            // inline styles first so the freshly-wrapped node does not lose them
+            // (e.g. a background colour must survive re-colouring the text).
+            preservedCss = parent.style.cssText;
             this.splitSpanAroundNode(parent, textNode);
+        } else if (
+            parent
+            && parent.tagName === 'SPAN'
+            && !parent.style[cssProp]
+            && parent.childNodes.length === 1
+            && parent.firstChild === textNode
+        ) {
+            // The text node is the sole content of an existing span that carries
+            // a different inline property (e.g. a background colour when applying
+            // a foreground colour, or a foreground when applying a background).
+            // Fold the colour into that span instead of nesting a second one, so
+            // re-colouring stays flat — matching the same-cssProp re-colour path.
+            parent.style[cssProp] = value;
+            this.mergeColorSpan(parent, cssProp, value);
+            return;
         }
         const span = document.createElement('span');
+        if (preservedCss) span.style.cssText = preservedCss;
         span.style[cssProp] = value;
         textNode.parentNode.insertBefore(span, textNode);
         span.appendChild(textNode);
