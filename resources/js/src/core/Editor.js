@@ -58,6 +58,7 @@ export default class Editor {
         this.handleShortcut = this.handleShortcut.bind(this);
         this.handleTableTab = this.handleTableTab.bind(this);
         this.handleEnter = this.handleEnter.bind(this);
+        this.handleBackspaceDelete = this.handleBackspaceDelete.bind(this);
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
@@ -85,6 +86,12 @@ export default class Editor {
         this.root.contentEditable = 'true';
         this.root.spellcheck = true;
         this.root.style.minHeight = `${this.options.height}px`;
+        // Bound the content area so very large content (long code blocks, huge
+        // tables, ...) scrolls *inside* the editor instead of growing the root
+        // past the wrapper — the wrapper is overflow:hidden, so an unbounded
+        // root would be clipped with no way to scroll to the rest of the
+        // content. TableModule tightens this to the viewport on init/resize.
+        this.root.style.maxHeight = `${this.options.height}px`;
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
@@ -116,6 +123,7 @@ export default class Editor {
         document.addEventListener('keydown', this.handleShortcut);
         document.addEventListener('keydown', this.handleTableTab);
         document.addEventListener('keydown', this.handleEnter);
+        document.addEventListener('keydown', this.handleBackspaceDelete);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -189,7 +197,10 @@ export default class Editor {
         let timer;
         return (...args) => {
             clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
+            // Keep the pending timer on the instance so destroy() can cancel a
+            // scheduled textarea sync even when it was queued long ago (the
+            // closure timer alone would be unreachable from outside).
+            this._debounceTimer = timer = setTimeout(() => fn(...args), delay);
         };
     }
 
@@ -208,7 +219,7 @@ export default class Editor {
         if (html) {
             clean = this.sanitizer.sanitize(html);
         } else {
-            clean = this.escapeHtml(this.autoLink(text));
+            clean = this.autoLink(this.escapeHtml(text));
         }
         this.commands.insertHTML(clean);
         this.events.emit('paste', { html, text });
@@ -216,9 +227,19 @@ export default class Editor {
 
     /** Converts URLs in plain text to clickable <a> links. */
     autoLink(text) {
+        // Called with already-escapeHtml()-escaped text, so '&' inside a URL will
+        // already be '&amp;' (and '"' already '&quot;'). Escape any remaining
+        // raw '&'/'"' without double-escaping existing entities — keeping the URL
+        // valid inside href="..." and safe to round-trip through getHTML().
+        const escapeHrefPart = (value) => value
+            .replace(/&(?!(?:amp|lt|gt|quot|#\d+|#x[0-9a-f]+);)/gi, '&amp;')
+            .replace(/"/g, '&quot;');
         return text.replace(
             /(https?:\/\/[^\s<]+)/gi,
-            '<a href="$1">$1</a>'
+            (match) => {
+                const escaped = escapeHrefPart(match);
+                return `<a href="${escaped}">${escaped}</a>`;
+            }
         );
     }
 
@@ -241,8 +262,17 @@ export default class Editor {
             u: () => this.commands.exec('underline'),
             k: () => this.module('link')?.open(),
             f: () => this.module('find')?.open(),
-            z: () => (event.shiftKey ? this.history.redo() : this.history.undo()),
-            y: () => this.history.redo(),
+            z: () => {
+                if (event.shiftKey) this.history.redo();
+                else this.history.undo();
+                // Undo/redo restore the caret and content — refresh the toolbar's
+                // active states so formatting buttons match the restored position.
+                this.syncSelectionState();
+            },
+            y: () => {
+                this.history.redo();
+                this.syncSelectionState();
+            },
             s: () => this.events.emit('save', this.getHTML()),
         };
 
@@ -289,9 +319,9 @@ export default class Editor {
 
         event.preventDefault();
 
-        this.history.push();
-
         if (isPre) {
+            // A code block with no content at all is removed by Enter (the caret
+            // exits into a fresh paragraph), matching the established behavior.
             const isEmpty = !block.textContent.trim();
             if (isEmpty) {
                 const p = document.createElement('p');
@@ -302,10 +332,29 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
+                this.commit();
+                return;
+            }
+
+            // The block has content: work out which line holds the caret (a <pre>
+            // can hold several lines separated by <br>). Enter on an empty or
+            // whitespace-only line exits the code block right there; Enter on any
+            // other line just inserts a line break inside the block.
+            const { children, startIndex, endIndex } = this.commands._getLineWindow(
+                block,
+                range.startContainer,
+                range.startOffset
+            );
+            const lineText = children
+                .slice(startIndex, endIndex + 1)
+                .map((node) => node.textContent ?? '')
+                .join('');
+            if (lineText.trim() === '') {
+                this._exitPreFromEmptyLine(block, startIndex - 1, endIndex + 1);
             } else {
                 this._insertBreakInPre(range);
             }
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -323,7 +372,7 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
-                this.emitChange();
+                this.commit();
                 return;
             }
 
@@ -348,7 +397,7 @@ export default class Editor {
             newRange.collapse(true);
             this.selection.setRange(newRange);
 
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -363,7 +412,7 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
-                this.emitChange();
+                this.commit();
                 return;
             }
 
@@ -388,7 +437,7 @@ export default class Editor {
             newRange.collapse(true);
             this.selection.setRange(newRange);
 
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -437,8 +486,14 @@ export default class Editor {
                 this.selection.setRange(newRange);
             }
 
-            this.emitChange();
+            this.commit();
         }
+    }
+
+    /** Records a history snapshot and notifies listeners after a mutation */
+    commit() {
+        this.history.push();
+        this.emitChange();
     }
 
     _insertBreakInPre(range) {
@@ -455,15 +510,152 @@ export default class Editor {
                 const afterText = document.createTextNode(after);
                 startContainer.parentNode.insertBefore(afterText, br.nextSibling);
             }
+        } else if (startContainer.tagName === 'BR') {
+            // A caret anchored directly on a <br> (e.g. the position the browser
+            // leaves after a previous Enter) means the caret sits *after* that
+            // break — inserting into the <br> itself (its child list) would
+            // corrupt the DOM, so insert at the parent level instead.
+            startContainer.parentNode.insertBefore(br, startContainer.nextSibling);
         } else {
             const refNode = startContainer.childNodes[startOffset] || null;
             startContainer.insertBefore(br, refNode);
+        }
+
+        // Normalize the break's container: a <br> must be a direct child of the
+        // <pre> so the next Enter still resolves against the pre's own line
+        // window. A break left inside an inline wrapper (e.g. a nested <code>)
+        // would trap every subsequent Enter inside that wrapper and the block
+        // could never reach an "empty line" to exit from.
+        const pre = this.commands.closestPre(br);
+        if (pre && br.parentNode !== pre) {
+            let holder = br;
+            while (holder.parentNode && holder.parentNode !== pre) holder = holder.parentNode;
+            pre.insertBefore(br, holder.nextSibling);
         }
 
         const newRange = document.createRange();
         newRange.setStartAfter(br);
         newRange.collapse(true);
         this.selection.setRange(newRange);
+    }
+
+    /**
+     * Exits a code block from an empty line: splits the <pre> around the empty
+     * line into [<pre>left</pre> <p><br></p> <pre>right</pre>] and places the
+     * caret in the new paragraph. The seam <br>s consumed by the split are
+     * dropped when the side keeps other content (a lone <br> is a real empty
+     * line and is preserved).
+     * @param {HTMLElement} pre the code block
+     * @param {number} lo index in pre.childNodes of the separator before the empty line
+     * @param {number} hi index in pre.childNodes of the separator after the empty line
+     */
+    _exitPreFromEmptyLine(pre, lo, hi) {
+        const children = [...pre.childNodes];
+        const makePre = () => {
+            const el = document.createElement('pre');
+            const cls = pre.getAttribute('class');
+            if (cls) el.setAttribute('class', cls);
+            return el;
+        };
+
+        const left = makePre();
+        for (let i = 0; i <= lo; i++) left.appendChild(children[i]);
+        const right = makePre();
+        for (let i = hi; i < children.length; i++) right.appendChild(children[i]);
+
+        this.commands._dropSeamBr(left, 'end');
+        this.commands._dropSeamBr(right, 'start');
+
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+
+        const parent = pre.parentNode;
+        if (left.firstChild) parent.insertBefore(left, pre);
+        parent.insertBefore(p, pre);
+        if (right.firstChild) parent.insertBefore(right, pre);
+        pre.remove();
+
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Keydown handler for Backspace/Delete inside a code block. Native
+     * contenteditable handles editing fine in most browsers, but an empty
+     * <pre> (the placeholder a code block leaves behind once its content is
+     * gone) can get stuck: Chrome does not remove an empty <pre> on Backspace
+     * the way it removes an empty <p>. Removing it manually lets the user
+     * actually delete a code block.
+     * @param {KeyboardEvent} event
+     */
+    handleBackspaceDelete(event) {
+        if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const range = this.selection.getRange();
+        if (!range || !range.collapsed) return;
+
+        const pre = this.commands.closestPre(range.startContainer);
+        if (!pre) return;
+        // Only act on placeholders: deleting a block that still holds code is
+        // left to the browser's native merge/delete behavior.
+        if (pre.textContent.trim() !== '') return;
+
+        const atStart = this._isAtBlockStart(pre, range);
+        const atEnd = this._isAtBlockEnd(pre, range);
+        if (!(event.key === 'Backspace' && atStart) && !(event.key === 'Delete' && atEnd)) return;
+
+        event.preventDefault();
+        this._removeEmptyPre(pre, event.key === 'Backspace');
+        this.commit();
+        this.syncSelectionState();
+    }
+
+    /** Whether a collapsed range sits at the very start of an element. */
+    _isAtBlockStart(block, range) {
+        const probe = document.createRange();
+        probe.setStart(block, 0);
+        probe.setEnd(range.startContainer, range.startOffset);
+        return probe.toString() === '';
+    }
+
+    /** Whether a collapsed range sits at the very end of an element. */
+    _isAtBlockEnd(block, range) {
+        const probe = document.createRange();
+        probe.setStart(range.startContainer, range.startOffset);
+        probe.setEnd(block, block.childNodes.length);
+        return probe.toString() === '';
+    }
+
+    /**
+     * Removes an empty code block and moves the caret to the neighboring
+     * block — the end of the previous one after Backspace, the start of the
+     * next one after Delete (mirroring native empty-paragraph removal).
+     * @param {HTMLElement} pre
+     * @param {boolean} isBackspace
+     */
+    _removeEmptyPre(pre, isBackspace) {
+        const prev = pre.previousElementSibling;
+        const next = pre.nextElementSibling;
+        pre.remove();
+
+        const range = document.createRange();
+        const target = isBackspace ? (prev ?? next) : (next ?? prev);
+        if (target && target !== this.root) {
+            if (isBackspace) {
+                range.selectNodeContents(target);
+                range.collapse(false);
+            } else {
+                range.setStart(target, 0);
+                range.collapse(true);
+            }
+        } else {
+            range.selectNodeContents(this.root);
+            range.collapse(false);
+        }
+        this.selection.setRange(range);
     }
 
     handleDragOver() {
@@ -556,11 +748,15 @@ export default class Editor {
 
     undo() {
         this.history.undo();
+        // Undo restored the caret — refresh toolbar active states so they match
+        // the restored position (bold/codeBlock/... button highlighting).
+        this.syncSelectionState();
         this.emitChange();
     }
 
     redo() {
         this.history.redo();
+        this.syncSelectionState();
         this.emitChange();
     }
 
@@ -590,9 +786,11 @@ export default class Editor {
         this.plugins.forEach((instance) => instance?.destroy?.());
         this.events.emit('destroy', this);
         clearInterval(this.autosaveTimer);
+        clearTimeout(this._debounceTimer);
         document.removeEventListener('keydown', this.handleShortcut);
         document.removeEventListener('keydown', this.handleTableTab);
         document.removeEventListener('keydown', this.handleEnter);
+        document.removeEventListener('keydown', this.handleBackspaceDelete);
         this.root.removeEventListener('dragover', this.handleDragOver);
         this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();

@@ -41,14 +41,14 @@ describe('Editor', () => {
         const keydownAdds = document.addEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownAdds).toHaveLength(3);
+        expect(keydownAdds).toHaveLength(4);
 
         editor.destroy();
 
         const keydownRemoves = document.removeEventListener.mock.calls.filter(
             ([event]) => event === 'keydown'
         );
-        expect(keydownRemoves).toHaveLength(3);
+        expect(keydownRemoves).toHaveLength(4);
         expect(keydownRemoves[0][1]).toBe(keydownAdds[0][1]);
         expect(keydownRemoves[1][1]).toBe(keydownAdds[1][1]);
     });
@@ -95,7 +95,27 @@ describe('Editor', () => {
             const spy = vi.spyOn(editor.commands, 'insertHTML');
             const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => type === 'text/plain' ? 'visit https://example.com today' : '' } };
             editor.handlePaste(event);
-            expect(spy).toHaveBeenCalledWith(expect.stringContaining('&lt;a href='));
+            expect(spy).toHaveBeenCalledWith('visit <a href="https://example.com">https://example.com</a> today');
+        });
+
+        it('auto-links a URL containing query amp/quote with entity-encoded href', () => {
+            const editor = new Editor(textarea);
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => type === 'text/plain' ? 'go https://x.test/?a=1&b=2 now' : '' } };
+            editor.handlePaste(event);
+            expect(spy).toHaveBeenCalledWith('go <a href="https://x.test/?a=1&amp;b=2">https://x.test/?a=1&amp;b=2</a> now');
+        });
+
+        it('does not auto-link HTML pastes', () => {
+            const editor = new Editor(textarea);
+            const spy = vi.spyOn(editor.commands, 'insertHTML');
+            const event = { preventDefault: vi.fn(), clipboardData: { getData: (type) => (type === 'text/html' ? '<a href="https://example.com">x</a>' : '') } };
+            editor.handlePaste(event);
+            const arg = spy.mock.calls[0][0];
+            expect(arg).toContain('<a href="https://example.com">x</a>');
+            // No double-wrapping: pasted HTML goes through the sanitizer, not autoLink.
+            expect(spy.mock.calls).toHaveLength(1);
+            expect(arg).not.toContain('https://example.com">https://');
         });
 
         it('emits paste event after insertion', () => {
@@ -455,6 +475,84 @@ describe('Editor', () => {
             resetActiveElement();
         });
 
+        it('exits <pre> from the empty line after Enter at the end of a line', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.innerHTML = 'code<br>';
+            editor.root.innerHTML = '';
+            editor.root.appendChild(pre);
+
+            // Caret sits right after the <br> — the empty second line.
+            const range = document.createRange();
+            range.setStart(pre, 2);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<pre>code</pre><p><br></p>');
+            resetActiveElement();
+        });
+
+        it('exits <pre> from an empty middle line, splitting the block', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.innerHTML = 'a<br><br>b';
+            editor.root.innerHTML = '';
+            editor.root.appendChild(pre);
+
+            // Caret on the second (empty) line, between the two <br>.
+            const range = document.createRange();
+            range.setStart(pre, 2);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<pre>a</pre><p><br></p><pre>b</pre>');
+            resetActiveElement();
+        });
+
+        it('exits <pre> from a whitespace-only line and drops the seam breaks', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.innerHTML = 'a<br>   <br>b';
+            editor.root.innerHTML = '';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre, 2);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<pre>a</pre><p><br></p><pre>b</pre>');
+            resetActiveElement();
+        });
+
+        it('exits <pre> from the first empty line placing the paragraph before the code', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            const pre = document.createElement('pre');
+            pre.innerHTML = '<br>code';
+            editor.root.innerHTML = '';
+            editor.root.appendChild(pre);
+
+            const range = document.createRange();
+            range.setStart(pre, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            editor.handleEnter(createEnterEvent());
+            expect(editor.root.innerHTML).toBe('<p><br></p><pre>code</pre>');
+            resetActiveElement();
+        });
+
         it('does nothing when Enter is pressed outside a <pre>, blockquote or <code>', () => {
             const editor = withActiveFocus(new Editor(textarea));
             editor.root.innerHTML = '<p>hello</p>';
@@ -623,6 +721,201 @@ describe('Editor', () => {
             expect(editor.history.push).not.toHaveBeenCalled();
             expect(editor.root.querySelectorAll('.note').length).toBe(1);
             resetActiveElement();
+        });
+    });
+
+    describe('buildDom', () => {
+        it('bounds the content area height so large content scrolls internally', () => {
+            const editor = new Editor(textarea);
+            expect(editor.root.style.minHeight).toBe('420px');
+            expect(editor.root.style.maxHeight).toBe('420px');
+        });
+
+        it('uses the configured height option for the content bounds', () => {
+            const editor = new Editor(textarea, { height: 600 });
+            expect(editor.root.style.minHeight).toBe('600px');
+            expect(editor.root.style.maxHeight).toBe('600px');
+        });
+    });
+
+    describe('handleBackspaceDelete', () => {
+        function withActiveFocus(ed) {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => ed.root,
+            });
+            return ed;
+        }
+
+        function resetActiveElement() {
+            Object.defineProperty(document, 'activeElement', {
+                configurable: true,
+                get: () => document.body,
+            });
+        }
+
+        function setCaret(node, offset) {
+            const range = document.createRange();
+            range.setStart(node, offset);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        function keyEvent(key) {
+            return { key, preventDefault: vi.fn() };
+        }
+
+        it('removes an empty <pre> with Backspace from its start', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>before</p><pre><br></pre>';
+            const pre = editor.root.querySelector('pre');
+
+            setCaret(pre, 0);
+            const event = keyEvent('Backspace');
+            editor.handleBackspaceDelete(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(editor.root.querySelector('pre')).toBeNull();
+            expect(editor.root.innerHTML).toBe('<p>before</p>');
+            resetActiveElement();
+        });
+
+        it('removes an empty <pre> with Delete from its end', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<pre><br></pre><p>after</p>';
+            const pre = editor.root.querySelector('pre');
+
+            setCaret(pre, 1);
+            const event = keyEvent('Delete');
+            editor.handleBackspaceDelete(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(editor.root.querySelector('pre')).toBeNull();
+            expect(editor.root.innerHTML).toBe('<p>after</p>');
+            resetActiveElement();
+        });
+
+        it('removes an empty <pre> with Backspace even when the caret is at its end', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>before</p><pre><br></pre><p>after</p>';
+            const pre = editor.root.querySelector('pre');
+
+            setCaret(pre, 1);
+            const event = keyEvent('Backspace');
+            editor.handleBackspaceDelete(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('pre').length).toBe(0);
+            resetActiveElement();
+        });
+
+        it('removes an empty <pre> with Delete even when the caret is at its start', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>before</p><pre><br></pre><p>after</p>';
+            const pre = editor.root.querySelector('pre');
+
+            setCaret(pre, 0);
+            const event = keyEvent('Delete');
+            editor.handleBackspaceDelete(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(editor.root.querySelectorAll('pre').length).toBe(0);
+            resetActiveElement();
+        });
+
+        it('does nothing while a selection (not a caret) is active', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<pre><br></pre><p>after</p>';
+            const pre = editor.root.querySelector('pre');
+
+            const range = document.createRange();
+            range.setStart(pre, 0);
+            range.setEnd(pre, 1);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            const event = keyEvent('Backspace');
+            editor.handleBackspaceDelete(event);
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(editor.root.querySelector('pre')).not.toBeNull();
+            resetActiveElement();
+        });
+
+        it('leaves a <pre> that still holds code untouched', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<pre>code</pre>';
+            const pre = editor.root.querySelector('pre');
+
+            setCaret(pre.firstChild, 0);
+            const event = keyEvent('Backspace');
+            editor.handleBackspaceDelete(event);
+
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(editor.root.innerHTML).toBe('<pre>code</pre>');
+            resetActiveElement();
+        });
+
+        it('pushes history and syncs selection after removing an empty pre', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>before</p><pre><br></pre>';
+            const pre = editor.root.querySelector('pre');
+            setCaret(pre, 0);
+
+            const pushSpy = vi.spyOn(editor.history, 'push');
+            const syncSpy = vi.spyOn(editor, 'syncSelectionState');
+            editor.handleBackspaceDelete(keyEvent('Backspace'));
+
+            expect(pushSpy).toHaveBeenCalled();
+            expect(syncSpy).toHaveBeenCalled();
+            resetActiveElement();
+        });
+
+        it('does nothing when editor is destroyed', () => {
+            const editor = withActiveFocus(new Editor(textarea));
+            editor.root.innerHTML = '<p>before</p><pre><br></pre>';
+            editor.destroy();
+            const pre = editor.root.querySelector('pre');
+            setCaret(pre, 0);
+
+            const event = keyEvent('Backspace');
+            editor.handleBackspaceDelete(event);
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            resetActiveElement();
+        });
+    });
+
+    describe('undo/redo sync', () => {
+        it('syncs selection state after undo', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor, 'syncSelectionState');
+            editor.undo();
+            expect(editor.syncSelectionState).toHaveBeenCalled();
+        });
+
+        it('syncs selection state after redo', () => {
+            const editor = new Editor(textarea);
+            vi.spyOn(editor, 'syncSelectionState');
+            editor.redo();
+            expect(editor.syncSelectionState).toHaveBeenCalled();
+        });
+    });
+
+    describe('debounced textarea sync', () => {
+        it('cancels the pending sync when the editor is destroyed', () => {
+            vi.useFakeTimers();
+            try {
+                const editor = new Editor(textarea);
+                editor.root.innerHTML = '<p>draft content</p>';
+                editor.emitChange();
+                editor.destroy();
+                vi.advanceTimersByTime(1000);
+                expect(textarea.value).not.toContain('draft content');
+            } finally {
+                vi.useRealTimers();
+            }
         });
     });
 

@@ -4,8 +4,12 @@ import FullscreenModule from '../src/modules/FullscreenModule.js';
 function createMockEditor() {
     const wrapper = document.createElement('div');
     wrapper.className = 'ife-wrapper';
+    const root = document.createElement('div');
+    root.className = 'ife-content';
+    wrapper.appendChild(root);
     return {
         wrapper,
+        root,
         on: vi.fn(),
     };
 }
@@ -54,12 +58,68 @@ describe('FullscreenModule', () => {
     it('handleChange reacts to fullscreenElement being null', () => {
         module.active = true;
         editor.wrapper.classList.add('ife-fullscreen');
+        editor.root.style.maxHeight = '420px';
         Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
 
         module.handleChange();
 
         expect(module.active).toBe(false);
         expect(editor.wrapper.classList.contains('ife-fullscreen')).toBe(false);
+        expect(editor.root.style.maxHeight).toBe('');
+    });
+
+    it('enter lifts an inline max-height so the fullscreen column owns the scroll', async () => {
+        editor.root.style.maxHeight = '420px';
+
+        await module.enter();
+
+        expect(editor.root.style.maxHeight).toBe('none');
+        // Remembered so exit can restore it.
+        expect(module._previousMaxHeight).toBe('420px');
+    });
+
+    it('exit restores the previous inline max-height', async () => {
+        editor.root.style.maxHeight = '420px';
+        await module.enter();
+        expect(editor.root.style.maxHeight).toBe('none');
+
+        await module.exit();
+
+        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(module._previousMaxHeight).toBe('');
+    });
+
+    it('exit restores an unset max-height as empty', async () => {
+        await module.enter();
+        expect(editor.root.style.maxHeight).toBe('none');
+
+        await module.exit();
+
+        expect(editor.root.style.maxHeight).toBe('');
+    });
+
+    it('fullscreenchange exit restores the remembered max-height', () => {
+        editor.root.style.maxHeight = '300px';
+        module.active = true;
+        module._previousMaxHeight = '300px';
+        editor.wrapper.classList.add('ife-fullscreen');
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+
+        module.handleChange();
+
+        expect(editor.root.style.maxHeight).toBe('300px');
+        expect(module._previousMaxHeight).toBe('');
+    });
+
+    it('does not crash when the editor has no root (headless mock)', async () => {
+        const rootless = { wrapper: document.createElement('div'), on: vi.fn() };
+        const headless = new FullscreenModule(rootless);
+
+        await headless.enter();
+
+        expect(headless.active).toBe(true);
+        expect(rootless.wrapper.classList.contains('ife-fullscreen')).toBe(true);
+        headless.destroy();
     });
 
     it('destroy removes fullscreenchange listener', () => {

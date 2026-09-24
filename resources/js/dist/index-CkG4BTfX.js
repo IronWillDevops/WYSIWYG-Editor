@@ -1,6 +1,6 @@
-var O = Object.defineProperty;
-var B = (r, e, t) => e in r ? O(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var N = (r, e, t) => B(r, typeof e != "symbol" ? e + "" : e, t);
+var z = Object.defineProperty;
+var B = (l, e, t) => e in l ? z(l, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : l[e] = t;
+var _ = (l, e, t) => B(l, typeof e != "symbol" ? e + "" : e, t);
 class A {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -43,7 +43,7 @@ class A {
     this.listeners.clear();
   }
 }
-class D {
+class I {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -222,7 +222,7 @@ class D {
     this.root.focus(), this.restore();
   }
 }
-class I {
+class D {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -233,9 +233,9 @@ class I {
    * @param {(bookmark: object) => void} [options.restoreBookmark]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: s, onChange: c }) {
+  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: s, onChange: a }) {
     this.getContent = e, this.setContent = t, this.maxSteps = n, this.debounceMs = o, this.saveBookmark = i ?? (() => null), this.restoreBookmark = s ?? (() => {
-    }), this.onChange = c ?? (() => {
+    }), this.onChange = a ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push({ html: this.getContent(), bookmark: null });
   }
   /** Called on every input event; batches rapid keystrokes into one snapshot. */
@@ -273,7 +273,7 @@ class I {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const z = /* @__PURE__ */ new Set([
+const R = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -282,7 +282,7 @@ const z = /* @__PURE__ */ new Set([
   "rgb(0,0,0,0)",
   "rgba(0,0,0,1)",
   "rgba(0, 0, 0, 1)"
-]), M = /* @__PURE__ */ new Set([
+]), N = /* @__PURE__ */ new Set([
   "white",
   "#fff",
   "#ffffff",
@@ -291,17 +291,17 @@ const z = /* @__PURE__ */ new Set([
   "rgba(255,255,255,1)",
   "rgba(255, 255, 255, 1)"
 ]);
-function x(r) {
-  const e = String(r).trim().toLowerCase().replace(/\s+/g, " ");
+function M(l) {
+  const e = String(l).trim().toLowerCase().replace(/\s+/g, " ");
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
-function P(r) {
-  return z.has(x(r));
+function P(l) {
+  return R.has(M(l));
 }
-function V(r) {
-  return M.has(x(r));
+function V(l) {
+  return N.has(M(l));
 }
-const L = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
+const w = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
 class F {
   /**
    * @param {import('./Editor').default} editor
@@ -324,7 +324,7 @@ class F {
     }
   }
   exec(e, t = null) {
-    switch (this.prepare(), this.editor.history.push(), e) {
+    switch (this.prepare(), e) {
       case "bold":
       case "italic":
       case "underline":
@@ -355,6 +355,9 @@ class F {
       case "insertOrderedList":
         this.toggleList("ol");
         break;
+      case "codeBlock":
+        this.toggleCodeBlock();
+        break;
       case "foreColor":
         t && !P(t) ? this.applyColor("color", t) : this.clearColor("color");
         break;
@@ -376,9 +379,13 @@ class F {
       default:
         throw new Error(`Unknown command: ${e}`);
     }
-    this.editor.emitChange(), this.editor.events.emit("selectionchange", this.editor);
+    this.editor.history.push(), this.editor.emitChange(), this.editor.events.emit("selectionchange", this.editor);
   }
   queryState(e) {
+    if (e === "codeBlock") {
+      const t = this.selection.getRange();
+      return t ? this.closestPre(t.startContainer) !== null : !1;
+    }
     try {
       return document.queryCommandState(e);
     } catch {
@@ -434,17 +441,29 @@ class F {
     if (!t) return;
     const n = this.selection.closest("li");
     if (n) {
-      const c = n.closest("ul, ol");
-      c && c.tagName.toLowerCase() === e ? this.unwrapList(c) : c && this.convertList(c, e);
+      const a = n.closest("ul, ol");
+      a && a.tagName.toLowerCase() === e ? this.unwrapList(a) : a && this.convertList(a, e);
       return;
     }
+    if (t.collapsed) {
+      const a = this.blockAt(t.startContainer);
+      if (a && this._convertCaretLine(a, t, (c) => {
+        const h = document.createElement(e), d = document.createElement("li");
+        return c.firstChild ? d.appendChild(c) : d.innerHTML = "<br>", h.appendChild(d), h;
+      }))
+        return;
+    }
     const o = this.getBlocksInRange(t);
-    if (!o.length) return;
+    if (!o.length) {
+      const a = this._wrapRangeIntoList(t, e);
+      a && this._placeCaretAtEnd(a);
+      return;
+    }
     const i = document.createElement(e);
-    o.forEach((c) => {
-      const a = document.createElement("li");
-      a.innerHTML = c.innerHTML || "<br>", i.appendChild(a);
-    }), o[0].replaceWith(i), o.slice(1).forEach((c) => c.remove());
+    o.forEach((a) => {
+      const r = document.createElement("li");
+      r.innerHTML = a.innerHTML || "<br>", i.appendChild(r);
+    }), o[0].replaceWith(i), o.slice(1).forEach((a) => a.remove());
     const s = document.createRange();
     s.selectNodeContents(i.lastElementChild), s.collapse(!1), this.selection.setRange(s);
   }
@@ -458,41 +477,62 @@ class F {
     if (!this.root.contains(e.commonAncestorContainer)) return [];
     if (e.commonAncestorContainer === this.root)
       return [...this.root.children].filter(
-        (l) => l instanceof HTMLElement && L.has(l.tagName)
+        (r) => r instanceof HTMLElement && w.has(r.tagName)
       );
-    const t = (a) => {
-      let l = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
-      if (l === this.root) return null;
-      for (; l && l !== this.root; ) {
-        if (l instanceof HTMLElement && L.has(l.tagName))
-          return l;
-        l = l.parentElement;
-      }
-      return null;
-    }, n = t(e.startContainer);
-    if (!n) return [];
-    const o = t(e.endContainer) ?? n;
-    if (n === o) return [n];
-    if (n.parentNode === o.parentNode) {
+    const t = this.blockAt(e.startContainer);
+    if (!t) return [];
+    const n = this.blockAt(e.endContainer) ?? t;
+    if (t === n) return [t];
+    if (t.parentNode === n.parentNode) {
       const a = [];
-      let l = n;
-      for (; l && (a.push(l), l !== o); )
-        l = l.nextElementSibling;
-      return a.length ? a : [n];
+      let r = t;
+      for (; r && (a.push(r), r !== n); )
+        r = r.nextElementSibling;
+      return a.length ? a : [t];
     }
-    const i = (a) => {
-      let l = a;
-      for (; l && l.parentNode !== this.root; ) l = l.parentNode;
-      return l;
-    }, s = i(n), c = i(o);
-    if (s && c) {
+    const o = (a) => {
+      let r = a;
+      for (; r && r.parentNode !== this.root; ) r = r.parentNode;
+      return r;
+    }, i = o(t), s = o(n);
+    if (i && s) {
       const a = [];
-      let l = s;
-      for (; l && (a.push(l), l !== c); )
-        l = l.nextElementSibling;
-      return a.length ? a : [n];
+      let r = i;
+      for (; r && (a.push(r), r !== s); )
+        r = r.nextElementSibling;
+      return a.length ? a : [t];
     }
-    return [n];
+    return [t];
+  }
+  /**
+   * Nearest block-level ancestor of a node at any depth (the block does not
+   * have to be a direct child of the root — nested <p> inside a <div>,
+   * inline wrappers, etc. all resolve to their real block).
+   * @param {Node} node
+   * @returns {HTMLElement|null}
+   */
+  blockAt(e) {
+    let t = e.nodeType === Node.TEXT_NODE ? e.parentElement : e;
+    if (t === this.root) return null;
+    for (; t && t !== this.root; ) {
+      if (t instanceof HTMLElement && w.has(t.tagName))
+        return t;
+      t = t.parentElement;
+    }
+    return null;
+  }
+  /**
+   * Nearest <pre> ancestor of a node, bounded by the editor root.
+   * @param {Node} node
+   * @returns {HTMLElement|null}
+   */
+  closestPre(e) {
+    let t = e.nodeType === Node.TEXT_NODE ? e.parentElement : e;
+    for (; t && t !== this.root; ) {
+      if (t instanceof HTMLElement && t.tagName === "PRE") return t;
+      t = t.parentElement;
+    }
+    return null;
   }
   /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
   convertList(e, t) {
@@ -521,24 +561,24 @@ class F {
    * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
    */
   clearColor(e) {
-    var c;
+    var a;
     const t = this.selection.getRange();
     if (!t) return;
     const n = this.selection.offsetOf(t.startContainer, t.startOffset), o = this.selection.offsetOf(t.endContainer, t.endOffset);
     let i = t.commonAncestorContainer;
     if (i.nodeType === Node.TEXT_NODE && (i = i.parentElement), !(i instanceof HTMLElement)) return;
-    ((c = i.style) != null && c.length ? [i, ...i.querySelectorAll("*")] : [...i.querySelectorAll("*")]).forEach((a) => {
-      var l;
+    ((a = i.style) != null && a.length ? [i, ...i.querySelectorAll("*")] : [...i.querySelectorAll("*")]).forEach((r) => {
+      var c;
       try {
-        if (!t.intersectsNode(a)) return;
+        if (!t.intersectsNode(r)) return;
       } catch {
         return;
       }
-      if ((l = a.style) != null && l[e] && (a.style[e] = "", a.style.length === 0 && a.removeAttribute("style")), ["SPAN", "FONT"].includes(a.tagName) && a.attributes.length === 0) {
-        const h = a.parentNode;
+      if ((c = r.style) != null && c[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
+        const h = r.parentNode;
         if (!h) return;
-        for (; a.firstChild; ) h.insertBefore(a.firstChild, a);
-        h.removeChild(a);
+        for (; r.firstChild; ) h.insertBefore(r.firstChild, r);
+        h.removeChild(r);
       }
     }), this.selection.setRangeByOffsets(n, o);
   }
@@ -565,8 +605,8 @@ class F {
   applyColor(e, t) {
     const n = this.selection.getRange();
     if (!n || n.collapsed) return;
-    const o = this.selection.offsetOf(n.startContainer, n.startOffset), i = this.selection.offsetOf(n.endContainer, n.endOffset), s = n.startContainer, c = n.startOffset, a = n.endContainer, l = n.endOffset;
-    this.colorTextNodes(e, t, s, c, a, l), this.selection.setRangeByOffsets(o, i);
+    const o = this.selection.offsetOf(n.startContainer, n.startOffset), i = this.selection.offsetOf(n.endContainer, n.endOffset), s = n.startContainer, a = n.startOffset, r = n.endContainer, c = n.endOffset;
+    this.colorTextNodes(e, t, s, a, r, c), this.selection.setRangeByOffsets(o, i);
   }
   /**
    * Styles every text node intersecting the given range, splitting the
@@ -579,13 +619,13 @@ class F {
    * @param {number} endOffset
    */
   colorTextNodes(e, t, n, o, i, s) {
-    const c = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT);
-    let a;
-    for (; a = c.nextNode(); )
-      if (this.rangeIntersectsText(a, n, o, i, s)) {
-        const l = a.textContent.length;
-        let h = 0, m = l;
-        a === n && (h = o), a === i && (m = s), this.wrapTextSegment(a, h, m, e, t);
+    const a = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT);
+    let r;
+    for (; r = a.nextNode(); )
+      if (this.rangeIntersectsText(r, n, o, i, s)) {
+        const c = r.textContent.length;
+        let h = 0, d = c;
+        r === n && (h = o), r === i && (d = s), this.wrapTextSegment(r, h, d, e, t);
       }
   }
   /**
@@ -628,8 +668,8 @@ class F {
    */
   wrapTextSegment(e, t, n, o, i) {
     if (t >= n) return;
-    let s = e, c = t, a = n;
-    c > 0 && (s = e.splitText(c), a -= c), a < s.textContent.length && s.splitText(a), this.colorTextNode(s, o, i);
+    let s = e, a = t, r = n;
+    a > 0 && (s = e.splitText(a), r -= a), r < s.textContent.length && s.splitText(r), this.colorTextNode(s, o, i);
   }
   /**
    * Ensures a text node is wrapped in a span with the given color, reusing
@@ -671,12 +711,12 @@ class F {
     const s = document.createDocumentFragment();
     for (; e.firstChild; )
       s.appendChild(e.firstChild);
-    const c = (h) => {
+    const a = (h) => {
       if (!h.firstChild) return null;
-      const m = document.createElement("span");
-      return m.style.cssText = n, m.appendChild(h), m;
-    }, a = c(i), l = c(s);
-    a && o.insertBefore(a, e), o.insertBefore(t, e), l && o.insertBefore(l, e), o.removeChild(e);
+      const d = document.createElement("span");
+      return d.style.cssText = n, d.appendChild(h), d;
+    }, r = a(i), c = a(s);
+    r && o.insertBefore(r, e), o.insertBefore(t, e), c && o.insertBefore(c, e), o.removeChild(e);
   }
   /**
    * Merges a freshly coloured span with any equal-coloured element siblings so
@@ -731,7 +771,7 @@ class F {
   }
   /** Inserts raw (already sanitized) HTML at the current caret position. */
   insertHTML(e) {
-    this.prepare(), this.editor.history.push();
+    this.prepare();
     const t = this.selection.getRange();
     if (!t) return;
     t.deleteContents();
@@ -740,7 +780,7 @@ class F {
       const i = document.createRange();
       i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
     }
-    this.editor.emitChange();
+    this.editor.history.push(), this.editor.emitChange();
   }
   /**
    * Changes the block-level element type of the current block(s).
@@ -753,26 +793,29 @@ class F {
     const t = this.selection.getRange();
     if (!t) return;
     const n = e.toLowerCase(), o = this.getBlocksInRange(t);
+    if (t.collapsed && o.length === 1 && this._convertCaretLine(o[0], t, (r) => {
+      const c = document.createElement(n);
+      return r.firstChild ? c.appendChild(r) : c.innerHTML = "<br>", c;
+    }))
+      return;
     if (!o.length) {
-      const c = this.wrapInlineIntoBlock(t, n);
-      if (!c) return;
-      this.editor.history.push();
-      const a = document.createRange();
-      a.selectNodeContents(c), a.collapse(!1), this.selection.setRange(a);
+      const a = this.wrapInlineIntoBlock(t, n);
+      if (!a) return;
+      const r = document.createRange();
+      r.selectNodeContents(a), r.collapse(!1), this.selection.setRange(r);
       return;
     }
     const i = o.filter(
-      (c) => c.tagName.toLowerCase() !== n
+      (a) => a.tagName.toLowerCase() !== n
     );
     if (!i.length) return;
-    this.editor.history.push();
     let s = null;
-    if (i.forEach((c) => {
-      const a = document.createElement(n);
-      a.innerHTML = c.innerHTML || "<br>", c.replaceWith(a), s = a;
+    if (i.forEach((a) => {
+      const r = document.createElement(n);
+      r.innerHTML = a.innerHTML || "<br>", a.replaceWith(r), s = r;
     }), s) {
-      const c = document.createRange();
-      c.selectNodeContents(s), c.collapse(!1), this.selection.setRange(c);
+      const a = document.createRange();
+      a.selectNodeContents(s), a.collapse(!1), this.selection.setRange(a);
     }
   }
   /**
@@ -814,21 +857,324 @@ class F {
         t = t.parentNode;
       if (t.nodeType !== Node.ELEMENT_NODE || t === this.root) return null;
     }
-    const n = (l) => l === this.root || l.nodeType === Node.ELEMENT_NODE && (l.tagName === "BR" || L.has(l.tagName));
+    const n = (c) => c === this.root || c.nodeType === Node.ELEMENT_NODE && (c.tagName === "BR" || w.has(c.tagName));
     let o = t, i = o.previousSibling;
     for (; i && !n(i); )
       o = i, i = i.previousSibling;
-    let s = t, c = s.nextSibling;
-    for (; c && !n(c); )
-      s = c, c = c.nextSibling;
-    const a = document.createRange();
-    if (a.setStart(o, 0), s.nodeType === Node.TEXT_NODE)
-      a.setEnd(s, s.length);
+    let s = t, a = s.nextSibling;
+    for (; a && !n(a); )
+      s = a, a = a.nextSibling;
+    const r = document.createRange();
+    if (r.setStart(o, 0), s.nodeType === Node.TEXT_NODE)
+      r.setEnd(s, s.length);
     else {
-      const l = s.lastChild;
-      l ? a.setEndAfter(l) : a.setEnd(s, 0);
+      const c = s.lastChild;
+      c ? r.setEndAfter(c) : r.setEnd(s, 0);
     }
-    return a;
+    return r;
+  }
+  // --------------------------------------------------------------------
+  // Code block + line-aware block conversion helpers
+  // --------------------------------------------------------------------
+  /**
+   * Toggles the current selection or caret line in/out of a <pre> code
+   * block. Entering wraps the caret's line (or the selected run) in a
+   * <pre>; leaving unwraps the caret's line back into a <p>.
+   */
+  toggleCodeBlock() {
+    const e = this.selection.getRange();
+    if (!e) return;
+    if (e.collapsed) {
+      const o = this.blockAt(e.startContainer);
+      if (o) {
+        const s = o.tagName === "PRE" ? "p" : "pre";
+        if (this._convertCaretLine(o, e, (r) => {
+          const c = document.createElement(s);
+          return r.firstChild ? c.appendChild(r) : c.innerHTML = "<br>", c;
+        })) return;
+        this._convertBlocksToTag([o], s);
+        return;
+      }
+      if (e.startContainer === this.root) {
+        const s = document.createElement("pre");
+        s.innerHTML = "<br>";
+        const a = this.root.childNodes[e.startOffset] || null;
+        this.root.insertBefore(s, a);
+        const r = document.createRange();
+        r.setStart(s, 0), r.collapse(!0), this.selection.setRange(r);
+        return;
+      }
+      const i = this.wrapInlineIntoBlock(e, "pre");
+      i && this._placeCaretAtEnd(i);
+      return;
+    }
+    const t = this.getBlocksInRange(e);
+    if (t.length === 1) {
+      const o = t[0];
+      if (o.tagName === "PRE") {
+        this._convertBlocksToTag([o], "p");
+        return;
+      }
+      const i = this._splitBlockAtSelection(o, e, "pre");
+      i && this._placeCaretAtEnd(i);
+      return;
+    }
+    if (t.length > 1) {
+      const o = t.every((i) => i.tagName === "PRE");
+      t.forEach((i) => {
+        i.tagName === "PRE" ? o && this._convertBlocksToTag([i], "p") : this._convertBlocksToTag([i], "pre");
+      });
+      return;
+    }
+    const n = this.wrapInlineIntoBlock(e, "pre");
+    n && this._placeCaretAtEnd(n);
+  }
+  /**
+   * Converts every given block element to the target tag, preserving the
+   * block's class attribute. Blocks already using the tag are left alone.
+   * @param {HTMLElement[]} blocks
+   * @param {string} tag lowercase target tag name
+   * @returns {HTMLElement|null} the last replacement element (or null)
+   */
+  _convertBlocksToTag(e, t) {
+    let n = null;
+    return e.forEach((o) => {
+      if (o.tagName.toLowerCase() === t) return;
+      const i = document.createElement(t), s = o.getAttribute("class");
+      s && i.setAttribute("class", s), i.innerHTML = o.innerHTML || "<br>", o.replaceWith(i), n = i;
+    }), n;
+  }
+  /**
+   * Converts the caret's line inside `block` into a new element built by
+   * `buildTarget`, splitting `block` into [prefix | target | suffix] and
+   * re-placing the caret at the same character offset inside the target.
+   * Returns null when the caret line spans the whole block — callers then
+   * convert the whole block instead.
+   * @param {HTMLElement} block
+   * @param {Range} range collapsed caret range
+   * @param {(fragment: DocumentFragment) => HTMLElement} buildTarget
+   * @returns {HTMLElement|null}
+   */
+  _convertCaretLine(e, t, n) {
+    const o = this._getLineWindow(e, t.startContainer, t.startOffset), { children: i, startIndex: s, endIndex: a } = o;
+    if (s === 0 && a === i.length - 1) return null;
+    const r = this._caretOffsetInLine(e, o, t.startContainer, t.startOffset), c = this._splitLineInto(e, o, n);
+    return c && this._placeCaretAtTextOffset(c, r), c;
+  }
+  /**
+   * Returns the child-index window describing the "line" of a caret point
+   * inside a block: the maximal run of direct children between the nearest
+   * <br>/block separators. Empty lines (endIndex < startIndex) are possible.
+   * @param {HTMLElement} block
+   * @param {Node} node caret container
+   * @param {number} offset caret offset
+   * @returns {{children: Node[], startIndex: number, endIndex: number}}
+   */
+  _getLineWindow(e, t, n) {
+    const o = [...e.childNodes];
+    let i;
+    if (t === e)
+      i = n;
+    else {
+      let r = t;
+      for (; r && r.parentNode !== e; ) r = r.parentNode;
+      r && r === t && r.nodeType === Node.ELEMENT_NODE && r.tagName === "BR" ? i = o.indexOf(r) + 1 : (i = r ? o.indexOf(r) : -1, i === -1 && (i = o.length));
+    }
+    let s = -1;
+    for (let r = i - 1; r >= 0; r--)
+      if (this._isLineSeparator(o[r])) {
+        s = r;
+        break;
+      }
+    let a = o.length;
+    for (let r = i; r < o.length; r++)
+      if (this._isLineSeparator(o[r])) {
+        a = r;
+        break;
+      }
+    return { children: o, startIndex: s + 1, endIndex: a - 1 };
+  }
+  /** Whether a node terminates a line inside a block (<br> or a block tag). */
+  _isLineSeparator(e) {
+    return e.nodeType === Node.ELEMENT_NODE && (e.tagName === "BR" || w.has(e.tagName));
+  }
+  /**
+   * Character offset of (node, offset) from the start of the caret line, so
+   * a later split can re-place the caret at the identical text position.
+   * @param {HTMLElement} block
+   * @param {{children: Node[], startIndex: number, endIndex: number}} window
+   * @param {Node} node caret container
+   * @param {number} offset caret offset
+   * @returns {number}
+   */
+  _caretOffsetInLine(e, t, n, o) {
+    var h, d, g;
+    const { children: i, startIndex: s, endIndex: a } = t;
+    let r = 0;
+    for (let p = s; p <= a; p++)
+      r += (((h = i[p]) == null ? void 0 : h.textContent) ?? "").length;
+    let c = 0;
+    if (n === e)
+      for (let p = s; p < Math.min(o, a + 1); p++)
+        c += (((d = i[p]) == null ? void 0 : d.textContent) ?? "").length;
+    else {
+      let p = n;
+      for (; p && p.parentNode !== e; ) p = p.parentNode;
+      const f = p ? i.indexOf(p) : -1;
+      if (f !== -1 && f >= s && f <= a) {
+        for (let v = s; v < f; v++)
+          c += (((g = i[v]) == null ? void 0 : g.textContent) ?? "").length;
+        c += this._textOffsetAt(p, n, o);
+      } else f !== -1 && (c = r);
+    }
+    return Math.min(Math.max(c, 0), r);
+  }
+  /**
+   * Number of text characters between the start of `scope` and the point
+   * (target, offset) inside it, walking text nodes in document order.
+   * Unlike Selection.offsetOf this handles element boundary points and
+   * <br> children without throwing or mis-counting.
+   * @param {Node} scope
+   * @param {Node} target
+   * @param {number} offset
+   * @returns {number}
+   */
+  _textOffsetAt(e, t, n) {
+    let o = 0;
+    const i = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+    let s;
+    for (; s = i.nextNode(); ) {
+      if (s === t) return o + n;
+      if (t.nodeType === Node.TEXT_NODE) {
+        if (s.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING) break;
+        o += s.length;
+      } else if (t.contains(s)) {
+        let a = s, r = s.parentNode;
+        for (; r && r !== t; )
+          a = r, r = r.parentNode;
+        if (r === t)
+          if (Array.prototype.indexOf.call(t.childNodes, a) < n) o += s.length;
+          else break;
+      } else {
+        if (s.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_PRECEDING) break;
+        o += s.length;
+      }
+    }
+    return o;
+  }
+  /**
+   * Splits a block around a non-collapsed selection into
+   * [prefix | target | suffix], converting the selected run into a fresh
+   * element of `targetTag`. Sides keep the original block's tag and class.
+   * @param {HTMLElement} block
+   * @param {Range} range non-collapsed range inside block
+   * @param {string} targetTag e.g. 'pre'
+   * @returns {HTMLElement} the new target element
+   */
+  _splitBlockAtSelection(e, t, n) {
+    const o = e.tagName.toLowerCase(), i = e.getAttribute("class"), s = () => {
+      const v = document.createElement(o);
+      return i && v.setAttribute("class", i), v;
+    }, a = t.startContainer, r = t.startOffset, c = s(), h = document.createRange();
+    h.setStart(e, 0), h.setEnd(a, r), c.appendChild(h.extractContents());
+    const d = document.createElement(n), g = document.createRange();
+    g.setStart(h.startContainer, h.startOffset), g.setEnd(t.endContainer, t.endOffset), d.appendChild(g.extractContents());
+    const p = s();
+    for (; e.firstChild; ) p.appendChild(e.firstChild);
+    d.firstChild || (d.innerHTML = "<br>"), this._dropSeamBr(c, "end"), this._dropSeamBr(p, "start");
+    const f = e.parentNode;
+    return p.firstChild && f.insertBefore(p, e), f.insertBefore(d, e), c.firstChild && f.insertBefore(c, e), e.remove(), d;
+  }
+  /**
+   * Splits the block around a (line) window into [left | target | right],
+   * where `target` is built by `buildTarget` from the extracted line content.
+   * Boundary <br>s at the seams are dropped when the side keeps content, so
+   * a lone <br> (a real empty line) survives.
+   * @param {HTMLElement} block
+   * @param {{children: Node[], startIndex: number, endIndex: number}} window
+   * @param {(fragment: DocumentFragment) => HTMLElement} buildTarget
+   * @returns {HTMLElement|null}
+   */
+  _splitLineInto(e, t, n) {
+    const { startIndex: o, endIndex: i } = t, s = e.tagName.toLowerCase(), a = e.getAttribute("class"), r = () => {
+      const v = document.createElement(s);
+      return a && v.setAttribute("class", a), v;
+    }, c = document.createRange();
+    c.setStart(e, o), c.setEnd(e, i + 1);
+    const h = c.extractContents(), d = r();
+    for (let v = 0; v < o; v++) d.appendChild(e.firstChild);
+    const g = r();
+    for (; e.firstChild; ) g.appendChild(e.firstChild);
+    const p = n(h);
+    if (!p) return null;
+    const f = e.parentNode;
+    return this._dropSeamBr(d, "end"), this._dropSeamBr(g, "start"), d.firstChild && f.insertBefore(d, e), f.insertBefore(p, e), g.firstChild && f.insertBefore(g, e), e.remove(), p;
+  }
+  /**
+   * Drops the seam <br> of a split side (last child for end, first child for
+   * start) — the break consumed by the block boundary — unless the side only
+   * holds <br>s, in which case it represents a real empty line.
+   * @param {HTMLElement} side
+   * @param {'start'|'end'} which
+   */
+  _dropSeamBr(e, t) {
+    const n = t === "end" ? e.lastChild : e.firstChild;
+    if (!n || n.nodeType !== Node.ELEMENT_NODE || n.tagName !== "BR") return;
+    [...e.childNodes].some(
+      (i) => i !== n && !(i.nodeType === Node.ELEMENT_NODE && i.tagName === "BR")
+    ) && n.remove();
+  }
+  /**
+   * Wraps the current line (collapsed) or selection (non-collapsed) of
+   * root-level inline content into a fresh single-item list.
+   * @param {Range} range
+   * @param {'ul'|'ol'} listTag
+   * @returns {HTMLElement|null}
+   */
+  _wrapRangeIntoList(e, t) {
+    const n = document.createElement(t), o = document.createElement("li");
+    let i = e;
+    if (e.collapsed)
+      if (e.startContainer === this.root)
+        o.innerHTML = "<br>";
+      else {
+        const a = this.getInlineLineRange(e);
+        if (!a) return null;
+        i = a;
+      }
+    const s = i.extractContents();
+    if (s.firstChild ? o.appendChild(s) : o.firstChild || (o.innerHTML = "<br>"), n.appendChild(o), e.collapsed && e.startContainer === this.root) {
+      const a = this.root.childNodes[e.startOffset] || null;
+      this.root.insertBefore(n, a);
+    } else
+      i.insertNode(n);
+    return n;
+  }
+  /** Collapses the selection at the end of an element. @param {HTMLElement} el */
+  _placeCaretAtEnd(e) {
+    const t = document.createRange();
+    t.selectNodeContents(e), t.collapse(!1), this.selection.setRange(t);
+  }
+  /**
+   * Collapses the selection to the given character offset within an element,
+   * walking the element's text nodes in document order.
+   * @param {HTMLElement} el
+   * @param {number} offset
+   */
+  _placeCaretAtTextOffset(e, t) {
+    let n = Math.max(t, 0);
+    const o = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+    let i;
+    for (; i = o.nextNode(); ) {
+      if (n <= i.length) {
+        const a = document.createRange();
+        a.setStart(i, n), a.collapse(!0), this.selection.setRange(a);
+        return;
+      }
+      n -= i.length;
+    }
+    const s = document.createRange();
+    s.selectNodeContents(e), s.collapse(!1), this.selection.setRange(s);
   }
 }
 const q = /* @__PURE__ */ new Set([
@@ -847,6 +1193,7 @@ const q = /* @__PURE__ */ new Set([
   "i",
   "strike",
   "font",
+  "input",
   "h1",
   "h2",
   "h3",
@@ -935,10 +1282,11 @@ const q = /* @__PURE__ */ new Set([
   symbol: /* @__PURE__ */ new Set(["id", "viewBox", "width", "height"]),
   mask: /* @__PURE__ */ new Set(["id"]),
   font: /* @__PURE__ */ new Set(["color", "size", "face"]),
+  input: /* @__PURE__ */ new Set(["type", "checked", "disabled"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, $ = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class U {
+}, U = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class $ {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -946,7 +1294,7 @@ class U {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : q, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : $;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : q, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : U;
   }
   /**
    * @param {string} dirtyHtml
@@ -1010,8 +1358,8 @@ class U {
         return;
       }
       if ((s === "href" || s === "src") && !this.isSafeUrl(i.value) && e.removeAttribute(i.name), s === "style") {
-        const c = this.cleanStyle(i.value);
-        c ? e.setAttribute("style", c) : e.removeAttribute("style");
+        const a = this.cleanStyle(i.value);
+        a ? e.setAttribute("style", a) : e.removeAttribute("style");
       }
     });
   }
@@ -1052,8 +1400,8 @@ class U {
   isThemeNeutralColor(e) {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
-    const n = t[1].toLowerCase(), o = x(t[2]);
-    return n === "color" ? z.has(o) : n === "background-color" ? M.has(o) : n === "background" ? this.isSolidBalancedColor(o) && M.has(o) : !1;
+    const n = t[1].toLowerCase(), o = M(t[2]);
+    return n === "color" ? R.has(o) : n === "background-color" ? N.has(o) : n === "background" ? this.isSolidBalancedColor(o) && N.has(o) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1078,21 +1426,21 @@ class U {
     }
   }
 }
-const j = {
+const X = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
-}, _ = /* @__PURE__ */ new Map();
-class H {
+}, H = /* @__PURE__ */ new Map();
+class x {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
     var n, o;
-    this.textarea = e, this.options = { ...j, ...t }, this.events = new A(), this.sanitizer = new U(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new D(this.root), this.commands = new F(this), this.history = new I({
+    this.textarea = e, this.options = { ...X, ...t }, this.events = new A(), this.sanitizer = new $(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new I(this.root), this.commands = new F(this), this.history = new D({
       getContent: () => this.root.innerHTML,
       setContent: (i) => {
         this.root.innerHTML = i;
@@ -1102,20 +1450,20 @@ class H {
       maxSteps: ((n = this.options.history) == null ? void 0 : n.max_steps) ?? 1e3,
       debounceMs: ((o = this.options.history) == null ? void 0 : o.debounce_ms) ?? 300,
       onChange: (i) => this.events.emit(i)
-    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((i) => {
+    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleBackspaceDelete = this.handleBackspaceDelete.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((i) => {
       console.error("WYSIWYG Editor: plugin loading failed", i);
     }), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
-    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.style.minHeight = `${this.options.height}px`, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
+    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.style.minHeight = `${this.options.height}px`, this.root.style.maxHeight = `${this.options.height}px`, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
   }
   bindEvents() {
     this.root.addEventListener("input", () => {
       this.history.record(), this.emitChange();
     }), this.root.addEventListener("keyup", () => this.syncSelectionState()), this.root.addEventListener("mouseup", () => this.syncSelectionState()), this.root.addEventListener("focus", () => this.events.emit("focus", this)), this.root.addEventListener("blur", () => {
       this.syncTextarea(), this.events.emit("blur", this);
-    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), this.root.addEventListener("dragover", (e) => this.handleDragOver(e)), this.root.addEventListener("dragleave", (e) => this.handleDragLeave(e)), document.addEventListener("keydown", this.handleShortcut), document.addEventListener("keydown", this.handleTableTab), document.addEventListener("keydown", this.handleEnter), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
+    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), this.root.addEventListener("dragover", (e) => this.handleDragOver(e)), this.root.addEventListener("dragleave", (e) => this.handleDragLeave(e)), document.addEventListener("keydown", this.handleShortcut), document.addEventListener("keydown", this.handleTableTab), document.addEventListener("keydown", this.handleEnter), document.addEventListener("keydown", this.handleBackspaceDelete), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
   }
   syncSelectionState() {
     this.selection.save(), this.events.emit("selectionchange", this);
@@ -1150,8 +1498,8 @@ class H {
     if (!o || !i) return;
     const s = document.createRange();
     s.setStart(o.node, Math.min(o.offset, (o.node.textContent || "").length)), s.setEnd(i.node, Math.min(i.offset, (i.node.textContent || "").length));
-    const c = window.getSelection();
-    c && (c.removeAllRanges(), c.addRange(s));
+    const a = window.getSelection();
+    a && (a.removeAllRanges(), a.addRange(s));
   }
   /** Find text node and offset at a given character position from root start. */
   nodeAtOffset(e) {
@@ -1167,7 +1515,7 @@ class H {
   _debounce(e, t) {
     let n;
     return (...o) => {
-      clearTimeout(n), n = setTimeout(() => e(...o), t);
+      clearTimeout(n), this._debounceTimer = n = setTimeout(() => e(...o), t);
     };
   }
   emitChange() {
@@ -1179,13 +1527,17 @@ class H {
     if (e.preventDefault(), this.destroyed) return;
     const t = (i = e.clipboardData) == null ? void 0 : i.getData("text/html"), n = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "";
     let o;
-    t ? o = this.sanitizer.sanitize(t) : o = this.escapeHtml(this.autoLink(n)), this.commands.insertHTML(o), this.events.emit("paste", { html: t, text: n });
+    t ? o = this.sanitizer.sanitize(t) : o = this.autoLink(this.escapeHtml(n)), this.commands.insertHTML(o), this.events.emit("paste", { html: t, text: n });
   }
   /** Converts URLs in plain text to clickable <a> links. */
   autoLink(e) {
+    const t = (n) => n.replace(/&(?!(?:amp|lt|gt|quot|#\d+|#x[0-9a-f]+);)/gi, "&amp;").replace(/"/g, "&quot;");
     return e.replace(
       /(https?:\/\/[^\s<]+)/gi,
-      '<a href="$1">$1</a>'
+      (n) => {
+        const o = t(n);
+        return `<a href="${o}">${o}</a>`;
+      }
     );
   }
   /** @param {string} text */
@@ -1208,8 +1560,12 @@ class H {
         var i;
         return (i = this.module("find")) == null ? void 0 : i.open();
       },
-      z: () => e.shiftKey ? this.history.redo() : this.history.undo(),
-      y: () => this.history.redo(),
+      z: () => {
+        e.shiftKey ? this.history.redo() : this.history.undo(), this.syncSelectionState();
+      },
+      y: () => {
+        this.history.redo(), this.syncSelectionState();
+      },
       s: () => this.events.emit("save", this.getHTML())
     }[e.key.toLowerCase()];
     o && (e.preventDefault(), o());
@@ -1231,95 +1587,179 @@ class H {
     const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre"), i = t.tagName === "DIV" && t.classList.contains("note"), s = this.selection.getRange();
     if (!s) return;
     if (!n && !o && !i) {
-      let a = s.startContainer;
-      if (a.nodeType === Node.TEXT_NODE && (a = a.parentElement), !(a instanceof HTMLElement) || !a.closest("code")) return;
+      let r = s.startContainer;
+      if (r.nodeType === Node.TEXT_NODE && (r = r.parentElement), !(r instanceof HTMLElement) || !r.closest("code")) return;
     }
-    if (e.preventDefault(), this.history.push(), o) {
+    if (e.preventDefault(), o) {
       if (!t.textContent.trim()) {
-        const l = document.createElement("p");
-        l.innerHTML = "<br>", t.parentNode.insertBefore(l, t.nextSibling), t.parentNode.removeChild(t);
-        const h = document.createRange();
-        h.setStart(l, 0), h.collapse(!0), this.selection.setRange(h);
-      } else
-        this._insertBreakInPre(s);
-      this.emitChange();
+        const p = document.createElement("p");
+        p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), t.parentNode.removeChild(t);
+        const f = document.createRange();
+        f.setStart(p, 0), f.collapse(!0), this.selection.setRange(f), this.commit();
+        return;
+      }
+      const { children: c, startIndex: h, endIndex: d } = this.commands._getLineWindow(
+        t,
+        s.startContainer,
+        s.startOffset
+      );
+      c.slice(h, d + 1).map((p) => p.textContent ?? "").join("").trim() === "" ? this._exitPreFromEmptyLine(t, h - 1, d + 1) : this._insertBreakInPre(s), this.commit();
       return;
     }
     if (n) {
       if (!t.textContent.trim()) {
-        const p = document.createElement("p");
-        p.innerHTML = "<br>", n.parentNode.insertBefore(p, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
+        const f = document.createElement("p");
+        f.innerHTML = "<br>", n.parentNode.insertBefore(f, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
         const v = document.createRange();
-        v.setStart(p, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
+        v.setStart(f, 0), v.collapse(!0), this.selection.setRange(v), this.commit();
         return;
       }
-      const l = document.createElement("p"), { startContainer: h, startOffset: m } = s;
+      const c = document.createElement("p"), { startContainer: h, startOffset: d } = s;
       if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
-        const p = h.textContent, v = p.slice(0, m), b = p.slice(m);
-        h.textContent = v, b && (l.textContent = b);
+        const f = h.textContent, v = f.slice(0, d), b = f.slice(d);
+        h.textContent = v, b && (c.textContent = b);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), g = l.firstChild || l;
-      f.setStart(g, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      c.textContent || (c.innerHTML = "<br>"), t.parentNode.insertBefore(c, t.nextSibling);
+      const g = document.createRange(), p = c.firstChild || c;
+      g.setStart(p, 0), g.collapse(!0), this.selection.setRange(g), this.commit();
       return;
     }
     if (i) {
       if (!t.textContent.trim()) {
-        const p = document.createElement("p");
-        p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), t.parentNode.removeChild(t);
+        const f = document.createElement("p");
+        f.innerHTML = "<br>", t.parentNode.insertBefore(f, t.nextSibling), t.parentNode.removeChild(t);
         const v = document.createRange();
-        v.setStart(p, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
+        v.setStart(f, 0), v.collapse(!0), this.selection.setRange(v), this.commit();
         return;
       }
-      const l = document.createElement("p"), { startContainer: h, startOffset: m } = s;
+      const c = document.createElement("p"), { startContainer: h, startOffset: d } = s;
       if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
-        const p = h.textContent, v = p.slice(0, m), b = p.slice(m);
-        h.textContent = v, b && (l.textContent = b);
+        const f = h.textContent, v = f.slice(0, d), b = f.slice(d);
+        h.textContent = v, b && (c.textContent = b);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), g = l.firstChild || l;
-      f.setStart(g, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      c.textContent || (c.innerHTML = "<br>"), t.parentNode.insertBefore(c, t.nextSibling);
+      const g = document.createRange(), p = c.firstChild || c;
+      g.setStart(p, 0), g.collapse(!0), this.selection.setRange(g), this.commit();
       return;
     }
-    const c = (() => {
-      let a = s.startContainer;
-      return a.nodeType === Node.TEXT_NODE && (a = a.parentElement), a instanceof HTMLElement ? a.closest("code") : null;
+    const a = (() => {
+      let r = s.startContainer;
+      return r.nodeType === Node.TEXT_NODE && (r = r.parentElement), r instanceof HTMLElement ? r.closest("code") : null;
     })();
-    if (c) {
-      const { startContainer: a, startOffset: l } = s;
-      if (a.nodeType === Node.TEXT_NODE && t.contains(a)) {
-        const h = a.textContent, m = h.slice(0, l), f = h.slice(l);
-        a.textContent = m;
-        const g = document.createElement("p");
-        if (f ? g.textContent = f : g.innerHTML = "<br>", t.parentNode.insertBefore(g, t.nextSibling), !c.textContent.trim()) {
-          const b = c.parentNode, R = document.createTextNode("");
-          b.replaceChild(R, c);
+    if (a) {
+      const { startContainer: r, startOffset: c } = s;
+      if (r.nodeType === Node.TEXT_NODE && t.contains(r)) {
+        const h = r.textContent, d = h.slice(0, c), g = h.slice(c);
+        r.textContent = d;
+        const p = document.createElement("p");
+        if (g ? p.textContent = g : p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), !a.textContent.trim()) {
+          const b = a.parentNode, O = document.createTextNode("");
+          b.replaceChild(O, a);
         }
-        const p = document.createRange(), v = g.firstChild || g;
-        p.setStart(v, 0), p.collapse(!0), this.selection.setRange(p);
+        const f = document.createRange(), v = p.firstChild || p;
+        f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f);
       } else {
         const h = document.createElement("p");
         h.innerHTML = "<br>", t.parentNode.insertBefore(h, t.nextSibling);
-        const m = document.createRange();
-        m.setStart(h, 0), m.collapse(!0), this.selection.setRange(m);
+        const d = document.createRange();
+        d.setStart(h, 0), d.collapse(!0), this.selection.setRange(d);
       }
-      this.emitChange();
+      this.commit();
     }
+  }
+  /** Records a history snapshot and notifies listeners after a mutation */
+  commit() {
+    this.history.push(), this.emitChange();
   }
   _insertBreakInPre(e) {
     const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
     if (t.nodeType === Node.TEXT_NODE) {
-      const s = t.textContent, c = s.slice(0, n), a = s.slice(n);
-      if (t.textContent = c, t.parentNode.insertBefore(o, t.nextSibling), a) {
-        const l = document.createTextNode(a);
-        t.parentNode.insertBefore(l, o.nextSibling);
+      const a = t.textContent, r = a.slice(0, n), c = a.slice(n);
+      if (t.textContent = r, t.parentNode.insertBefore(o, t.nextSibling), c) {
+        const h = document.createTextNode(c);
+        t.parentNode.insertBefore(h, o.nextSibling);
       }
-    } else {
-      const s = t.childNodes[n] || null;
-      t.insertBefore(o, s);
+    } else if (t.tagName === "BR")
+      t.parentNode.insertBefore(o, t.nextSibling);
+    else {
+      const a = t.childNodes[n] || null;
+      t.insertBefore(o, a);
     }
-    const i = document.createRange();
-    i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
+    const i = this.commands.closestPre(o);
+    if (i && o.parentNode !== i) {
+      let a = o;
+      for (; a.parentNode && a.parentNode !== i; ) a = a.parentNode;
+      i.insertBefore(o, a.nextSibling);
+    }
+    const s = document.createRange();
+    s.setStartAfter(o), s.collapse(!0), this.selection.setRange(s);
+  }
+  /**
+   * Exits a code block from an empty line: splits the <pre> around the empty
+   * line into [<pre>left</pre> <p><br></p> <pre>right</pre>] and places the
+   * caret in the new paragraph. The seam <br>s consumed by the split are
+   * dropped when the side keeps other content (a lone <br> is a real empty
+   * line and is preserved).
+   * @param {HTMLElement} pre the code block
+   * @param {number} lo index in pre.childNodes of the separator before the empty line
+   * @param {number} hi index in pre.childNodes of the separator after the empty line
+   */
+  _exitPreFromEmptyLine(e, t, n) {
+    const o = [...e.childNodes], i = () => {
+      const d = document.createElement("pre"), g = e.getAttribute("class");
+      return g && d.setAttribute("class", g), d;
+    }, s = i();
+    for (let d = 0; d <= t; d++) s.appendChild(o[d]);
+    const a = i();
+    for (let d = n; d < o.length; d++) a.appendChild(o[d]);
+    this.commands._dropSeamBr(s, "end"), this.commands._dropSeamBr(a, "start");
+    const r = document.createElement("p");
+    r.innerHTML = "<br>";
+    const c = e.parentNode;
+    s.firstChild && c.insertBefore(s, e), c.insertBefore(r, e), a.firstChild && c.insertBefore(a, e), e.remove();
+    const h = document.createRange();
+    h.setStart(r, 0), h.collapse(!0), this.selection.setRange(h);
+  }
+  /**
+   * Keydown handler for Backspace/Delete inside a code block. Native
+   * contenteditable handles editing fine in most browsers, but an empty
+   * <pre> (the placeholder a code block leaves behind once its content is
+   * gone) can get stuck: Chrome does not remove an empty <pre> on Backspace
+   * the way it removes an empty <p>. Removing it manually lets the user
+   * actually delete a code block.
+   * @param {KeyboardEvent} event
+   */
+  handleBackspaceDelete(e) {
+    if (e.key !== "Backspace" && e.key !== "Delete" || this.destroyed || !this.root.contains(document.activeElement)) return;
+    const t = this.selection.getRange();
+    if (!t || !t.collapsed) return;
+    const n = this.commands.closestPre(t.startContainer);
+    if (!n || n.textContent.trim() !== "") return;
+    const o = this._isAtBlockStart(n, t), i = this._isAtBlockEnd(n, t);
+    !(e.key === "Backspace" && o) && !(e.key === "Delete" && i) || (e.preventDefault(), this._removeEmptyPre(n, e.key === "Backspace"), this.commit(), this.syncSelectionState());
+  }
+  /** Whether a collapsed range sits at the very start of an element. */
+  _isAtBlockStart(e, t) {
+    const n = document.createRange();
+    return n.setStart(e, 0), n.setEnd(t.startContainer, t.startOffset), n.toString() === "";
+  }
+  /** Whether a collapsed range sits at the very end of an element. */
+  _isAtBlockEnd(e, t) {
+    const n = document.createRange();
+    return n.setStart(t.startContainer, t.startOffset), n.setEnd(e, e.childNodes.length), n.toString() === "";
+  }
+  /**
+   * Removes an empty code block and moves the caret to the neighboring
+   * block — the end of the previous one after Backspace, the start of the
+   * next one after Delete (mirroring native empty-paragraph removal).
+   * @param {HTMLElement} pre
+   * @param {boolean} isBackspace
+   */
+  _removeEmptyPre(e, t) {
+    const n = e.previousElementSibling, o = e.nextElementSibling;
+    e.remove();
+    const i = document.createRange(), s = t ? n ?? o : o ?? n;
+    s && s !== this.root ? t ? (i.selectNodeContents(s), i.collapse(!1)) : (i.setStart(s, 0), i.collapse(!0)) : (i.selectNodeContents(this.root), i.collapse(!1)), this.selection.setRange(i);
   }
   handleDragOver() {
     if (this.destroyed) return;
@@ -1351,7 +1791,7 @@ class H {
    */
   async loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []), t = [];
-    _.forEach((n, o) => {
+    H.forEach((n, o) => {
       e.has(o) || t.push(
         Promise.resolve(n(this)).then((i) => {
           this.plugins.set(o, i);
@@ -1388,10 +1828,10 @@ class H {
     this.commands.insertHTML(this.sanitizer.sanitize(e));
   }
   undo() {
-    this.history.undo(), this.emitChange();
+    this.history.undo(), this.syncSelectionState(), this.emitChange();
   }
   redo() {
-    this.history.redo(), this.emitChange();
+    this.history.redo(), this.syncSelectionState(), this.emitChange();
   }
   clear() {
     var e;
@@ -1411,7 +1851,7 @@ class H {
     this.destroyed || (this.destroyed = !0, this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleEnter), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
+    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), clearTimeout(this._debounceTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleEnter), document.removeEventListener("keydown", this.handleBackspaceDelete), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
   }
   /**
    * @param {string} event
@@ -1425,58 +1865,58 @@ class H {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    _.set(e, t);
+    H.set(e, t);
   }
 }
-const d = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, u = {
-  undo: d('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
-  redo: d('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
-  bold: d('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
-  italic: d('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
-  underline: d('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
-  strikeThrough: d('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
-  superscript: d('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  subscript: d('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
-  formatColorText: d('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
-  clearFormat: d('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
-  formatColorFill: d('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
-  alignLeft: d('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
-  alignCenter: d('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
-  alignRight: d('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
-  alignJustify: d('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
-  listBulleted: d('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  listNumbered: d('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
-  checklist: d('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
-  link: d('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
-  unlink: d('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
-  image: d('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
-  videocam: d('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
-  audiotrack: d('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
-  table: d('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
-  hr: d('<path d="M2 11h20v2H2z"/>'),
-  blockquote: d('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
-  code: d('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
-  codeBlock: d('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
-  note: d('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
-  emoji: d('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
-  specialChars: d('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
-  find: d('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
-  sourceCode: d('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
-  fullscreen: d('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
-  indent: d('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  outdent: d('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
-  wordCount: d('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
-  ltr: d('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
-  rtl: d('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
-  markdown: d('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
-  date: d('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
-  time: d('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
-  template: d('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
-  anchor: d('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
-  listProps: d('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
-  paragraph: d('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
+const u = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${l}</svg>`, m = {
+  undo: u('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
+  redo: u('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
+  bold: u('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
+  italic: u('<path d="M10 4v3h2.21l-3.42 8H6v3h8v-3h-2.21l3.42-8H18V4z"/>'),
+  underline: u('<path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/>'),
+  strikeThrough: u('<path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/>'),
+  superscript: u('<path d="M20.34 4.63l-1.31 1.53-1.31-1.53-.72.61 1.52 1.76-1.52 1.76.72.61 1.31-1.53 1.31 1.53.72-.61-1.52-1.76 1.52-1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  subscript: u('<path d="M20.34 19.37l-1.31-1.53-1.31 1.53-.72-.61 1.52-1.76-1.52-1.76.72-.61 1.31 1.53 1.31-1.53.72.61-1.52 1.76 1.52 1.76zM5.88 18.94h2.66l3.16-4.98h.12l3.17 4.98h2.66l-4.32-6.6 4.03-6.15h-2.61l-2.9 4.65h-.12l-2.89-4.65H6.02l4.04 6.19z"/>'),
+  formatColorText: u('<path d="M2 20h20v4H2zM5.49 17h1.9l1.13-3h4.96l1.13 3h1.9L11.44 3h-1.87L5.49 17zm3.66-4.66L11 6l1.85 6.34H9.15z"/>'),
+  clearFormat: u('<path d="M6.4 4L4 6.4l5.6 5.6-1.6 3.7v.1c-.4.9.3 1.9 1.3 1.9h.1c.6 0 1.1-.4 1.3-.9l1.4-3.2 5.2 5.2 2.4-2.4L6.4 4zM7.6 5.4L12 9.8 13.6 6H8.4l-.8-.6zM17 4H9.4l2.6 2.6H17V4z"/>'),
+  formatColorFill: u('<path d="M16.56 8.94L7.62 0 6.21 1.41l2.38 2.38-5.15 5.15c-.59.59-.59 1.54 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.58.59-1.53 0-2.12zM5.21 10L10 5.21 14.79 10H5.21zM19 11.5s-2 2.17-2 3.5c0 1.1.9 2 2 2s2-.9 2-2c0-1.33-2-3.5-2-3.5z"/>'),
+  alignLeft: u('<path d="M3 21h12v-2H3v2zM3 17h18v-2H3v2zM3 13h12v-2H3v2zM3 9h18V7H3v2zM3 5h12V3H3v2z"/>'),
+  alignCenter: u('<path d="M7 21h10v-2H7v2zM3 17h18v-2H3v2zM7 13h10v-2H7v2zM3 9h18V7H3v2zM7 5h10V3H7v2z"/>'),
+  alignRight: u('<path d="M9 21h12v-2H9v2zM3 17h18v-2H3v2zM9 13h12v-2H9v2zM3 9h18V7H3v2zM9 5h12V3H9v2z"/>'),
+  alignJustify: u('<path d="M3 21h18v-2H3v2zM3 17h18v-2H3v2zM3 13h18v-2H3v2zM3 9h18V7H3v2zM3 5h18V3H3v2z"/>'),
+  listBulleted: u('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  listNumbered: u('<path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zM7 5v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/>'),
+  checklist: u('<path d="M3 5h6v6H3V5zm2 2v2h2V7H5zm6.5-1.5h9v2h-9v-2zm0 6.5h9v2h-9v-2zM3 13h6v6H3v-6zm2 2v2h2v-2H5zm6.5.5h9v2h-9v-2z"/>'),
+  link: u('<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>'),
+  unlink: u('<path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zM3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM2 2l20 20-1.4 1.4L.6 3.4z"/>'),
+  image: u('<path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>'),
+  videocam: u('<path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11z"/>'),
+  audiotrack: u('<path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>'),
+  table: u('<path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm0 5h16V6H4v3zm0 2v3h5v-3H4zm7 0v3h9v-3h-9zm-7 5v3h5v-3H4zm7 0v3h9v-3h-9z"/>'),
+  hr: u('<path d="M2 11h20v2H2z"/>'),
+  blockquote: u('<path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>'),
+  code: u('<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6z"/>'),
+  codeBlock: u('<path d="M3 3h18v18H3zm2 2v14h14V5H5zm3.4 7.6L4.8 9l3.6-3.6L9.8 6.8 7.4 9l2.4 2.2zm5.2 0l2.4-2.6-2.4-2.2 1.4-1.4L19 9l-3.6 3.6z"/>'),
+  note: u('<path d="M20 2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM7 9h10v2H7V9zm6 6H7v-2h6v2zm4-8H7V5h10v2z"/>'),
+  emoji: u('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zM8.5 10a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zm7 0a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM12 17.5c-2.33 0-4.32-1.45-5.15-3.5h10.3c-.83 2.05-2.82 3.5-5.15 3.5z"/>'),
+  specialChars: u('<path d="M5 4v3h5.5v12h3V7H19V4z"/>'),
+  find: u('<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/>'),
+  sourceCode: u('<path d="M14.6 16.6L19.2 12l-4.6-4.6L16 6l6 6-6 6zM9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6z"/>'),
+  fullscreen: u('<path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>'),
+  indent: u('<path d="M3 21h18v-2H3v2zM3 8v8l4-4-4-4zm8 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  outdent: u('<path d="M3 21h18v-2H3v2zM7 8v8l-4-4 4-4zm4 9h10v-2H11v2zM3 3v2h18V3H3zm8 6h10V7H11v2zm0 4h10v-2H11v2z"/>'),
+  wordCount: u('<path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2zm13 0h3v2h-3v-2zm-3-5h6v2h-6v-2z"/>'),
+  ltr: u('<path d="M6 4v16h2v-5h4v5h2V4h-2v5H8V4H6zm10 0v16h2V4h-2z"/>'),
+  rtl: u('<path d="M8 4v16h2v-5h4v5h2V4h-2v5h-4V4H8zM18 4v16h2V4h-2z"/>'),
+  markdown: u('<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h2l2 3 2-3h2v8h-2v-5l-2 3-2-3v5H7V7zm10 0h2v8h-4v-2h2V7z"/>'),
+  date: u('<path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v10z"/>'),
+  time: u('<path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm1-13h-2v6l5.25 3.15.75-1.23-4-2.37V7z"/>'),
+  template: u('<path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zM13 3h8v8h-8V3zm0 10h8v8h-8v-8z"/>'),
+  anchor: u('<path d="M18 10h-4V6a2 2 0 00-4 0v4H6a2 2 0 000 4h4v4a2 2 0 004 0v-4h4a2 2 0 000-4z"/>'),
+  listProps: u('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
+  paragraph: u('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
-class X {
+class j {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1487,11 +1927,11 @@ class X {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    * @param {() => void} [config.onClose]
    */
-  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: s, onClose: c }) {
-    N(this, "handleEscape", (e) => {
+  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: s, onClose: a }) {
+    _(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
-    this.container = e, this.onConfirm = s, this.onClose = c, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
+    this.container = e, this.onConfirm = s, this.onClose = a, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
             <form class="ife-dialog" role="dialog" aria-modal="true" aria-label="${t}">
                 <header class="ife-dialog__header">
                     <h2>${t}</h2>
@@ -1503,16 +1943,16 @@ class X {
                     <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
                 </footer>
             </form>
-        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
-      a.addEventListener("click", (l) => l.stopPropagation()), a.addEventListener("keydown", (l) => {
-        l.key !== "Escape" && l.stopPropagation();
+        `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((r) => {
+      r.addEventListener("click", (c) => c.stopPropagation()), r.addEventListener("keydown", (c) => {
+        c.key !== "Escape" && c.stopPropagation();
       });
-    }), this.overlay.querySelectorAll("button").forEach((a) => {
-      a.addEventListener("mousedown", (l) => l.preventDefault());
-    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (a) => {
-      a.target === this.overlay && this.close();
-    }), this.form.addEventListener("submit", (a) => {
-      a.preventDefault(), a.stopPropagation(), this.onConfirm(this.form), this.close();
+    }), this.overlay.querySelectorAll("button").forEach((r) => {
+      r.addEventListener("mousedown", (c) => c.preventDefault());
+    }), this.overlay.querySelector(".ife-dialog__close").addEventListener("click", () => this.close()), this.overlay.querySelector('[data-action="cancel"]').addEventListener("click", () => this.close()), this.overlay.addEventListener("click", (r) => {
+      r.target === this.overlay && this.close();
+    }), this.form.addEventListener("submit", (r) => {
+      r.preventDefault(), r.stopPropagation(), this.onConfirm(this.form), this.close();
     }), document.addEventListener("keydown", this.handleEscape);
   }
   open() {
@@ -1541,7 +1981,7 @@ class X {
 }
 const K = {
   blockFormat: {
-    icon: u.paragraph,
+    icon: m.paragraph,
     label: "Block format",
     type: "select",
     options: [
@@ -1553,194 +1993,180 @@ const K = {
       ["h5", "heading5"],
       ["h6", "heading6"]
     ],
-    onChange: (r, e) => {
-      r.commands.exec("formatBlock", e);
+    onChange: (l, e) => {
+      l.commands.exec("formatBlock", e);
     }
   },
-  undo: { icon: u.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
-  redo: { icon: u.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
-  bold: { icon: u.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: u.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: u.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: u.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: u.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: u.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: u.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: u.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+  undo: { icon: m.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (l) => l.undo() },
+  redo: { icon: m.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (l) => l.redo() },
+  bold: { icon: m.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: m.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: m.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: m.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: m.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: m.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: m.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: m.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: u.clearFormat,
+    icon: m.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: u.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: u.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: u.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: u.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: u.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: u.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: m.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: m.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: m.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: m.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: m.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: m.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: u.checklist,
+    icon: m.checklist,
     label: "Checklist",
     type: "action",
-    action: (r) => r.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
+    action: (l) => l.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: u.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: u.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: u.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (r) => r.module("link").open() },
+  indent: { icon: m.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: m.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: m.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (l) => l.module("link").open() },
   unlink: {
-    icon: u.unlink,
+    icon: m.unlink,
     label: "Remove link",
     type: "action",
-    action: (r) => {
-      const e = r.selection.closest("a");
-      e && r.module("link").remove(e);
+    action: (l) => {
+      const e = l.selection.closest("a");
+      e && l.module("link").remove(e);
     }
   },
-  image: { icon: u.image, label: "Insert image", type: "action", action: (r) => r.module("image").open() },
-  video: { icon: u.videocam, label: "Insert video", type: "action", action: (r) => r.module("media").openVideo() },
-  audio: { icon: u.audiotrack, label: "Insert audio", type: "action", action: (r) => r.module("media").openAudio() },
-  table: { icon: u.table, label: "Insert table", type: "action", action: (r) => r.module("table").openInsertDialog() },
-  hr: { icon: u.hr, label: "Horizontal rule", type: "action", action: (r) => r.module("media").insertHorizontalRule() },
-  blockquote: { icon: u.blockquote, label: "Blockquote", type: "action", action: (r) => {
-    const e = r.selection.getBlockElement();
-    if (!e || e === r.root) return;
+  image: { icon: m.image, label: "Insert image", type: "action", action: (l) => l.module("image").open() },
+  video: { icon: m.videocam, label: "Insert video", type: "action", action: (l) => l.module("media").openVideo() },
+  audio: { icon: m.audiotrack, label: "Insert audio", type: "action", action: (l) => l.module("media").openAudio() },
+  table: { icon: m.table, label: "Insert table", type: "action", action: (l) => l.module("table").openInsertDialog() },
+  hr: { icon: m.hr, label: "Horizontal rule", type: "action", action: (l) => l.module("media").insertHorizontalRule() },
+  blockquote: { icon: m.blockquote, label: "Blockquote", type: "action", action: (l) => {
+    const e = l.selection.getBlockElement();
+    if (!e || e === l.root) return;
     if (e.tagName === "BLOCKQUOTE" || e.closest("blockquote")) {
-      const n = e.tagName === "BLOCKQUOTE" ? e : e.closest("blockquote");
-      r.history.push();
-      const o = document.createElement("p");
+      const n = e.tagName === "BLOCKQUOTE" ? e : e.closest("blockquote"), o = document.createElement("p");
       o.innerHTML = n.innerHTML, n.replaceWith(o);
     } else {
-      r.history.push();
       const n = document.createElement("blockquote");
       n.innerHTML = e.outerHTML, e.replaceWith(n);
     }
-    r.emitChange();
+    l.history.push(), l.emitChange();
   } },
   codeInline: {
-    icon: u.code,
+    icon: m.code,
     label: "Inline code",
     type: "action",
-    action: (r) => r.selection.wrap("code") && r.emitChange()
-  },
-  codeBlock: { icon: u.codeBlock, label: "Code block", type: "action", action: (r) => {
-    const e = r.selection.getBlockElement();
-    if (!e || e === r.root) return;
-    const t = e.tagName === "PRE" || e.closest("pre");
-    if (r.history.push(), t) {
-      const n = e.tagName === "PRE" ? e : e.closest("pre"), o = document.createElement("p");
-      o.innerHTML = n.innerHTML, n.replaceWith(o);
-    } else {
-      const n = document.createElement("pre");
-      n.innerHTML = e.innerHTML, e.replaceWith(n);
+    action: (l) => {
+      l.selection.wrap("code") && (l.history.push(), l.emitChange());
     }
-    r.emitChange();
-  } },
-  note: { icon: u.note, label: "Insert note", type: "action", action: (r) => r.module("note").open() },
+  },
+  codeBlock: { icon: m.codeBlock, label: "Code block", type: "command", command: "codeBlock" },
+  note: { icon: m.note, label: "Insert note", type: "action", action: (l) => l.module("note").open() },
   emoji: {
-    icon: u.emoji,
+    icon: m.emoji,
     label: "Emoji",
     type: "action",
-    action: (r, e) => r.module("emoji").open(e)
+    action: (l, e) => l.module("emoji").open(e)
   },
   specialChars: {
-    icon: u.specialChars,
+    icon: m.specialChars,
     label: "Special characters",
     type: "action",
-    action: (r) => r.commands.insertHTML("&amp;copy;")
+    action: (l) => l.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: u.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (r) => r.module("find").open() },
+  find: { icon: m.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (l) => l.module("find").open() },
   sourceCode: {
-    icon: u.sourceCode,
+    icon: m.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("codeView").toggle()
+    action: (l) => l.module("codeView").toggle()
   },
   fullscreen: {
-    icon: u.fullscreen,
+    icon: m.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
-    action: (r) => r.module("fullscreen").toggle()
+    action: (l) => l.module("fullscreen").toggle()
   },
   ltr: {
-    icon: u.ltr,
+    icon: m.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
-    action: (r) => r.commands.exec("direction", "ltr")
+    action: (l) => l.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: u.rtl,
+    icon: m.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
-    action: (r) => r.commands.exec("direction", "rtl")
+    action: (l) => l.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: u.markdown,
+    icon: m.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
-    action: (r) => {
-      const e = r.module("markdown");
+    action: (l) => {
+      const e = l.module("markdown");
       if (e)
-        if (r.root.dataset.markdownMode === "true") {
-          r.root.dataset.markdownMode = "false";
-          const t = r.getHTML(), n = e.htmlToMarkdown(t);
-          r.setHTML(e.markdownToHtml(n));
+        if (l.root.dataset.markdownMode === "true") {
+          l.root.dataset.markdownMode = "false";
+          const t = l.getHTML(), n = e.htmlToMarkdown(t);
+          l.setHTML(e.markdownToHtml(n));
         } else
-          r._mdSource = e.export(), e.import(r._mdSource), r.root.dataset.markdownMode = "true";
+          l._mdSource = e.export(), e.import(l._mdSource), l.root.dataset.markdownMode = "true";
     }
   },
   date: {
-    icon: u.date,
+    icon: m.date,
     label: "Insert date",
     type: "action",
-    action: (r) => {
-      const t = (/* @__PURE__ */ new Date()).toLocaleDateString(r.options.locale ?? "en", { year: "numeric", month: "long", day: "numeric" });
-      r.commands.insertHTML(t);
+    action: (l) => {
+      const t = (/* @__PURE__ */ new Date()).toLocaleDateString(l.options.locale ?? "en", { year: "numeric", month: "long", day: "numeric" });
+      l.commands.insertHTML(t);
     }
   },
   time: {
-    icon: u.time,
+    icon: m.time,
     label: "Insert time",
     type: "action",
-    action: (r) => {
-      const t = (/* @__PURE__ */ new Date()).toLocaleTimeString(r.options.locale ?? "en", { hour: "2-digit", minute: "2-digit" });
-      r.commands.insertHTML(t);
+    action: (l) => {
+      const t = (/* @__PURE__ */ new Date()).toLocaleTimeString(l.options.locale ?? "en", { hour: "2-digit", minute: "2-digit" });
+      l.commands.insertHTML(t);
     }
   },
   anchor: {
-    icon: u.anchor,
+    icon: m.anchor,
     label: "Insert anchor",
     type: "action",
-    action: (r) => {
+    action: (l) => {
       const e = prompt("Anchor name:");
       if (!e) return;
-      r.history.push();
       const t = document.createElement("a");
       t.name = e.trim();
-      const n = r.selection.getRange();
-      n && (n.deleteContents(), n.insertNode(t)), r.emitChange();
+      const n = l.selection.getRange();
+      n && (n.deleteContents(), n.insertNode(t), l.history.push(), l.emitChange());
     }
   },
   templates: {
-    icon: u.template,
+    icon: m.template,
     label: "Content templates",
     type: "action",
-    action: (r) => {
+    action: (l) => {
       var e;
-      return (e = r.module("templates")) == null ? void 0 : e.open();
+      return (e = l.module("templates")) == null ? void 0 : e.open();
     }
   },
   listProps: {
-    icon: u.listProps,
+    icon: m.listProps,
     label: "List properties",
     type: "action",
-    action: (r) => {
-      const e = r.selection.closest("li"), t = e == null ? void 0 : e.closest("ol, ul");
+    action: (l) => {
+      const e = l.selection.closest("li"), t = e == null ? void 0 : e.closest("ol, ul");
       if (!t || t.tagName !== "OL") return;
       const n = t.getAttribute("start") || "", o = t.style.listStyleType || "", i = `
                 <label class="ife-field">
@@ -1758,16 +2184,16 @@ const K = {
                         <option value="upper-roman" ${o === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, s = new X(r.wrapper, {
+            `, s = new j(l.wrapper, {
         title: "List properties",
         bodyHtml: i,
         confirmLabel: "Apply",
-        onConfirm: (c) => {
-          const a = new FormData(c), l = a.get("start"), h = a.get("type");
-          r.history.push(), l ? t.setAttribute("start", String(l)) : t.removeAttribute("start"), h ? t.style.listStyleType = h : t.style.listStyleType = "", r.emitChange();
+        onConfirm: (a) => {
+          const r = new FormData(a), c = r.get("start"), h = r.get("type");
+          c ? t.setAttribute("start", String(c)) : t.removeAttribute("start"), h ? t.style.listStyleType = h : t.style.listStyleType = "", l.history.push(), l.emitChange();
         }
       });
-      r.selection.save(), s.open();
+      l.selection.save(), s.open();
     }
   }
 }, G = {
@@ -1965,7 +2391,7 @@ const K = {
   listProps: "Свойства списка",
   blockFormat: "Формат блока",
   madeBy: "Сделано в ITkha"
-}, k = /* @__PURE__ */ new Map([
+}, C = /* @__PURE__ */ new Map([
   ["en", G],
   ["uk", J],
   ["ru", Y]
@@ -1974,19 +2400,19 @@ const K = {
    * @param {string} code
    * @param {Record<string, string>} strings
    */
-  register(r, e) {
-    k.set(r, e);
+  register(l, e) {
+    C.set(l, e);
   },
   /**
    * @param {string} locale
    * @param {string} key
    * @returns {string}
    */
-  t(r, e) {
-    return (k.get(r) ?? k.get("en"))[e] ?? k.get("en")[e] ?? e;
+  t(l, e) {
+    return (C.get(l) ?? C.get("en"))[e] ?? C.get("en")[e] ?? e;
   },
   available() {
-    return [...k.keys()];
+    return [...C.keys()];
   }
 }, Q = [
   "#000000",
@@ -2021,23 +2447,23 @@ const K = {
   "#795548",
   "#a1887f"
 ];
-function E(r, e, t) {
-  return Math.max(e, Math.min(t, r));
+function k(l, e, t) {
+  return Math.max(e, Math.min(t, l));
 }
-function S(r) {
-  const e = /^#([0-9a-f]{6})$/i.exec((r || "").trim());
+function L(l) {
+  const e = /^#([0-9a-f]{6})$/i.exec((l || "").trim());
   if (!e) return [0, 0, 0];
-  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, o = parseInt(e[1].slice(4, 6), 16) / 255, i = Math.max(t, n, o), s = Math.min(t, n, o), c = i - s, a = i;
-  let l = 0, h = 0;
-  return c !== 0 && (h = c / i, i === t ? l = (n - o) / c + (n < o ? 6 : 0) : i === n ? l = (o - t) / c + 2 : l = (t - n) / c + 4), [Math.round(l * 60), Math.round(h * 100), Math.round(a * 100)];
+  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, o = parseInt(e[1].slice(4, 6), 16) / 255, i = Math.max(t, n, o), s = Math.min(t, n, o), a = i - s, r = i;
+  let c = 0, h = 0;
+  return a !== 0 && (h = a / i, i === t ? c = (n - o) / a + (n < o ? 6 : 0) : i === n ? c = (o - t) / a + 2 : c = (t - n) / a + 4), [Math.round(c * 60), Math.round(h * 100), Math.round(r * 100)];
 }
-function T(r, e, t) {
-  r = (r % 360 + 360) % 360, e = E(e, 0, 100) / 100, t = E(t, 0, 100) / 100;
-  const n = t * e, o = n * (1 - Math.abs(r / 60 % 2 - 1)), i = t - n;
-  let s = 0, c = 0, a = 0;
-  r < 60 ? (s = n, c = o) : r < 120 ? (s = o, c = n) : r < 180 ? (c = n, a = o) : r < 240 ? (c = o, a = n) : r < 300 ? (s = o, a = n) : (s = n, a = o);
-  const l = (h) => Math.round((h + i) * 255).toString(16).padStart(2, "0");
-  return `#${l(s)}${l(c)}${l(a)}`;
+function T(l, e, t) {
+  l = (l % 360 + 360) % 360, e = k(e, 0, 100) / 100, t = k(t, 0, 100) / 100;
+  const n = t * e, o = n * (1 - Math.abs(l / 60 % 2 - 1)), i = t - n;
+  let s = 0, a = 0, r = 0;
+  l < 60 ? (s = n, a = o) : l < 120 ? (s = o, a = n) : l < 180 ? (a = n, r = o) : l < 240 ? (a = o, r = n) : l < 300 ? (s = o, r = n) : (s = n, r = o);
+  const c = (h) => Math.round((h + i) * 255).toString(16).padStart(2, "0");
+  return `#${c(s)}${c(a)}${c(r)}`;
 }
 class Z {
   /**
@@ -2054,7 +2480,7 @@ class Z {
   open() {
     if (this.picker) return;
     this.editor.selection.save(), this.editor.wrapper.classList.add("ife-color-picking");
-    const e = this.getCurrentColor(), [t, n, o] = e ? S(e) : [0, 0, 0];
+    const e = this.getCurrentColor(), [t, n, o] = e ? L(e) : [0, 0, 0];
     this.hue = t, this.sat = n, this.value = o, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
     const i = this.editor.wrapper;
     ["--ife-bg", "--ife-text", "--ife-border", "--ife-btn-hover", "--ife-btn-active"].forEach((s) => {
@@ -2082,23 +2508,23 @@ class Z {
     s.type = "text", s.className = "ife-color-picker__hex", s.value = T(this.hue, this.sat, this.value), s.setAttribute("aria-label", `${this.label} hex`), s.addEventListener("input", () => {
       const h = /^#?([0-9a-f]{6})$/i.exec(s.value.trim());
       if (!h) return;
-      const [m, f, g] = S(`#${h[1]}`);
-      this.hue = m, this.sat = f, this.value = g, this.render(), this.emit();
+      const [d, g, p] = L(`#${h[1]}`);
+      this.hue = d, this.sat = g, this.value = p, this.render(), this.emit();
     }), s.addEventListener("mousedown", (h) => h.stopPropagation());
-    const c = document.createElement("span");
-    c.className = "ife-color-picker__preview", c.setAttribute("aria-hidden", "true");
-    const a = document.createElement("button");
-    a.type = "button", a.className = "ife-color-picker__clear", a.textContent = "✕", a.title = "Clear colour", a.setAttribute("aria-label", "Clear colour"), a.addEventListener("mousedown", (h) => h.preventDefault()), a.addEventListener("click", () => {
+    const a = document.createElement("span");
+    a.className = "ife-color-picker__preview", a.setAttribute("aria-hidden", "true");
+    const r = document.createElement("button");
+    r.type = "button", r.className = "ife-color-picker__clear", r.textContent = "✕", r.title = "Clear colour", r.setAttribute("aria-label", "Clear colour"), r.addEventListener("mousedown", (h) => h.preventDefault()), r.addEventListener("click", () => {
       this.onClear && this.onClear(), this.close();
-    }), o.appendChild(i), o.appendChild(s), o.appendChild(c), o.appendChild(a);
-    const l = document.createElement("div");
-    l.className = "ife-color-picker__swatches", l.setAttribute("role", "group"), l.setAttribute("aria-label", "Preset colours"), Q.forEach((h) => {
-      const m = document.createElement("button");
-      m.type = "button", m.className = "ife-color-picker__swatch", m.style.backgroundColor = h, m.title = h, m.setAttribute("aria-label", h), m.setAttribute("data-color", h), m.addEventListener("mousedown", (f) => f.preventDefault()), m.addEventListener("click", () => {
-        const [f, g, p] = S(h);
-        this.hue = f, this.sat = g, this.value = p, this.render(), this.emit(h);
-      }), l.appendChild(m);
-    }), n.appendChild(e), n.appendChild(t), n.appendChild(o), n.appendChild(l), this.picker.appendChild(n), this.square = t, this.hueEl = e, this.hexEl = s, this.previewEl = c, this.square.addEventListener("pointerdown", (h) => this.onSquareDown(h)), this.hueEl.addEventListener("pointerdown", (h) => this.onHueDown(h)), this._boundPointerMove = (h) => this.onPointerMove(h), this._boundPointerUp = () => {
+    }), o.appendChild(i), o.appendChild(s), o.appendChild(a), o.appendChild(r);
+    const c = document.createElement("div");
+    c.className = "ife-color-picker__swatches", c.setAttribute("role", "group"), c.setAttribute("aria-label", "Preset colours"), Q.forEach((h) => {
+      const d = document.createElement("button");
+      d.type = "button", d.className = "ife-color-picker__swatch", d.style.backgroundColor = h, d.title = h, d.setAttribute("aria-label", h), d.setAttribute("data-color", h), d.addEventListener("mousedown", (g) => g.preventDefault()), d.addEventListener("click", () => {
+        const [g, p, f] = L(h);
+        this.hue = g, this.sat = p, this.value = f, this.render(), this.emit(h);
+      }), c.appendChild(d);
+    }), n.appendChild(e), n.appendChild(t), n.appendChild(o), n.appendChild(c), this.picker.appendChild(n), this.square = t, this.hueEl = e, this.hexEl = s, this.previewEl = a, this.square.addEventListener("pointerdown", (h) => this.onSquareDown(h)), this.hueEl.addEventListener("pointerdown", (h) => this.onHueDown(h)), this._boundPointerMove = (h) => this.onPointerMove(h), this._boundPointerUp = () => {
       this._squareDrag = !1, this._hueDrag = !1;
     }, document.addEventListener("pointermove", this._boundPointerMove), document.addEventListener("pointerup", this._boundPointerUp), this.picker.addEventListener("mousedown", (h) => {
       h.target.closest("input") || h.preventDefault();
@@ -2133,11 +2559,11 @@ class Z {
     this._squareDrag && this._squareFromPointer(e), this._hueDrag && this._hueFromPointer(e);
   }
   _squareFromPointer(e) {
-    const t = this.square.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1) * 100, o = E((e.clientY - t.top) / t.height, 0, 1) * 100;
+    const t = this.square.getBoundingClientRect(), n = k((e.clientX - t.left) / t.width, 0, 1) * 100, o = k((e.clientY - t.top) / t.height, 0, 1) * 100;
     this.sat = Math.round(n), this.value = Math.round(100 - o), this.render(), this.emit();
   }
   _hueFromPointer(e) {
-    const t = this.hueEl.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1);
+    const t = this.hueEl.getBoundingClientRect(), n = k((e.clientX - t.left) / t.width, 0, 1);
     this.hue = Math.round(n * 360), this.render(), this.emit();
   }
   getCurrentColor() {
@@ -2151,10 +2577,10 @@ class Z {
       if ((o = n.style) != null && o[this.cssProp]) {
         const i = n.style[this.cssProp], s = /^#([0-9a-f]{6})$/i.exec(i);
         if (s) return `#${s[1].toLowerCase()}`;
-        const c = i.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-        if (c) {
-          const a = (l) => parseInt(l, 10).toString(16).padStart(2, "0");
-          return `#${a(c[1])}${a(c[2])}${a(c[3])}`;
+        const a = i.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+        if (a) {
+          const r = (c) => parseInt(c, 10).toString(16).padStart(2, "0");
+          return `#${r(a[1])}${r(a[2])}${r(a[3])}`;
         }
       }
       n = n.parentElement;
@@ -2206,8 +2632,8 @@ class te {
       const i = n.toString();
       i.trim() && (i !== this._liveLastSelection && (clearTimeout(this._liveTimer), this._liveTimer = setTimeout(() => {
         this._liveLastSelection = i;
-        const { command: s, value: c } = this._liveColor;
-        this.editor.selection.save(), this.editor.commands.exec(s, c);
+        const { command: s, value: a } = this._liveColor;
+        this.editor.selection.save(), this.editor.commands.exec(s, a);
       }, 40)), clearTimeout(this._liveIdleTimer), this._liveIdleTimer = setTimeout(() => this.disarmLiveColor(), 1500));
     }, document.addEventListener("selectionchange", this._handleLiveSelection), document.addEventListener("mouseup", this._handleLiveSelection), this.el.addEventListener("mousedown", () => {
       this.editor.selection.save();
@@ -2243,8 +2669,8 @@ class te {
   buildSelect(e, t) {
     const n = this.editor.options.locale ?? "en", o = document.createElement("select");
     return o.className = "ife-toolbar__select", o.setAttribute("aria-label", y.t(n, e) !== e ? y.t(n, e) : t.label), t.options.forEach(([i, s]) => {
-      const c = document.createElement("option");
-      c.value = i, c.textContent = s, o.appendChild(c);
+      const a = document.createElement("option");
+      a.value = i, a.textContent = s, o.appendChild(a);
     }), o.addEventListener("pointerdown", () => {
       this.editor.selection.save();
     }), o.addEventListener("mousedown", () => {
@@ -2257,19 +2683,19 @@ class te {
   buildColorPicker(e, t) {
     const n = this.editor.options.locale ?? "en", o = y.t(n, e) !== e ? y.t(n, e) : t.label, i = document.createElement("button");
     i.type = "button", i.className = "ife-toolbar__btn ife-toolbar__color", i.dataset.command = e, i.title = o, i.setAttribute("aria-label", o), i.setAttribute("aria-haspopup", "dialog"), i.innerHTML = t.icon;
-    const s = t.command === "backColor" ? "backgroundColor" : "color", c = new Z(this.editor, i, {
+    const s = t.command === "backColor" ? "backgroundColor" : "color", a = new Z(this.editor, i, {
       id: e,
       cssProp: s,
       label: o,
-      onChange: (a) => {
-        this.editor.selection.restoreSavedOffsets(), this.editor.commands.applyColor(s, a), this.armLiveColor({ command: t.command, value: a });
+      onChange: (r) => {
+        this.editor.selection.restoreSavedOffsets(), this.editor.commands.applyColor(s, r), this.armLiveColor({ command: t.command, value: r });
       },
       onClear: () => {
         this.editor.selection.restoreSavedOffsets(), this.editor.commands.clearColor(s), this.disarmLiveColor();
       }
     });
-    return this._colorPickers.set(e, c), i.addEventListener("click", () => {
-      this.editor.selection.save(), c.toggle();
+    return this._colorPickers.set(e, a), i.addEventListener("click", () => {
+      this.editor.selection.save(), a.toggle();
     }), this.buttons.set(e, i), i;
   }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
@@ -2282,63 +2708,64 @@ class te {
       superscript: "superscript",
       subscript: "subscript",
       bulletList: "insertUnorderedList",
-      orderedList: "insertOrderedList"
-    }).forEach(([l, h]) => {
-      const m = this.buttons.get(l);
-      m instanceof HTMLElement && m.classList.toggle("is-active", this.editor.commands.queryState(h));
+      orderedList: "insertOrderedList",
+      codeBlock: "codeBlock"
+    }).forEach(([c, h]) => {
+      const d = this.buttons.get(c);
+      d instanceof HTMLElement && d.classList.toggle("is-active", this.editor.commands.queryState(h));
     });
     const t = this.editor.selection.getBlockElement();
     let n = "";
     if (t) {
-      let l = t;
-      for (; l && l !== this.editor.root; ) {
-        if (l.style.textAlign) {
-          n = l.style.textAlign;
+      let c = t;
+      for (; c && c !== this.editor.root; ) {
+        if (c.style.textAlign) {
+          n = c.style.textAlign;
           break;
         }
-        l = l.parentElement;
+        c = c.parentElement;
       }
     }
-    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((l) => {
-      const h = this.buttons.get(l);
-      h instanceof HTMLElement && h.classList.toggle("is-active", n === l.replace("align", "").toLowerCase());
+    ["alignLeft", "alignCenter", "alignRight", "alignJustify"].forEach((c) => {
+      const h = this.buttons.get(c);
+      h instanceof HTMLElement && h.classList.toggle("is-active", n === c.replace("align", "").toLowerCase());
     });
     const o = this.buttons.get("ltr"), i = this.buttons.get("rtl");
     if (o instanceof HTMLElement && i instanceof HTMLElement) {
-      let l = "";
+      let c = "";
       if (t) {
         let h = t;
         for (; h && h !== this.editor.root; ) {
           if (h.dir) {
-            l = h.dir;
+            c = h.dir;
             break;
           }
           h = h.parentElement;
         }
       }
-      o.classList.toggle("is-active", l === "ltr"), i.classList.toggle("is-active", l === "rtl");
+      o.classList.toggle("is-active", c === "ltr"), i.classList.toggle("is-active", c === "rtl");
     }
     const s = this.buttons.get("markdown");
     s instanceof HTMLElement && s.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
-    const c = this.buttons.get("blockquote");
-    if (c instanceof HTMLElement) {
-      let l = !1;
+    const a = this.buttons.get("blockquote");
+    if (a instanceof HTMLElement) {
+      let c = !1;
       if (t) {
         let h = t;
         for (; h && h !== this.editor.root; ) {
           if (h.tagName === "BLOCKQUOTE") {
-            l = !0;
+            c = !0;
             break;
           }
           h = h.parentElement;
         }
       }
-      c.classList.toggle("is-active", l);
+      a.classList.toggle("is-active", c);
     }
-    const a = this.buttons.get("blockFormat");
-    if (a instanceof HTMLSelectElement && t) {
-      const l = t.tagName.toLowerCase(), h = ["p", "h1", "h2", "h3", "h4", "h5", "h6"];
-      a.value = h.includes(l) ? l : "p";
+    const r = this.buttons.get("blockFormat");
+    if (r instanceof HTMLSelectElement && t) {
+      const c = t.tagName.toLowerCase(), h = ["p", "h1", "h2", "h3", "h4", "h5", "h6"];
+      r.value = h.includes(c) ? c : "p";
     }
   }
   setEnabled(e, t) {
@@ -2362,63 +2789,63 @@ class te {
   }
 }
 const ne = {
-  link: () => import("./LinkModule-45rHF5Cq.js"),
-  image: () => import("./ImageModule-BuXstJwM.js"),
-  table: () => import("./TableModule-V3fOW7hn.js"),
+  link: () => import("./LinkModule-DOJ-Q8vc.js"),
+  image: () => import("./ImageModule-CqlgaYVJ.js"),
+  table: () => import("./TableModule-CgK4B4kU.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
-  fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-Bnt5gza4.js"),
-  note: () => import("./NoteModule-rd8L3dl8.js"),
-  media: () => import("./MediaModule-CQ-kQCoj.js"),
+  fullscreen: () => import("./FullscreenModule-Ck-yOE8o.js"),
+  find: () => import("./FindModule-CM_sM3QO.js"),
+  note: () => import("./NoteModule--2Qiy3Cq.js"),
+  media: () => import("./MediaModule-Ca3SV2eV.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-CrjeC5gE.js"),
+  statusBar: () => import("./StatusBar-DPjQ5A7t.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CkJfyuEh.js")
+  templates: () => import("./TemplateModule-DgAejgKc.js")
 };
-Object.entries(ne).forEach(([r, e]) => {
-  H.registerPlugin(r, async (t) => {
+Object.entries(ne).forEach(([l, e]) => {
+  x.registerPlugin(l, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
 });
-const C = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new Set(), ie = {
+const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), ie = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
    * @returns {EditorCore}
    */
-  init(r, e = {}) {
-    const t = typeof r == "string" ? document.querySelector(r) : r;
+  init(l, e = {}) {
+    const t = typeof l == "string" ? document.querySelector(l) : l;
     if (!t)
-      throw new Error(`WYSIWYG Editor: target "${r}" not found`);
+      throw new Error(`WYSIWYG Editor: target "${l}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
-    if (C.has(t))
-      return C.get(t);
-    const n = new H(t, e), o = new te(n, e.toolbar);
-    return n.on("destroy", () => o.destroy()), C.set(t, n), w.add(n), n.on("destroy", () => {
-      C.delete(t), w.delete(n);
+    if (E.has(t))
+      return E.get(t);
+    const n = new x(t, e), o = new te(n, e.toolbar);
+    return n.on("destroy", () => o.destroy()), E.set(t, n), S.add(n), n.on("destroy", () => {
+      E.delete(t), S.delete(n);
     }), n;
   },
   /**
    * @param {string|HTMLTextAreaElement} target
    * @returns {EditorCore|undefined}
    */
-  get(r) {
-    const e = typeof r == "string" ? document.querySelector(r) : r;
-    return e ? C.get(e) : void 0;
+  get(l) {
+    const e = typeof l == "string" ? document.querySelector(l) : l;
+    return e ? E.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    w.forEach((r) => r.destroy()), w.clear();
+    S.forEach((l) => l.destroy()), S.clear();
   },
-  registerPlugin: H.registerPlugin
+  registerPlugin: x.registerPlugin
 };
 export {
-  X as D,
-  u as I,
+  j as D,
+  m as I,
   y as L,
   ie as W
 };
-//# sourceMappingURL=index-B3jrLqjz.js.map
+//# sourceMappingURL=index-CkG4BTfX.js.map

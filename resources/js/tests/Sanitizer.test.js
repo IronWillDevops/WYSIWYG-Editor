@@ -117,6 +117,46 @@ describe('Sanitizer', () => {
         });
     });
 
+    describe('checklist <input> support', () => {
+        // The checklist toolbar feature stores task state as
+        // <input type="checkbox"> inside <li>. The sanitizer must keep the
+        // checkbox and its state attrs when re-saving article HTML.
+
+        it('keeps an unchecked task checkbox', () => {
+            const result = sanitizer.sanitize('<ul class="ife-checklist"><li><input type="checkbox"> Task</li></ul>');
+            expect(result).toContain('<input type="checkbox">');
+            expect(result).toContain('Task');
+        });
+
+        it('keeps the checked state of a completed task', () => {
+            const result = sanitizer.sanitize('<ul class="ife-checklist"><li><input type="checkbox" checked> Done</li></ul>');
+            expect(result).toContain('<input');
+            expect(result).toContain('checked');
+        });
+
+        it('keeps a disabled input', () => {
+            const result = sanitizer.sanitize('<p><input type="checkbox" disabled></p>');
+            expect(result).toContain('disabled');
+        });
+
+        it('strips event handlers and unknown attrs from <input>', () => {
+            const result = sanitizer.sanitize('<input type="checkbox" checked onclick="alert(1)" value="x" name="y">');
+            expect(result).not.toContain('onclick');
+            expect(result).not.toContain('value=');
+            expect(result).not.toContain('name=');
+            expect(result).toContain('<input');
+            expect(result).toContain('checked');
+        });
+
+        it('blocks javascript: URLs and stays idempotent for checklist HTML', () => {
+            const html = '<ul class="ife-checklist"><li><input type="checkbox" checked> A</li><li><input type="checkbox"> B</li></ul>';
+            const first = sanitizer.sanitize(html);
+            const second = sanitizer.sanitize(first);
+            expect(second).toBe(first);
+            expect(first).toContain('type="checkbox"');
+        });
+    });
+
     describe('double-escaped entity decoding', () => {
         it('decodes entity-encoded span tags into rendered HTML', () => {
             const result = sanitizer.sanitize('&lt;span style="font-weight: bold;"&gt;Welcome&lt;/span&gt;');

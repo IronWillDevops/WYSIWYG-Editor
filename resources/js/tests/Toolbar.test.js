@@ -300,6 +300,22 @@ describe('Toolbar', () => {
         expect(btn.classList.contains('is-active')).toBe(true);
     });
 
+    it('activates codeBlock button when the caret is inside a <pre>', () => {
+        editor.commands.queryState = vi.fn((name) => name === 'codeBlock');
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('codeBlock');
+        expect(btn).not.toBeNull();
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('does not activate codeBlock button outside a code block', () => {
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('codeBlock');
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(false);
+    });
+
     it('renders a blockFormat select control', () => {
         toolbar = new Toolbar(editor);
         const select = toolbar.buttons.get('blockFormat');

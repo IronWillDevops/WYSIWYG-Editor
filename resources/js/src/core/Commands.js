@@ -45,7 +45,6 @@ export default class Commands {
 
     exec(name, value = null) {
         this.prepare();
-        this.editor.history.push();
 
         switch (name) {
             case 'bold':
@@ -93,6 +92,10 @@ export default class Commands {
 
             case 'insertOrderedList':
                 this.toggleList('ol');
+                break;
+
+            case 'codeBlock':
+                this.toggleCodeBlock();
                 break;
 
             case 'foreColor':
@@ -145,11 +148,20 @@ export default class Commands {
                 throw new Error(`Unknown command: ${name}`);
         }
 
+        // Record the post-command state. History.push() de-duplicates against
+        // the last snapshot, so a push taken *before* the mutation above would
+        // always be a no-op and the command would never land on the undo stack.
+        this.editor.history.push();
         this.editor.emitChange();
         this.editor.events.emit('selectionchange', this.editor);
     }
 
     queryState(name) {
+        if (name === 'codeBlock') {
+            const range = this.selection.getRange();
+            if (!range) return false;
+            return this.closestPre(range.startContainer) !== null;
+        }
         try {
             return document.queryCommandState(name);
         } catch {
@@ -220,8 +232,36 @@ export default class Commands {
             return;
         }
 
+        // Collapsed caret inside a single block: turn only the caret's line
+        // into a list item (same line-aware behaviour as formatBlock).
+        if (range.collapsed) {
+            const block = this.blockAt(range.startContainer);
+            if (block) {
+                const target = this._convertCaretLine(block, range, (fragment) => {
+                    const list = document.createElement(listTag);
+                    const li = document.createElement('li');
+                    if (fragment.firstChild) {
+                        li.appendChild(fragment);
+                    } else {
+                        li.innerHTML = '<br>';
+                    }
+                    list.appendChild(li);
+                    return list;
+                });
+                if (target) return;
+                // The caret line spans the whole block → fall through to the
+                // whole-block conversion below.
+            }
+        }
+
         const blocks = this.getBlocksInRange(range);
-        if (!blocks.length) return;
+        if (!blocks.length) {
+            // No enclosing block (plain text/inline elements under the root):
+            // wrap the line or selection into a fresh single-item list.
+            const wrapped = this._wrapRangeIntoList(range, listTag);
+            if (wrapped) this._placeCaretAtEnd(wrapped);
+            return;
+        }
 
         const list = document.createElement(listTag);
         blocks.forEach((block) => {
@@ -259,25 +299,10 @@ export default class Commands {
             return topBlocks;
         }
 
-        // Nearest block-level ancestor of a node at any depth (the block does
-        // not have to be a direct child of the root — nested <p> inside a
-        // <div>, inline wrappers, etc. all resolve to their real block).
-        const nearestBlock = (node) => {
-            let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-            if (el === this.root) return null;
-            while (el && el !== this.root) {
-                if (el instanceof HTMLElement && BLOCK_TAGS.has(el.tagName)) {
-                    return el;
-                }
-                el = el.parentElement;
-            }
-            return null;
-        };
-
-        const startBlock = nearestBlock(range.startContainer);
+        const startBlock = this.blockAt(range.startContainer);
         if (!startBlock) return [];
 
-        const endBlock = nearestBlock(range.endContainer) ?? startBlock;
+        const endBlock = this.blockAt(range.endContainer) ?? startBlock;
         if (startBlock === endBlock) return [startBlock];
 
         // Both blocks share a parent (the usual multi-paragraph selection):
@@ -313,6 +338,39 @@ export default class Commands {
             return blocks.length ? blocks : [startBlock];
         }
         return [startBlock];
+    }
+
+    /**
+     * Nearest block-level ancestor of a node at any depth (the block does not
+     * have to be a direct child of the root — nested <p> inside a <div>,
+     * inline wrappers, etc. all resolve to their real block).
+     * @param {Node} node
+     * @returns {HTMLElement|null}
+     */
+    blockAt(node) {
+        let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        if (el === this.root) return null;
+        while (el && el !== this.root) {
+            if (el instanceof HTMLElement && BLOCK_TAGS.has(el.tagName)) {
+                return el;
+            }
+            el = el.parentElement;
+        }
+        return null;
+    }
+
+    /**
+     * Nearest <pre> ancestor of a node, bounded by the editor root.
+     * @param {Node} node
+     * @returns {HTMLElement|null}
+     */
+    closestPre(node) {
+        let el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+        while (el && el !== this.root) {
+            if (el instanceof HTMLElement && el.tagName === 'PRE') return el;
+            el = el.parentElement;
+        }
+        return null;
     }
 
     /** @param {HTMLElement} list @param {'ul'|'ol'} listTag */
@@ -676,7 +734,6 @@ export default class Commands {
     /** Inserts raw (already sanitized) HTML at the current caret position. */
     insertHTML(html) {
         this.prepare();
-        this.editor.history.push();
 
         const range = this.selection.getRange();
         if (!range) return;
@@ -693,6 +750,9 @@ export default class Commands {
             this.selection.setRange(newRange);
         }
 
+        // Push after the mutation: a push taken before insertNode would snapshot
+        // unchanged content and be de-duplicated away by History.push().
+        this.editor.history.push();
         this.editor.emitChange();
     }
 
@@ -710,6 +770,22 @@ export default class Commands {
         const targetTag = tag.toLowerCase();
         const blocks = this.getBlocksInRange(range);
 
+        // Collapsed caret inside a single (multi-line) block: format only the
+        // line holding the caret, splitting the block around it.
+        if (range.collapsed && blocks.length === 1) {
+            const target = this._convertCaretLine(blocks[0], range, (fragment) => {
+                const el = document.createElement(targetTag);
+                if (fragment.firstChild) {
+                    el.appendChild(fragment);
+                } else {
+                    el.innerHTML = '<br>';
+                }
+                return el;
+            });
+            if (target) return;
+            // The caret line spans the whole block → convert it below.
+        }
+
         // No enclosing block means the content is inline directly under the
         // root (plain text and/or inline elements, possibly separated by <br>).
         // Without a block to convert, the previous implementation returned
@@ -719,7 +795,6 @@ export default class Commands {
         if (!blocks.length) {
             const wrapped = this.wrapInlineIntoBlock(range, targetTag);
             if (!wrapped) return;
-            this.editor.history.push();
             const newRange = document.createRange();
             newRange.selectNodeContents(wrapped);
             newRange.collapse(false);
@@ -734,8 +809,6 @@ export default class Commands {
             (block) => block.tagName.toLowerCase() !== targetTag
         );
         if (!blocksToConvert.length) return;
-
-        this.editor.history.push();
 
         let lastReplacement = null;
         blocksToConvert.forEach((block) => {
@@ -841,5 +914,452 @@ export default class Commands {
             else lineRange.setEnd(end, 0);
         }
         return lineRange;
+    }
+
+    // --------------------------------------------------------------------
+    // Code block + line-aware block conversion helpers
+    // --------------------------------------------------------------------
+
+    /**
+     * Toggles the current selection or caret line in/out of a <pre> code
+     * block. Entering wraps the caret's line (or the selected run) in a
+     * <pre>; leaving unwraps the caret's line back into a <p>.
+     */
+    toggleCodeBlock() {
+        const range = this.selection.getRange();
+        if (!range) return;
+
+        if (range.collapsed) {
+            // Collapsed caret: operate on the block holding the caret.
+            const block = this.blockAt(range.startContainer);
+            if (block) {
+                const targetTag = block.tagName === 'PRE' ? 'p' : 'pre';
+                const target = this._convertCaretLine(block, range, (fragment) => {
+                    const el = document.createElement(targetTag);
+                    if (fragment.firstChild) {
+                        el.appendChild(fragment);
+                    } else {
+                        el.innerHTML = '<br>';
+                    }
+                    return el;
+                });
+                if (target) return;
+                // The caret line spans the whole block → convert the block.
+                this._convertBlocksToTag([block], targetTag);
+                return;
+            }
+            if (range.startContainer === this.root) {
+                // Caret sitting directly inside the (empty) root → insert an
+                // empty pre at the caret position.
+                const pre = document.createElement('pre');
+                pre.innerHTML = '<br>';
+                const ref = this.root.childNodes[range.startOffset] || null;
+                this.root.insertBefore(pre, ref);
+                const newRange = document.createRange();
+                newRange.setStart(pre, 0);
+                newRange.collapse(true);
+                this.selection.setRange(newRange);
+                return;
+            }
+            // Root-level inline content → wrap the caret's line into a pre.
+            const wrapped = this.wrapInlineIntoBlock(range, 'pre');
+            if (wrapped) this._placeCaretAtEnd(wrapped);
+            return;
+        }
+
+        // Non-collapsed selection.
+        const blocks = this.getBlocksInRange(range);
+        if (blocks.length === 1) {
+            const block = blocks[0];
+            if (block.tagName === 'PRE') {
+                // Selection inside a code block: the button reads as "active",
+                // so the click means "remove the code block".
+                this._convertBlocksToTag([block], 'p');
+                return;
+            }
+            const pre = this._splitBlockAtSelection(block, range, 'pre');
+            if (pre) this._placeCaretAtEnd(pre);
+            return;
+        }
+        if (blocks.length > 1) {
+            const allPres = blocks.every((b) => b.tagName === 'PRE');
+            blocks.forEach((b) => {
+                if (b.tagName === 'PRE') {
+                    if (allPres) this._convertBlocksToTag([b], 'p');
+                } else {
+                    this._convertBlocksToTag([b], 'pre');
+                }
+            });
+            return;
+        }
+        // No enclosing block → wrap the selected run into a pre.
+        const wrapped = this.wrapInlineIntoBlock(range, 'pre');
+        if (wrapped) this._placeCaretAtEnd(wrapped);
+    }
+
+    /**
+     * Converts every given block element to the target tag, preserving the
+     * block's class attribute. Blocks already using the tag are left alone.
+     * @param {HTMLElement[]} blocks
+     * @param {string} tag lowercase target tag name
+     * @returns {HTMLElement|null} the last replacement element (or null)
+     */
+    _convertBlocksToTag(blocks, tag) {
+        let last = null;
+        blocks.forEach((block) => {
+            if (block.tagName.toLowerCase() === tag) return;
+            const replacement = document.createElement(tag);
+            const cls = block.getAttribute('class');
+            if (cls) replacement.setAttribute('class', cls);
+            replacement.innerHTML = block.innerHTML || '<br>';
+            block.replaceWith(replacement);
+            last = replacement;
+        });
+        return last;
+    }
+
+    /**
+     * Converts the caret's line inside `block` into a new element built by
+     * `buildTarget`, splitting `block` into [prefix | target | suffix] and
+     * re-placing the caret at the same character offset inside the target.
+     * Returns null when the caret line spans the whole block — callers then
+     * convert the whole block instead.
+     * @param {HTMLElement} block
+     * @param {Range} range collapsed caret range
+     * @param {(fragment: DocumentFragment) => HTMLElement} buildTarget
+     * @returns {HTMLElement|null}
+     */
+    _convertCaretLine(block, range, buildTarget) {
+        const window = this._getLineWindow(block, range.startContainer, range.startOffset);
+        const { children, startIndex, endIndex } = window;
+        if (startIndex === 0 && endIndex === children.length - 1) return null;
+
+        // Character offset of the caret within the line's text stream, so the
+        // caret can be re-placed at the same position inside the fresh target.
+        const rel = this._caretOffsetInLine(block, window, range.startContainer, range.startOffset);
+
+        const target = this._splitLineInto(block, window, buildTarget);
+        if (target) this._placeCaretAtTextOffset(target, rel);
+        return target;
+    }
+
+    /**
+     * Returns the child-index window describing the "line" of a caret point
+     * inside a block: the maximal run of direct children between the nearest
+     * <br>/block separators. Empty lines (endIndex < startIndex) are possible.
+     * @param {HTMLElement} block
+     * @param {Node} node caret container
+     * @param {number} offset caret offset
+     * @returns {{children: Node[], startIndex: number, endIndex: number}}
+     */
+    _getLineWindow(block, node, offset) {
+        const children = [...block.childNodes];
+        let idx;
+        if (node === block) {
+            idx = offset;
+        } else {
+            let cur = node;
+            while (cur && cur.parentNode !== block) cur = cur.parentNode;
+            if (cur && cur === node && cur.nodeType === Node.ELEMENT_NODE && cur.tagName === 'BR') {
+                // Caret anchored directly on a <br> (test/edge position): it
+                // sits at the break, i.e. on the line *after* it.
+                idx = children.indexOf(cur) + 1;
+            } else {
+                idx = cur ? children.indexOf(cur) : -1;
+                if (idx === -1) idx = children.length;
+            }
+        }
+        let lo = -1;
+        for (let i = idx - 1; i >= 0; i--) {
+            if (this._isLineSeparator(children[i])) {
+                lo = i;
+                break;
+            }
+        }
+        let hi = children.length;
+        for (let i = idx; i < children.length; i++) {
+            if (this._isLineSeparator(children[i])) {
+                hi = i;
+                break;
+            }
+        }
+        return { children, startIndex: lo + 1, endIndex: hi - 1 };
+    }
+
+    /** Whether a node terminates a line inside a block (<br> or a block tag). */
+    _isLineSeparator(node) {
+        return node.nodeType === Node.ELEMENT_NODE
+            && (node.tagName === 'BR' || BLOCK_TAGS.has(node.tagName));
+    }
+
+    /**
+     * Character offset of (node, offset) from the start of the caret line, so
+     * a later split can re-place the caret at the identical text position.
+     * @param {HTMLElement} block
+     * @param {{children: Node[], startIndex: number, endIndex: number}} window
+     * @param {Node} node caret container
+     * @param {number} offset caret offset
+     * @returns {number}
+     */
+    _caretOffsetInLine(block, window, node, offset) {
+        const { children, startIndex, endIndex } = window;
+        let total = 0;
+        for (let i = startIndex; i <= endIndex; i++) {
+            total += (children[i]?.textContent ?? '').length;
+        }
+        let before = 0;
+        if (node === block) {
+            for (let i = startIndex; i < Math.min(offset, endIndex + 1); i++) {
+                before += (children[i]?.textContent ?? '').length;
+            }
+        } else {
+            let cur = node;
+            while (cur && cur.parentNode !== block) cur = cur.parentNode;
+            const idx = cur ? children.indexOf(cur) : -1;
+            if (idx !== -1 && idx >= startIndex && idx <= endIndex) {
+                for (let i = startIndex; i < idx; i++) {
+                    before += (children[i]?.textContent ?? '').length;
+                }
+                before += this._textOffsetAt(cur, node, offset);
+            } else if (idx !== -1) {
+                before = total; // caret past the line's end edge
+            }
+        }
+        return Math.min(Math.max(before, 0), total);
+    }
+
+    /**
+     * Number of text characters between the start of `scope` and the point
+     * (target, offset) inside it, walking text nodes in document order.
+     * Unlike Selection.offsetOf this handles element boundary points and
+     * <br> children without throwing or mis-counting.
+     * @param {Node} scope
+     * @param {Node} target
+     * @param {number} offset
+     * @returns {number}
+     */
+    _textOffsetAt(scope, target, offset) {
+        let total = 0;
+        const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+        let text;
+        while ((text = walker.nextNode())) {
+            if (text === target) return total + offset;
+            if (target.nodeType === Node.TEXT_NODE) {
+                // PRECEDING on text.cdp(target) means `target` comes first —
+                // i.e. this text node sits after the caret point: stop.
+                if (text.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_PRECEDING) break;
+                total += text.length;
+            } else if (target.contains(text)) {
+                // Element boundary point (target, offset): text in the
+                // target's own children before `offset` still precedes it.
+                let child = text;
+                let parent = text.parentNode;
+                while (parent && parent !== target) {
+                    child = parent;
+                    parent = parent.parentNode;
+                }
+                if (parent === target) {
+                    const idx = Array.prototype.indexOf.call(target.childNodes, child);
+                    if (idx < offset) total += text.length;
+                    else break;
+                }
+            } else {
+                if (text.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_PRECEDING) break;
+                total += text.length;
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Splits a block around a non-collapsed selection into
+     * [prefix | target | suffix], converting the selected run into a fresh
+     * element of `targetTag`. Sides keep the original block's tag and class.
+     * @param {HTMLElement} block
+     * @param {Range} range non-collapsed range inside block
+     * @param {string} targetTag e.g. 'pre'
+     * @returns {HTMLElement} the new target element
+     */
+    _splitBlockAtSelection(block, range, targetTag) {
+        const tag = block.tagName.toLowerCase();
+        const className = block.getAttribute('class');
+        const makeSide = () => {
+            const el = document.createElement(tag);
+            if (className) el.setAttribute('class', className);
+            return el;
+        };
+
+        // Snapshot the start point before extractContents mutates the range.
+        // The end point is re-read from the live range afterwards, since DOM
+        // ranges auto-adjust their anchors on the prefix removal.
+        const startNode = range.startContainer;
+        const startOffset = range.startOffset;
+
+        const left = makeSide();
+        const prefixRange = document.createRange();
+        prefixRange.setStart(block, 0);
+        prefixRange.setEnd(startNode, startOffset);
+        left.appendChild(prefixRange.extractContents());
+
+        const target = document.createElement(targetTag);
+        const midRange = document.createRange();
+        midRange.setStart(prefixRange.startContainer, prefixRange.startOffset);
+        midRange.setEnd(range.endContainer, range.endOffset);
+        target.appendChild(midRange.extractContents());
+
+        // Whatever is still inside the block after the selection is the suffix.
+        const right = makeSide();
+        while (block.firstChild) right.appendChild(block.firstChild);
+
+        if (!target.firstChild) target.innerHTML = '<br>';
+
+        this._dropSeamBr(left, 'end');
+        this._dropSeamBr(right, 'start');
+
+        const parent = block.parentNode;
+        if (right.firstChild) parent.insertBefore(right, block);
+        parent.insertBefore(target, block);
+        if (left.firstChild) parent.insertBefore(left, block);
+        block.remove();
+        return target;
+    }
+
+    /**
+     * Splits the block around a (line) window into [left | target | right],
+     * where `target` is built by `buildTarget` from the extracted line content.
+     * Boundary <br>s at the seams are dropped when the side keeps content, so
+     * a lone <br> (a real empty line) survives.
+     * @param {HTMLElement} block
+     * @param {{children: Node[], startIndex: number, endIndex: number}} window
+     * @param {(fragment: DocumentFragment) => HTMLElement} buildTarget
+     * @returns {HTMLElement|null}
+     */
+    _splitLineInto(block, window, buildTarget) {
+        const { startIndex, endIndex } = window;
+        const tag = block.tagName.toLowerCase();
+        const className = block.getAttribute('class');
+        const makeSide = () => {
+            const el = document.createElement(tag);
+            if (className) el.setAttribute('class', className);
+            return el;
+        };
+
+        // Extract the caret line FIRST, while every child of `block` is still
+        // attached. BuildTarget callers read element offsets (startIndex/
+        // endIndex) into `block`; if we pulled the left side out before
+        // creating that range, the indexes would be stale and `extractContents`
+        // would throw IndexSizeError (offset out of bound).
+        const range = document.createRange();
+        range.setStart(block, startIndex);
+        range.setEnd(block, endIndex + 1);
+        const fragment = range.extractContents();
+
+        const left = makeSide();
+        for (let i = 0; i < startIndex; i++) left.appendChild(block.firstChild);
+
+        const right = makeSide();
+        while (block.firstChild) right.appendChild(block.firstChild);
+
+        const target = buildTarget(fragment);
+        if (!target) return null;
+
+        const parent = block.parentNode;
+        this._dropSeamBr(left, 'end');
+        this._dropSeamBr(right, 'start');
+
+        if (left.firstChild) parent.insertBefore(left, block);
+        parent.insertBefore(target, block);
+        if (right.firstChild) parent.insertBefore(right, block);
+        block.remove();
+        return target;
+    }
+
+    /**
+     * Drops the seam <br> of a split side (last child for end, first child for
+     * start) — the break consumed by the block boundary — unless the side only
+     * holds <br>s, in which case it represents a real empty line.
+     * @param {HTMLElement} side
+     * @param {'start'|'end'} which
+     */
+    _dropSeamBr(side, which) {
+        const node = which === 'end' ? side.lastChild : side.firstChild;
+        if (!node || node.nodeType !== Node.ELEMENT_NODE || node.tagName !== 'BR') return;
+        const hasOther = [...side.childNodes].some(
+            (n) => n !== node && !(n.nodeType === Node.ELEMENT_NODE && n.tagName === 'BR')
+        );
+        if (hasOther) node.remove();
+    }
+
+    /**
+     * Wraps the current line (collapsed) or selection (non-collapsed) of
+     * root-level inline content into a fresh single-item list.
+     * @param {Range} range
+     * @param {'ul'|'ol'} listTag
+     * @returns {HTMLElement|null}
+     */
+    _wrapRangeIntoList(range, listTag) {
+        const list = document.createElement(listTag);
+        const li = document.createElement('li');
+
+        let wrapRange = range;
+        if (range.collapsed) {
+            if (range.startContainer === this.root) {
+                li.innerHTML = '<br>';
+            } else {
+                const lineRange = this.getInlineLineRange(range);
+                if (!lineRange) return null;
+                wrapRange = lineRange;
+            }
+        }
+
+        const fragment = wrapRange.extractContents();
+        if (fragment.firstChild) {
+            li.appendChild(fragment);
+        } else if (!li.firstChild) {
+            li.innerHTML = '<br>';
+        }
+        list.appendChild(li);
+
+        if (range.collapsed && range.startContainer === this.root) {
+            const ref = this.root.childNodes[range.startOffset] || null;
+            this.root.insertBefore(list, ref);
+        } else {
+            wrapRange.insertNode(list);
+        }
+        return list;
+    }
+
+    /** Collapses the selection at the end of an element. @param {HTMLElement} el */
+    _placeCaretAtEnd(el) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        this.selection.setRange(range);
+    }
+
+    /**
+     * Collapses the selection to the given character offset within an element,
+     * walking the element's text nodes in document order.
+     * @param {HTMLElement} el
+     * @param {number} offset
+     */
+    _placeCaretAtTextOffset(el, offset) {
+        let remaining = Math.max(offset, 0);
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let text;
+        while ((text = walker.nextNode())) {
+            if (remaining <= text.length) {
+                const range = document.createRange();
+                range.setStart(text, remaining);
+                range.collapse(true);
+                this.selection.setRange(range);
+                return;
+            }
+            remaining -= text.length;
+        }
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        this.selection.setRange(range);
     }
 }
