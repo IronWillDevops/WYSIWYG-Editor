@@ -38,6 +38,11 @@ proper Laravel package with a one-line Blade component.
 - **Find & Replace** — with regex and case-sensitive matching.
 - **History** — up to 1000 undo/redo steps, debounced recording.
 - **Autosave**, **fullscreen**, **keyboard shortcuts**, **spellcheck**.
+- **Status bar** — live word & character counts, block-type and
+  link/code/table context, always reachable. Long content never grows the
+  editor: the content area is bounded to the configured `height` and scrolls
+  internally with its own scrollbar, so the toolbar and status bar stay pinned
+  above and below it (also in fullscreen).
 - **Themes** — light / dark / auto (`prefers-color-scheme`).
 - **i18n** — English, Українська, Русский, easy to extend.
 - **Security** — whitelist HTML sanitizer, paste sanitizer, URL validation,
@@ -106,6 +111,11 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
     autosave
 />
 ```
+
+> **Escaping** — the initial value is printed with `{{ e($value, false) }}`:
+> stored markup such as `<p>hi</p>` is rendered as literal text (never live
+> HTML) until the editor mounts and replaces it, and already-encoded entities
+> (`&amp;`) are not double-encoded, so published content round-trips cleanly.
 
 ### 2. Plain `<textarea>` + JS
 
