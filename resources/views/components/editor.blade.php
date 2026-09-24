@@ -46,7 +46,7 @@
         name="{{ $name }}"
         id="{{ $elementId }}"
         style="display:none"
-    >{!! preg_replace('/<\/textarea>/i', '&lt;/textarea&gt;', $value) !!}</textarea>
+    >{{ e($value, false) }}</textarea>
 </div>
 
 @once
