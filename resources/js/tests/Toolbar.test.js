@@ -48,6 +48,15 @@ describe('Toolbar', () => {
         expect(groups.length).toBeGreaterThan(0);
     });
 
+    it('mounts as a sibling directly above the scrollable content area', () => {
+        // The toolbar must stay outside the scroll container, otherwise it
+        // scrolls away with the content it is meant to stay above.
+        toolbar = new Toolbar(editor);
+        expect(toolbar.el.parentNode).toBe(editor.wrapper);
+        expect(toolbar.el.nextElementSibling).toBe(editor.root);
+        expect(editor.root.contains(toolbar.el)).toBe(false);
+    });
+
     it('renders a bold button', () => {
         toolbar = new Toolbar(editor);
         const btn = toolbar.el.querySelector('[data-command="bold"]');

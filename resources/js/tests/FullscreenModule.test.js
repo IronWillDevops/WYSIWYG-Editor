@@ -89,12 +89,32 @@ describe('FullscreenModule', () => {
         expect(module._previousMaxHeight).toBe('');
     });
 
-    it('exit restores an unset max-height as empty', async () => {
+    it('enter lifts the inline min-height so a short fullscreen window still scrolls', async () => {
+        editor.root.style.minHeight = '420px';
+
         await module.enter();
-        expect(editor.root.style.maxHeight).toBe('none');
+
+        expect(editor.root.style.minHeight).toBe('0');
+        expect(module._previousMinHeight).toBe('420px');
+    });
+
+    it('exit restores the previous inline min-height', async () => {
+        editor.root.style.minHeight = '420px';
+        await module.enter();
+        expect(editor.root.style.minHeight).toBe('0');
 
         await module.exit();
 
+        expect(editor.root.style.minHeight).toBe('420px');
+        expect(module._previousMinHeight).toBe('');
+    });
+
+    it('exit restores unset height bounds as empty', async () => {
+        await module.enter();
+
+        await module.exit();
+
+        expect(editor.root.style.minHeight).toBe('');
         expect(editor.root.style.maxHeight).toBe('');
     });
 

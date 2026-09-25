@@ -21,9 +21,7 @@ export default class TableModule {
 
         // The editor emits 'init' synchronously, but this plugin is loaded
         // asynchronously (dynamic import), so the init subscription above runs
-        // too late to ever constrain the content area on first paint. Bound the
-        // editor to the viewport once now so it doesn't initially grow past the
-        // screen (it keeps being re-applied on resize/content change).
+        // too late to cap tables that already exist in the initial content.
         setTimeout(this.adjustTableHeight, 0);
 
         this.editor.root.addEventListener('mousedown', (e) => this.handleColumnResizeStart(e));
@@ -490,42 +488,31 @@ export default class TableModule {
         this.editor.events.emit('table:context', inTable);
     }
 
-    /** Constrains content area and table height to fit within the viewport. */
+    /**
+     * Caps oversized tables to the content box they live in, so a long table
+     * scrolls together with the surrounding content instead of stretching the
+     * editor.
+     *
+     * The editor's own content height belongs to `Editor.buildDom` (the
+     * `height` option) and is deliberately left untouched here: sizing it from
+     * viewport geometry (the wrapper's position plus `window.innerHeight`) made
+     * the editor resize itself on every scroll/paste/selection change, which
+     * broke the pinned toolbar/status-bar layout and hid the inner scrollbar.
+     */
     adjustTableHeight() {
         if (!this.editor.root?.isConnected) return;
-
-        const wrapper = this.editor.wrapper;
-        const viewportHeight = window.innerHeight;
-        const wrapperRect = wrapper.getBoundingClientRect();
-
-        const toolbarEl = wrapper.querySelector('.ife-toolbar');
-        const toolbarHeight = toolbarEl ? toolbarEl.offsetHeight : 0;
-
-        const contextToolbarVisible = this.contextToolbar?.style.display !== 'none';
-        const contextToolbarHeight = contextToolbarVisible ? (this.contextToolbar?.offsetHeight || 0) : 0;
-
-        const statusbarEl = wrapper.querySelector('.ife-statusbar');
-        const statusbarHeight = statusbarEl ? statusbarEl.offsetHeight : 0;
-
-        const wrapperStyle = getComputedStyle(wrapper);
-        const wrapperBorderTop = parseFloat(wrapperStyle.borderTopWidth) || 0;
-        const wrapperBorderBottom = parseFloat(wrapperStyle.borderBottomWidth) || 0;
-
-        const maxContentHeight = viewportHeight
-            - wrapperRect.top
-            - wrapperBorderTop
-            - toolbarHeight
-            - contextToolbarHeight
-            - statusbarHeight
-            - wrapperBorderBottom;
-
-        this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(maxContentHeight))}px`;
 
         const tables = this.editor.root.querySelectorAll('table.ife-table');
         if (!tables.length) return;
 
-        const contentPaddingTop = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16;
-        const contentPaddingBottom = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
+        // Measure the box we actually scroll inside, so the cap stays correct
+        // no matter where the editor sits on the page or how tall the viewport
+        // is. `clientHeight` includes padding, hence the subtraction.
+        const rootStyle = getComputedStyle(this.editor.root);
+        const availableHeight = this.editor.root.clientHeight
+            - (parseFloat(rootStyle.paddingTop) || 0)
+            - (parseFloat(rootStyle.paddingBottom) || 0);
+        if (availableHeight <= 0) return;
 
         tables.forEach((table) => {
             let precedingHeight = 0;
@@ -542,12 +529,10 @@ export default class TableModule {
             const tableMarginTop = parseFloat(tableStyle.marginTop) || 0;
             const tableMarginBottom = parseFloat(tableStyle.marginBottom) || 0;
 
-            const availableForTable = maxContentHeight
-                - contentPaddingTop
+            const availableForTable = availableHeight
                 - precedingHeight
                 - tableMarginTop
-                - tableMarginBottom
-                - contentPaddingBottom;
+                - tableMarginBottom;
 
             table.style.maxHeight = `${Math.max(200, Math.floor(availableForTable))}px`;
         });
@@ -555,7 +540,9 @@ export default class TableModule {
 
     destroy() {
         window.removeEventListener('resize', this.adjustTableHeight);
-        this.editor.root.style.maxHeight = '';
+        this.editor.root?.querySelectorAll('table.ife-table').forEach((table) => {
+            table.style.maxHeight = '';
+        });
         this.contextToolbar?.remove();
     }
 }

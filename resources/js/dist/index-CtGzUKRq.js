@@ -2789,19 +2789,19 @@ class te {
   }
 }
 const ne = {
-  link: () => import("./LinkModule-DOJ-Q8vc.js"),
-  image: () => import("./ImageModule-CqlgaYVJ.js"),
-  table: () => import("./TableModule-CgK4B4kU.js"),
+  link: () => import("./LinkModule-BTLIT6XP.js"),
+  image: () => import("./ImageModule-BgXaztyy.js"),
+  table: () => import("./TableModule-DJ8D7usP.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
-  fullscreen: () => import("./FullscreenModule-Ck-yOE8o.js"),
-  find: () => import("./FindModule-CM_sM3QO.js"),
-  note: () => import("./NoteModule--2Qiy3Cq.js"),
-  media: () => import("./MediaModule-Ca3SV2eV.js"),
+  fullscreen: () => import("./FullscreenModule-D0F0ld5P.js"),
+  find: () => import("./FindModule-DYySVHNC.js"),
+  note: () => import("./NoteModule-Bl7TJf4N.js"),
+  media: () => import("./MediaModule-CUAE6hqe.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-DPjQ5A7t.js"),
+  statusBar: () => import("./StatusBar-1N82vqJi.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-DgAejgKc.js")
+  templates: () => import("./TemplateModule-CylhTJRw.js")
 };
 Object.entries(ne).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -2848,4 +2848,4 @@ export {
   y as L,
   ie as W
 };
-//# sourceMappingURL=index-CkG4BTfX.js.map
+//# sourceMappingURL=index-CtGzUKRq.js.map

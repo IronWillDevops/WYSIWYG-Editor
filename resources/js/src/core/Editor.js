@@ -90,7 +90,8 @@ export default class Editor {
         // tables, ...) scrolls *inside* the editor instead of growing the root
         // past the wrapper — the wrapper is overflow:hidden, so an unbounded
         // root would be clipped with no way to scroll to the rest of the
-        // content. TableModule tightens this to the viewport on init/resize.
+        // content. The editor is the single owner of these bounds: no module
+        // may recompute them, otherwise the layout stops being height-stable.
         this.root.style.maxHeight = `${this.options.height}px`;
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');

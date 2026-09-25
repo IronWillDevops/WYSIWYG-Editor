@@ -42,7 +42,9 @@ proper Laravel package with a one-line Blade component.
   link/code/table context, always reachable. Long content never grows the
   editor: the content area is bounded to the configured `height` and scrolls
   internally with its own scrollbar, so the toolbar and status bar stay pinned
-  above and below it (also in fullscreen).
+  above and below it (also in fullscreen). The `height` option is the only
+  thing that sizes the editor — it is never silently re-fitted to the viewport
+  as the page scrolls.
 - **Themes** — light / dark / auto (`prefers-color-scheme`).
 - **i18n** — English, Українська, Русский, easy to extend.
 - **Security** — whitelist HTML sanitizer, paste sanitizer, URL validation,
