@@ -85,20 +85,43 @@ export default class Editor {
         this.root.className = 'ife-content';
         this.root.contentEditable = 'true';
         this.root.spellcheck = true;
-        this.root.style.minHeight = `${this.options.height}px`;
-        // Bound the content area so very large content (long code blocks, huge
-        // tables, ...) scrolls *inside* the editor instead of growing the root
-        // past the wrapper — the wrapper is overflow:hidden, so an unbounded
-        // root would be clipped with no way to scroll to the rest of the
-        // content. The editor is the single owner of these bounds: no module
-        // may recompute them, otherwise the layout stops being height-stable.
-        this.root.style.maxHeight = `${this.options.height}px`;
+        this.applyHeight();
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
 
         this.wrapper.appendChild(this.root);
         this.textarea.insertAdjacentElement('afterend', this.wrapper);
+    }
+
+    /**
+     * Applies the `height` option to the content area — the only thing that
+     * sizes the editor, and the only place allowed to write these bounds.
+     *
+     * The area is bounded rather than grown, so very large content (long code
+     * blocks, huge tables, a big paste, ...) scrolls *inside* the editor
+     * instead of stretching it: the wrapper is overflow:hidden, so an
+     * unbounded root would be clipped with no way to reach the rest of the
+     * content, the page would become the only scroll area and the toolbar and
+     * status bar would travel with it.
+     *
+     * `fullscreen: true` lifts the bounds so the fullscreen flex column owns
+     * the scrolling (see `.ife-fullscreen .ife-content` in the stylesheet);
+     * calling it again re-applies them. The bounds are re-derived from the
+     * option instead of being snapshotted, so no number of fullscreen round
+     * trips (or a native Esc) can leave the editor without them.
+     *
+     * @param {boolean} [fullscreen]
+     */
+    applyHeight(fullscreen = false) {
+        if (!this.root) return;
+        // An unusable option (missing, null, a CSS length, ...) must not
+        // silently drop the bounds — fall back to the default height instead
+        // of leaving the content area unbounded.
+        const configured = Number(this.options.height);
+        const height = Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_OPTIONS.height;
+        this.root.style.minHeight = fullscreen ? '0' : `${height}px`;
+        this.root.style.maxHeight = fullscreen ? 'none' : `${height}px`;
     }
 
     bindEvents() {

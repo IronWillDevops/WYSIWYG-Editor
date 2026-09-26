@@ -6,8 +6,6 @@ export default class FullscreenModule {
     constructor(editor) {
         this.editor = editor;
         this.active = false;
-        this._previousMinHeight = '';
-        this._previousMaxHeight = '';
         this.handleChange = this.handleChange.bind(this);
         document.addEventListener('fullscreenchange', this.handleChange);
     }
@@ -27,19 +25,13 @@ export default class FullscreenModule {
                 await this.editor.wrapper.requestFullscreen();
             }
             this.editor.wrapper.classList.add('ife-fullscreen');
-            // Lift the content-area height bounds so the fullscreen flex column
-            // owns the scrolling (see .ife-fullscreen .ife-content in the
-            // stylesheet). Both bounds are inline (applied by buildDom from the
-            // `height` option): without lifting max-height the content stays
-            // trapped in a fixed-size mini-box over the fullscreen viewport, and
-            // a leftover min-height would push the status bar out of a short
-            // window instead of letting the content scroll.
-            if (this.editor.root) {
-                this._previousMinHeight = this.editor.root.style.minHeight;
-                this._previousMaxHeight = this.editor.root.style.maxHeight;
-                this.editor.root.style.minHeight = '0';
-                this.editor.root.style.maxHeight = 'none';
-            }
+            // Let the editor hand its content bounds over to the fullscreen
+            // flex column (see `.ife-fullscreen .ife-content` in the
+            // stylesheet) rather than snapshotting and restoring them here:
+            // the bounds are re-derived from the `height` option on the way
+            // back, so neither a second exit path (the native `fullscreenchange`
+            // event) nor a repeated round trip can leave the editor unbounded.
+            this.editor.applyHeight(true);
             this.active = true;
         } catch {
             return;
@@ -55,26 +47,16 @@ export default class FullscreenModule {
             // Ignore — element may already have left fullscreen (e.g. Esc key).
         }
         this.editor.wrapper.classList.remove('ife-fullscreen');
-        this._restoreHeightBounds();
+        this.editor.applyHeight(false);
         this.active = false;
     }
 
     handleChange() {
         if (!document.fullscreenElement) {
             this.editor.wrapper.classList.remove('ife-fullscreen');
-            this._restoreHeightBounds();
+            this.editor.applyHeight(false);
             this.active = false;
         }
-    }
-
-    /** Puts the editor's previous inline height bounds back ('' = unset). */
-    _restoreHeightBounds() {
-        if (this.editor.root) {
-            this.editor.root.style.minHeight = this._previousMinHeight || '';
-            this.editor.root.style.maxHeight = this._previousMaxHeight || '';
-        }
-        this._previousMinHeight = '';
-        this._previousMaxHeight = '';
     }
 
     destroy() {

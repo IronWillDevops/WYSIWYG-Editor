@@ -10,6 +10,9 @@ function createMockEditor() {
     return {
         wrapper,
         root,
+        // The editor owns the content-area height (the `height` option); the
+        // module only asks it to lift or re-apply those bounds.
+        applyHeight: vi.fn(),
         on: vi.fn(),
     };
 }
@@ -58,81 +61,59 @@ describe('FullscreenModule', () => {
     it('handleChange reacts to fullscreenElement being null', () => {
         module.active = true;
         editor.wrapper.classList.add('ife-fullscreen');
-        editor.root.style.maxHeight = '420px';
+        editor.applyHeight(true);
         Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
 
         module.handleChange();
 
         expect(module.active).toBe(false);
         expect(editor.wrapper.classList.contains('ife-fullscreen')).toBe(false);
-        expect(editor.root.style.maxHeight).toBe('');
+        expect(editor.applyHeight).toHaveBeenLastCalledWith(false);
     });
 
-    it('enter lifts an inline max-height so the fullscreen column owns the scroll', async () => {
-        editor.root.style.maxHeight = '420px';
-
+    it('enter lifts the content bounds so the fullscreen column owns the scroll', async () => {
         await module.enter();
 
-        expect(editor.root.style.maxHeight).toBe('none');
-        // Remembered so exit can restore it.
-        expect(module._previousMaxHeight).toBe('420px');
+        expect(editor.applyHeight).toHaveBeenCalledWith(true);
     });
 
-    it('exit restores the previous inline max-height', async () => {
-        editor.root.style.maxHeight = '420px';
+    it('exit re-applies the content bounds', async () => {
         await module.enter();
-        expect(editor.root.style.maxHeight).toBe('none');
+        editor.applyHeight.mockClear();
 
         await module.exit();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(module._previousMaxHeight).toBe('');
+        expect(editor.applyHeight).toHaveBeenCalledWith(false);
     });
 
-    it('enter lifts the inline min-height so a short fullscreen window still scrolls', async () => {
-        editor.root.style.minHeight = '420px';
-
-        await module.enter();
-
-        expect(editor.root.style.minHeight).toBe('0');
-        expect(module._previousMinHeight).toBe('420px');
-    });
-
-    it('exit restores the previous inline min-height', async () => {
-        editor.root.style.minHeight = '420px';
-        await module.enter();
-        expect(editor.root.style.minHeight).toBe('0');
-
-        await module.exit();
-
-        expect(editor.root.style.minHeight).toBe('420px');
-        expect(module._previousMinHeight).toBe('');
-    });
-
-    it('exit restores unset height bounds as empty', async () => {
-        await module.enter();
-
-        await module.exit();
-
-        expect(editor.root.style.minHeight).toBe('');
-        expect(editor.root.style.maxHeight).toBe('');
-    });
-
-    it('fullscreenchange exit restores the remembered max-height', () => {
-        editor.root.style.maxHeight = '300px';
+    it('handleChange re-applies the content bounds when fullscreen is left natively', () => {
         module.active = true;
-        module._previousMaxHeight = '300px';
         editor.wrapper.classList.add('ife-fullscreen');
         Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
 
         module.handleChange();
 
-        expect(editor.root.style.maxHeight).toBe('300px');
-        expect(module._previousMaxHeight).toBe('');
+        expect(editor.applyHeight).toHaveBeenCalledWith(false);
+    });
+
+    it('re-applies the content bounds on every exit path, so none of them can drop them', async () => {
+        // The bounds used to be snapshotted and restored here, and the restore
+        // cleared the snapshot: the second exit path (the native
+        // `fullscreenchange` event that also fires when the button is used to
+        // leave fullscreen) then wrote the empty snapshot over the editor's own
+        // bounds, leaving the content area unbounded for the rest of the page
+        // life. Both paths now just ask the editor to re-apply them.
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+
+        await module.enter();
+        await module.exit();
+        module.handleChange();
+
+        expect(editor.applyHeight.mock.calls).toEqual([[true], [false], [false]]);
     });
 
     it('does not crash when the editor has no root (headless mock)', async () => {
-        const rootless = { wrapper: document.createElement('div'), on: vi.fn() };
+        const rootless = { wrapper: document.createElement('div'), applyHeight: vi.fn(), on: vi.fn() };
         const headless = new FullscreenModule(rootless);
 
         await headless.enter();

@@ -164,4 +164,58 @@ describe('editor layout with a mounted editor', () => {
 
         expect(editor.root.style.maxHeight).toBe('420px');
     });
+
+    it('falls back to the default height when the height option is unusable', () => {
+        // An unusable value used to produce an invalid `height` declaration
+        // ("undefinedpx"), which the browser drops — leaving the content area
+        // unbounded, i.e. no inner scrollbar and bars that travel with the page.
+        for (const height of [undefined, null, '', 'tall', -10, NaN]) {
+            const editor = mount({ height });
+            expect(editor.root.style.maxHeight, `height: ${String(height)}`).toBe('420px');
+            expect(editor.root.style.minHeight, `height: ${String(height)}`).toBe('420px');
+            WysiwygEditor.destroyAll();
+        }
+    });
+
+    it('keeps the configured content height after a fullscreen round trip', async () => {
+        const editor = mount();
+        // The module is loaded asynchronously, so wait for it to be registered.
+        await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
+        const fullscreen = editor.module('fullscreen');
+
+        await fullscreen.toggle();
+        expect(editor.root.style.maxHeight).toBe('none');
+        expect(editor.root.style.minHeight).toBe('0');
+
+        await fullscreen.toggle();
+
+        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.root.style.minHeight).toBe('420px');
+    });
+
+    it('keeps the configured content height when the exit is repeated', async () => {
+        // Leaving fullscreen by the toolbar button *and* the native
+        // `fullscreenchange` event both run the exit path. The bounds used to
+        // be snapshotted on the way in and restored — then cleared — on the
+        // way out, so the second run wrote the empty snapshot over the
+        // editor's own bounds and the content area grew with the document from
+        // then on: no inner scrollbar, and the toolbar and status bar scrolled
+        // away with the page.
+        const editor = mount();
+        await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
+        const fullscreen = editor.module('fullscreen');
+
+        await fullscreen.toggle();
+        await fullscreen.toggle();
+        fullscreen.handleChange();
+        fullscreen.handleChange();
+
+        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.root.style.minHeight).toBe('420px');
+
+        editor.setHTML(Array.from({ length: 50 }, (_, i) => `<p>Paragraph ${i}</p>`).join(''));
+        editor.emitChange();
+
+        expect(editor.root.style.maxHeight).toBe('420px');
+    });
 });
