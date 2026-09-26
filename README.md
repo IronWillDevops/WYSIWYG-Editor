@@ -44,7 +44,9 @@ proper Laravel package with a one-line Blade component.
   internally with its own scrollbar, so the toolbar and status bar stay pinned
   above and below it (also in fullscreen). The `height` option is the only
   thing that sizes the editor — it is never silently re-fitted to the viewport
-  as the page scrolls.
+  as the page scrolls. The editor also never grows wider than the box that holds
+  it: long unbreakable text (a URL, a base64 blob, minified code) wraps inside
+  the content area instead of pushing the bars and the scrollbar off-screen.
 - **Manual height resize** — a grip on the editor's bottom edge
   (mouse, touch or the arrow keys once focused) changes the height. It writes
   the same `height` option, so the toolbar, status bar and internal scrollbar

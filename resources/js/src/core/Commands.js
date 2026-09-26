@@ -408,6 +408,28 @@ export default class Commands {
     }
 
     /**
+     * The elements a formatting sweep may touch for the current selection:
+     * the selection's own container (only when it carries inline styles) plus
+     * its descendants.
+     *
+     * The editing surface itself is never a target. `.ife-content` keeps the
+     * editor's height bounds in its inline `min-height`/`max-height` (see
+     * `Editor.applyHeight`), and a select-all made that container the root —
+     * "clear formatting" then stripped the whole style attribute off it, which
+     * left the editor unbounded: large content (a big paste, a long document)
+     * grew the editor instead of scrolling inside it, the page became the only
+     * scroll area, the toolbar and status bar travelled with it and the editor
+     * had no scrollbar of its own.
+     *
+     * @param {HTMLElement} container the selection's common-ancestor element
+     * @returns {HTMLElement[]}
+     */
+    formattingCandidates(container) {
+        const self = container !== this.root && container.style?.length ? [container] : [];
+        return [...self, ...container.querySelectorAll('*')];
+    }
+
+    /**
      * Removes a specific CSS property from every element touched by
      * the current selection. Used by the color button "clear" action.
      * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
@@ -428,9 +450,7 @@ export default class Commands {
         if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
         if (!(container instanceof HTMLElement)) return;
 
-        const candidates = container.style?.length
-            ? [container, ...container.querySelectorAll('*')]
-            : [...container.querySelectorAll('*')];
+        const candidates = this.formattingCandidates(container);
 
         candidates.forEach((el) => {
             try { if (!range.intersectsNode(el)) return; } catch { return; }
@@ -717,10 +737,13 @@ export default class Commands {
         if (container.nodeType === Node.TEXT_NODE) container = container.parentElement;
         if (!(container instanceof HTMLElement)) return;
 
-        const candidates = container.style?.length ? [container, ...container.querySelectorAll('*')] : [...container.querySelectorAll('*')];
+        const candidates = this.formattingCandidates(container);
 
         candidates.forEach((el) => {
             if (!this.root.contains(el) || !range.intersectsNode(el)) return;
+            // Belt and braces: the editing surface holds the editor's height
+            // bounds in its style attribute, so it is never stripped.
+            if (el === this.root) return;
             el.removeAttribute('style');
             if (['SPAN', 'FONT'].includes(el.tagName) && el.attributes.length === 0) {
                 const parent = el.parentNode;

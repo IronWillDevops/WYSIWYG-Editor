@@ -1,4 +1,4 @@
-import { L as o } from "./index-CO1fWwaT.js";
+import { L as o } from "./index-BD_mRa9A.js";
 const s = 120, r = 32;
 class d {
   constructor(e) {
@@ -69,4 +69,4 @@ class d {
 export {
   d as default
 };
-//# sourceMappingURL=ResizeModule-B9lviRJC.js.map
+//# sourceMappingURL=ResizeModule-B_NNJm2S.js.map

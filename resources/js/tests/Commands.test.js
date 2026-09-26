@@ -674,6 +674,23 @@ describe('Commands', () => {
             const sel = editor.selection.getRange();
             expect(sel.toString()).toBe('red text');
         });
+
+        it('leaves the editing surface style attribute alone on a select-all', () => {
+            root.innerHTML = '<p><span style="color: red;">red</span> normal</p>';
+            root.setAttribute('style', 'min-height: 420px; max-height: 420px;');
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.clearColor('color');
+
+            expect(root.hasAttribute('style')).toBe(true);
+            expect(root.style.minHeight).toBe('420px');
+            expect(root.style.maxHeight).toBe('420px');
+            // The colour span is still unwrapped, its text kept.
+            expect(root.querySelector('span')).toBeNull();
+            expect(root.textContent).toContain('normal');
+        });
     });
 
     describe('clearInlineStyles', () => {
@@ -687,6 +704,29 @@ describe('Commands', () => {
             commands.clearInlineStyles();
 
             expect(span.hasAttribute('style')).toBe(false);
+        });
+
+        it('never strips the editing surface itself, which carries the editor bounds', () => {
+            // A select-all makes the editing surface the selection's common
+            // ancestor, so it used to be swept like any other element and lost
+            // the inline min/max-height that bound the content area: the editor
+            // grew with the content instead of scrolling inside it and the
+            // toolbar/status bar travelled with the page.
+            root.innerHTML = '<p><span style="color: red;">red</span> text</p>';
+            root.setAttribute('style', 'min-height: 420px; max-height: 420px;');
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.clearInlineStyles();
+
+            expect(root.hasAttribute('style')).toBe(true);
+            expect(root.style.minHeight).toBe('420px');
+            expect(root.style.maxHeight).toBe('420px');
+            // The content itself is still cleared: the emptied span is unwrapped
+            // and its text kept.
+            expect(root.querySelector('span')).toBeNull();
+            expect(root.textContent).toContain('red');
         });
     });
 

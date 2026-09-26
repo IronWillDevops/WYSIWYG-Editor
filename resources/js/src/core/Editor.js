@@ -147,8 +147,31 @@ export default class Editor {
     applyHeight(fullscreen = false) {
         if (!this.root) return;
         const height = resolveHeight(this.options.height) ?? `${DEFAULT_OPTIONS.height}px`;
-        this.root.style.minHeight = fullscreen ? '0' : height;
-        this.root.style.maxHeight = fullscreen ? 'none' : height;
+        // Remembered so `ensureHeightBounds()` can re-assert exactly what was
+        // applied, and so the last mode (fullscreen or not) is never guessed.
+        this._bounds = fullscreen ? { min: '0', max: 'none' } : { min: height, max: height };
+        this.root.style.minHeight = this._bounds.min;
+        this.root.style.maxHeight = this._bounds.max;
+    }
+
+    /**
+     * Re-asserts the content area's bounds after a change.
+     *
+     * The bounds live in the area's inline `min-height`/`max-height`, so
+     * anything that rewrites that style attribute takes the editor's layout
+     * with it: the content area stops being a bounded scroll container, large
+     * content stretches the editor, the page becomes the only scroll area, the
+     * toolbar and status bar travel with it and the editor never shows a
+     * scrollbar of its own. The bounds are therefore re-asserted on every
+     * change, so no such path — a formatting command, a plugin, a host page's
+     * own script — can leave the editor unbounded for longer than one edit.
+     */
+    ensureHeightBounds() {
+        if (this.destroyed || !this.root || !this._bounds) return;
+        const { min, max } = this._bounds;
+        if (this.root.style.minHeight === min && this.root.style.maxHeight === max) return;
+        this.root.style.minHeight = min;
+        this.root.style.maxHeight = max;
     }
 
     bindEvents() {
@@ -256,6 +279,10 @@ export default class Editor {
     }
 
     emitChange() {
+        // Every content change re-asserts the content area's bounds, so an
+        // unbounded editor (bars drifting, no inner scrollbar) can never
+        // survive an edit — see `ensureHeightBounds()`.
+        this.ensureHeightBounds();
         this._debouncedSyncTextarea();
         this.events.emit('change', this.getHTML());
     }

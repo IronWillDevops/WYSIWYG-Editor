@@ -556,29 +556,49 @@ class q {
     }
   }
   /**
+   * The elements a formatting sweep may touch for the current selection:
+   * the selection's own container (only when it carries inline styles) plus
+   * its descendants.
+   *
+   * The editing surface itself is never a target. `.ife-content` keeps the
+   * editor's height bounds in its inline `min-height`/`max-height` (see
+   * `Editor.applyHeight`), and a select-all made that container the root —
+   * "clear formatting" then stripped the whole style attribute off it, which
+   * left the editor unbounded: large content (a big paste, a long document)
+   * grew the editor instead of scrolling inside it, the page became the only
+   * scroll area, the toolbar and status bar travelled with it and the editor
+   * had no scrollbar of its own.
+   *
+   * @param {HTMLElement} container the selection's common-ancestor element
+   * @returns {HTMLElement[]}
+   */
+  formattingCandidates(e) {
+    var n;
+    return [...e !== this.root && ((n = e.style) != null && n.length) ? [e] : [], ...e.querySelectorAll("*")];
+  }
+  /**
    * Removes a specific CSS property from every element touched by
    * the current selection. Used by the color button "clear" action.
    * @param {string} cssProp camelCase property name (e.g. 'color', 'backgroundColor')
    */
   clearColor(e) {
-    var a;
     const t = this.selection.getRange();
     if (!t) return;
     const n = this.selection.offsetOf(t.startContainer, t.startOffset), i = this.selection.offsetOf(t.endContainer, t.endOffset);
     let o = t.commonAncestorContainer;
     if (o.nodeType === Node.TEXT_NODE && (o = o.parentElement), !(o instanceof HTMLElement)) return;
-    ((a = o.style) != null && a.length ? [o, ...o.querySelectorAll("*")] : [...o.querySelectorAll("*")]).forEach((r) => {
-      var c;
+    this.formattingCandidates(o).forEach((a) => {
+      var r;
       try {
-        if (!t.intersectsNode(r)) return;
+        if (!t.intersectsNode(a)) return;
       } catch {
         return;
       }
-      if ((c = r.style) != null && c[e] && (r.style[e] = "", r.style.length === 0 && r.removeAttribute("style")), ["SPAN", "FONT"].includes(r.tagName) && r.attributes.length === 0) {
-        const h = r.parentNode;
-        if (!h) return;
-        for (; r.firstChild; ) h.insertBefore(r.firstChild, r);
-        h.removeChild(r);
+      if ((r = a.style) != null && r[e] && (a.style[e] = "", a.style.length === 0 && a.removeAttribute("style")), ["SPAN", "FONT"].includes(a.tagName) && a.attributes.length === 0) {
+        const c = a.parentNode;
+        if (!c) return;
+        for (; a.firstChild; ) c.insertBefore(a.firstChild, a);
+        c.removeChild(a);
       }
     }), this.selection.setRangeByOffsets(n, i);
   }
@@ -755,17 +775,16 @@ class q {
    * Backs the "clear formatting" / "reset text color" toolbar action.
    */
   clearInlineStyles() {
-    var i;
     const e = this.selection.getRange();
     if (!e) return;
     let t = e.commonAncestorContainer;
     if (t.nodeType === Node.TEXT_NODE && (t = t.parentElement), !(t instanceof HTMLElement)) return;
-    ((i = t.style) != null && i.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((o) => {
-      if (!(!this.root.contains(o) || !e.intersectsNode(o)) && (o.removeAttribute("style"), ["SPAN", "FONT"].includes(o.tagName) && o.attributes.length === 0)) {
-        const s = o.parentNode;
-        if (!s) return;
-        for (; o.firstChild; ) s.insertBefore(o.firstChild, o);
-        s.removeChild(o);
+    this.formattingCandidates(t).forEach((i) => {
+      if (!(!this.root.contains(i) || !e.intersectsNode(i)) && i !== this.root && (i.removeAttribute("style"), ["SPAN", "FONT"].includes(i.tagName) && i.attributes.length === 0)) {
+        const o = i.parentNode;
+        if (!o) return;
+        for (; i.firstChild; ) o.insertBefore(i.firstChild, i);
+        o.removeChild(i);
       }
     });
   }
@@ -1492,7 +1511,24 @@ class x {
   applyHeight(e = !1) {
     if (!this.root) return;
     const t = K(this.options.height) ?? `${M.height}px`;
-    this.root.style.minHeight = e ? "0" : t, this.root.style.maxHeight = e ? "none" : t;
+    this._bounds = e ? { min: "0", max: "none" } : { min: t, max: t }, this.root.style.minHeight = this._bounds.min, this.root.style.maxHeight = this._bounds.max;
+  }
+  /**
+   * Re-asserts the content area's bounds after a change.
+   *
+   * The bounds live in the area's inline `min-height`/`max-height`, so
+   * anything that rewrites that style attribute takes the editor's layout
+   * with it: the content area stops being a bounded scroll container, large
+   * content stretches the editor, the page becomes the only scroll area, the
+   * toolbar and status bar travel with it and the editor never shows a
+   * scrollbar of its own. The bounds are therefore re-asserted on every
+   * change, so no such path — a formatting command, a plugin, a host page's
+   * own script — can leave the editor unbounded for longer than one edit.
+   */
+  ensureHeightBounds() {
+    if (this.destroyed || !this.root || !this._bounds) return;
+    const { min: e, max: t } = this._bounds;
+    this.root.style.minHeight === e && this.root.style.maxHeight === t || (this.root.style.minHeight = e, this.root.style.maxHeight = t);
   }
   bindEvents() {
     this.root.addEventListener("input", () => {
@@ -1555,7 +1591,7 @@ class x {
     };
   }
   emitChange() {
-    this._debouncedSyncTextarea(), this.events.emit("change", this.getHTML());
+    this.ensureHeightBounds(), this._debouncedSyncTextarea(), this.events.emit("change", this.getHTML());
   }
   /** @param {ClipboardEvent} event */
   handlePaste(e) {
@@ -2828,20 +2864,20 @@ class oe {
   }
 }
 const se = {
-  link: () => import("./LinkModule-C3GZ-i55.js"),
-  image: () => import("./ImageModule-DPEsnSUK.js"),
-  table: () => import("./TableModule-D6Y1Zkbz.js"),
+  link: () => import("./LinkModule-Lleg82I-.js"),
+  image: () => import("./ImageModule-C30RoPBY.js"),
+  table: () => import("./TableModule-D2xp_gAc.js"),
   codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-CogwV5ea.js"),
-  note: () => import("./NoteModule-T3t8J7En.js"),
-  media: () => import("./MediaModule-Bwm6-VrV.js"),
+  find: () => import("./FindModule-U1Plu-Bt.js"),
+  note: () => import("./NoteModule-CKubxqdq.js"),
+  media: () => import("./MediaModule-CmPoU8D_.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-BF2lg3X3.js"),
+  statusBar: () => import("./StatusBar--VVUJOqA.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-DcKKbJrR.js"),
-  resize: () => import("./ResizeModule-B9lviRJC.js")
+  templates: () => import("./TemplateModule-BAbnz5xL.js"),
+  resize: () => import("./ResizeModule-B_NNJm2S.js")
 };
 Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -2888,4 +2924,4 @@ export {
   y as L,
   ae as W
 };
-//# sourceMappingURL=index-CO1fWwaT.js.map
+//# sourceMappingURL=index-BD_mRa9A.js.map

@@ -17,6 +17,20 @@
  * fallbacks used when no wrapper is present.
  */
 
+/* The wrapper element the <x-editor> component renders around the textarea.
+   It sits between the host page and `.ife-wrapper`, so it is the box a flex,
+   grid or table-cell parent actually sizes. Without these two declarations a
+   single unbreakable run of text (a long URL, a base64 blob, minified code)
+   sets its min-content width: the editor grew to the full width of that text,
+   the toolbar and the status bar ran off-screen (their right-hand ends with
+   the brand labels) and the content area's scrollbar ended up far out of
+   reach. Editors mounted without the component are covered by the same two
+   declarations on `.ife-wrapper` below. */
+div[data-wysiwyg-editor-wrapper] {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .ife-wrapper {
     --ife-bg: #ffffff;
     --ife-text: #1f2328;
@@ -46,6 +60,16 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* Never wider than the box that holds it, and shrinkable below its own
+       content width. Without this a single unbreakable run of text (a long
+       URL, a base64 blob, minified code) sets the wrapper's max-content width:
+       inside a flex/grid/table-cell parent the editor grew to the full width
+       of that text, which pushed the toolbar and the status bar off-screen —
+       their right-hand ends (the brand labels) "ran away" — and moved the
+       content area's scrollbar far out of reach. The content itself still
+       wraps inside the bounded box, so no horizontal bar is needed. */
+    min-width: 0;
+    max-width: 100%;
     /* Containing block for the absolutely positioned resize handle, so the
        handle tracks the editor's own box instead of a viewport-sized one. */
     position: relative;
@@ -88,6 +112,20 @@
     flex: 0 1 auto;
     min-height: 0;
     overflow: auto;
+}
+
+/* Editor surface only: the shared content stylesheet wraps long runs of text
+   with `overflow-wrap: break-word`, which does not change the box's intrinsic
+   (min-content) width. Inside a host box that sizes itself from its content —
+   an auto-width table cell, a float, an inline-block — a single unbreakable
+   run (a URL, a base64 blob, minified code) therefore stretched the whole
+   editor to the length of that text, which pushed the bars off-screen and the
+   content area's scrollbar out of reach. `anywhere` keeps the same line breaks
+   at any given width (it only breaks a word that does not fit) and lets such a
+   run contribute a one-character min-content width. A published post renders
+   `.ife-content` on its own, so it keeps `break-word`. */
+.ife-wrapper .ife-content {
+    overflow-wrap: anywhere;
 }
 
 .ife-wrapper.ife-fullscreen .ife-content {

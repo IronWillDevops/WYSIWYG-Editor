@@ -92,6 +92,34 @@ describe('editor layout stylesheet contract', () => {
         expect(ruleFor('.ife-wrapper').position).toBe('relative');
     });
 
+    it('never lets the editor grow wider than the box that holds it', () => {
+        // A long unbreakable run of text (URL, base64, minified code) used to
+        // set the wrapper's max-content width, so inside a flex/grid/table-cell
+        // parent the editor became as wide as that text: the bars ran off-screen
+        // and the scrollbar ended up out of reach.
+        const wrapper = ruleFor('.ife-wrapper');
+        expect(wrapper['min-width']).toBe('0');
+        expect(wrapper['max-width']).toBe('100%');
+    });
+
+    it('lets the <x-editor> wrapper element shrink too', () => {
+        // The component wraps the editor in its own div, so that div — not
+        // `.ife-wrapper` — is the box a flex/grid/table-cell parent sizes.
+        const host = ruleFor('div[data-wysiwyg-editor-wrapper]');
+        expect(host['min-width']).toBe('0');
+        expect(host['max-width']).toBe('100%');
+    });
+
+    it('lets an unbreakable run of text wrap inside the editor surface', () => {
+        // `break-word` from the shared content stylesheet leaves the box's
+        // intrinsic width alone, so an auto-width table cell / float / inline
+        // block got stretched to the length of a pasted URL or base64 blob.
+        // `anywhere` breaks at the same places and keeps that width sane; a
+        // published post renders `.ife-content` on its own and is unaffected.
+        expect(ruleFor('.ife-wrapper .ife-content')['overflow-wrap']).toBe('anywhere');
+        expect(ruleFor('.ife-content')['overflow-wrap']).toBeUndefined();
+    });
+
     it('keeps the resize grip out of the column flow so it cannot shift the bars', () => {
         // Absolute + its own fixed height: the grip adds no flex item, so the
         // toolbar, content area and status bar keep their places at any height.
@@ -302,5 +330,108 @@ describe('editor layout with a mounted editor', () => {
         editor.emitChange();
 
         expect(editor.root.style.maxHeight).toBe('420px');
+    });
+
+    /** Selects the whole editing surface, as Ctrl+A does. */
+    function selectAll(editor) {
+        const range = document.createRange();
+        range.selectNodeContents(editor.root);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        editor.selection.save();
+    }
+
+    it('keeps the content bounds when a select-all is cleared of formatting', () => {
+        // "Clear formatting" treated the editing surface as a formatting
+        // target and stripped its style attribute — which is where the height
+        // bounds live. The editor was then unbounded, so a large paste grew it
+        // instead of scrolling inside: the page became the only scroll area, the
+        // toolbar and status bar travelled with it, and no scrollbar appeared.
+        const editor = mount();
+        editor.setHTML('<p><span style="color: red;">red</span> text</p>');
+        selectAll(editor);
+
+        editor.commands.clearInlineStyles();
+
+        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.root.style.maxHeight).toBe('420px');
+    });
+
+    it('keeps the content bounds when a select-all has a colour cleared', () => {
+        // Same hazard through the colour picker's "clear" control: it swept the
+        // selection's common ancestor, which is the editing surface itself.
+        const editor = mount();
+        editor.setHTML('<p><span style="color: red;">red</span> text</p>');
+        selectAll(editor);
+
+        editor.commands.clearColor('color');
+
+        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.root.style.maxHeight).toBe('420px');
+    });
+
+    it('still clears the content formatting around a select-all', () => {
+        // The sweep must keep doing its job on the content — only the editing
+        // surface is off limits.
+        const editor = mount();
+        editor.setHTML('<p><span style="color: red;">red</span> text</p>');
+        selectAll(editor);
+
+        editor.commands.clearInlineStyles();
+
+        // The content is still swept — the emptied span is unwrapped, its text kept.
+        expect(editor.root.querySelector('span')).toBeNull();
+        expect(editor.root.textContent).toContain('red');
+    });
+
+    it('restores the content bounds when something drops them', () => {
+        // Defence in depth: whatever clears the inline bounds (a command, a
+        // plugin, a host page's own script) can no longer leave the editor
+        // unbounded — the next change re-asserts them, so a following large
+        // paste scrolls inside the editor again.
+        const editor = mount();
+        editor.root.style.minHeight = '';
+        editor.root.style.maxHeight = '';
+        editor.root.removeAttribute('style');
+
+        editor.setHTML(Array.from({ length: 50 }, (_, i) => `<p>Paragraph ${i}</p>`).join(''));
+
+        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.root.style.maxHeight).toBe('420px');
+    });
+
+    it('leaves the fullscreen bounds alone while restoring the dropped ones', async () => {
+        // The guard must re-assert the *current* mode's bounds, not always the
+        // configured height: in fullscreen the content area fills the window.
+        const editor = mount();
+        await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
+
+        await editor.module('fullscreen').toggle();
+        editor.root.style.minHeight = '123px';
+        editor.root.style.maxHeight = '123px';
+
+        editor.emitChange();
+
+        expect(editor.root.style.minHeight).toBe('0');
+        expect(editor.root.style.maxHeight).toBe('none');
+    });
+
+    it('keeps the content bounds on every change, not just the first', async () => {
+        // The bounds belong to the editor, so a long editing session that
+        // re-applies them (drag resize, undo/redo, formatting) must not
+        // accumulate a second, competing height.
+        const editor = mount();
+        await vi.waitFor(() => expect(editor.module('resize')).toBeDefined());
+
+        editor.module('resize').setHeight(600);
+        expect(editor.root.style.maxHeight).toBe('600px');
+
+        editor.emitChange();
+        editor.setHTML('<p>short</p>');
+        editor.emitChange();
+
+        expect(editor.root.style.minHeight).toBe('600px');
+        expect(editor.root.style.maxHeight).toBe('600px');
     });
 });
