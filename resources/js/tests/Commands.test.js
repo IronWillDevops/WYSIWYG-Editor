@@ -129,6 +129,177 @@ describe('Commands', () => {
         expect(root.querySelector('ul')).toBeNull();
     });
 
+    describe('toggleCodeBlock', () => {
+        it('wraps the caret paragraph in a <pre>', () => {
+            root.innerHTML = '<p>hello world</p>';
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.setStart(p.firstChild, 3);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            expect(root.querySelector('pre')).not.toBeNull();
+            expect(root.querySelector('p')).toBeNull();
+            expect(root.textContent).toBe('hello world');
+        });
+
+        it('queryState reports an active code block inside a <pre>', () => {
+            root.innerHTML = '<pre>code</pre>';
+            const pre = root.querySelector('pre');
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 2);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            expect(commands.queryState('codeBlock')).toBe(true);
+        });
+
+        it('queryState reports no code block inside a paragraph', () => {
+            const p = root.querySelector('p');
+            const range = document.createRange();
+            range.setStart(p.firstChild, 2);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            expect(commands.queryState('codeBlock')).toBe(false);
+        });
+
+        it('queryState reports no code block without a selection', () => {
+            window.getSelection().removeAllRanges();
+            expect(commands.queryState('codeBlock')).toBe(false);
+        });
+
+        it('unwraps a <pre> back to a paragraph when toggling inside it', () => {
+            root.innerHTML = '<pre>code</pre>';
+            const pre = root.querySelector('pre');
+            const range = document.createRange();
+            range.setStart(pre.firstChild, 2);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            expect(root.querySelector('pre')).toBeNull();
+            expect(root.querySelector('p')).not.toBeNull();
+            expect(root.textContent).toBe('code');
+        });
+
+        it('splits a multi-line <pre> converting only the caret line', () => {
+            root.innerHTML = '<pre>a<br>b</pre>';
+            const b = root.querySelector('pre').lastChild;
+            const range = document.createRange();
+            range.setStart(b, 1);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            expect(root.innerHTML).toBe('<pre>a</pre><p>b</p>');
+        });
+
+        it('converts only the caret line when it is the first line of a multi-line <pre>', () => {
+            root.innerHTML = '<pre>a<br>b</pre>';
+            const a = root.querySelector('pre').firstChild;
+            const range = document.createRange();
+            range.setStart(a, 0);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            expect(root.innerHTML).toBe('<p>a</p><pre>b</pre>');
+        });
+
+        it('toggles a selection spanning several blocks', () => {
+            root.innerHTML = '<p>one</p><p>two</p>';
+            const paragraphs = root.querySelectorAll('p');
+            let range = document.createRange();
+            range.setStart(paragraphs[0].firstChild, 0);
+            range.setEnd(paragraphs[1].firstChild, 3);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+            expect(root.querySelectorAll('pre').length).toBe(2);
+
+            // Second click — all blocks are already <pre> — reverts them.
+            const pres = root.querySelectorAll('pre');
+            range = document.createRange();
+            range.setStart(pres[0].firstChild, 0);
+            range.setEnd(pres[1].firstChild, 3);
+            editor.selection.setRange(range);
+            commands.toggleCodeBlock();
+
+            expect(root.querySelectorAll('p').length).toBe(2);
+            expect(root.querySelectorAll('pre').length).toBe(0);
+        });
+
+        it('normalizes a mixed pre/p selection to code, then back on the second click', () => {
+            root.innerHTML = '<pre>one</pre><p>two</p>';
+            let pre = root.querySelector('pre');
+            let p = root.querySelector('p');
+            let range = document.createRange();
+            range.setStart(pre.firstChild, 0);
+            range.setEnd(p.firstChild, 3);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+            expect(root.querySelectorAll('pre').length).toBe(2);
+
+            pre = root.querySelectorAll('pre')[0];
+            p = root.querySelectorAll('pre')[1];
+            range = document.createRange();
+            range.setStart(pre.firstChild, 0);
+            range.setEnd(p.firstChild, 3);
+            editor.selection.setRange(range);
+            commands.toggleCodeBlock();
+
+            expect(root.querySelectorAll('p').length).toBe(2);
+            expect(root.querySelectorAll('pre').length).toBe(0);
+        });
+
+        it('reverts a selection spanning a single <pre> block to a paragraph', () => {
+            root.innerHTML = '<pre>one</pre>';
+            const pre = root.querySelector('pre');
+            const range = document.createRange();
+            range.selectNodeContents(pre.firstChild);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            expect(root.querySelector('pre')).toBeNull();
+            expect(root.querySelector('p')).not.toBeNull();
+        });
+
+        it('inserts an empty <pre> when the caret sits in an empty root', () => {
+            root.innerHTML = '';
+            const range = document.createRange();
+            range.setStart(root, 0);
+            range.collapse(true);
+            editor.selection.setRange(range);
+
+            commands.toggleCodeBlock();
+
+            const pre = root.querySelector('pre');
+            expect(pre).not.toBeNull();
+            expect(pre.innerHTML).toBe('<br>');
+        });
+
+        it('exec("codeBlock") toggles and records history/change after the mutation', () => {
+            const toggleSpy = vi.spyOn(commands, 'toggleCodeBlock');
+            const pushSpy = vi.spyOn(editor.history, 'push');
+            const emitSpy = vi.spyOn(editor.events, 'emit');
+
+            commands.exec('codeBlock');
+
+            expect(toggleSpy).toHaveBeenCalled();
+            // push/change happen after the mutation so the undo stack is armed.
+            expect(pushSpy).toHaveBeenCalled();
+            expect(emitSpy).toHaveBeenCalledWith('change');
+        });
+    });
+
     describe('exec — formatting commands', () => {
         beforeEach(() => {
             document.execCommand = vi.fn();
@@ -503,6 +674,23 @@ describe('Commands', () => {
             const sel = editor.selection.getRange();
             expect(sel.toString()).toBe('red text');
         });
+
+        it('leaves the editing surface style attribute alone on a select-all', () => {
+            root.innerHTML = '<p><span style="color: red;">red</span> normal</p>';
+            root.setAttribute('style', 'min-height: 420px; max-height: 420px;');
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.clearColor('color');
+
+            expect(root.hasAttribute('style')).toBe(true);
+            expect(root.style.minHeight).toBe('420px');
+            expect(root.style.maxHeight).toBe('420px');
+            // The colour span is still unwrapped, its text kept.
+            expect(root.querySelector('span')).toBeNull();
+            expect(root.textContent).toContain('normal');
+        });
     });
 
     describe('clearInlineStyles', () => {
@@ -516,6 +704,29 @@ describe('Commands', () => {
             commands.clearInlineStyles();
 
             expect(span.hasAttribute('style')).toBe(false);
+        });
+
+        it('never strips the editing surface itself, which carries the editor bounds', () => {
+            // A select-all makes the editing surface the selection's common
+            // ancestor, so it used to be swept like any other element and lost
+            // the inline min/max-height that bound the content area: the editor
+            // grew with the content instead of scrolling inside it and the
+            // toolbar/status bar travelled with the page.
+            root.innerHTML = '<p><span style="color: red;">red</span> text</p>';
+            root.setAttribute('style', 'min-height: 420px; max-height: 420px;');
+            const range = document.createRange();
+            range.selectNodeContents(root);
+            editor.selection.setRange(range);
+
+            commands.clearInlineStyles();
+
+            expect(root.hasAttribute('style')).toBe(true);
+            expect(root.style.minHeight).toBe('420px');
+            expect(root.style.maxHeight).toBe('420px');
+            // The content itself is still cleared: the emptied span is unwrapped
+            // and its text kept.
+            expect(root.querySelector('span')).toBeNull();
+            expect(root.textContent).toContain('red');
         });
     });
 

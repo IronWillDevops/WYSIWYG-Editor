@@ -54,6 +54,14 @@ describe('TableModule', () => {
 
     let wrapper;
 
+    /** jsdom performs no layout, so the scroll box reports a 0 client height. */
+    function setContentBoxHeight(height) {
+        Object.defineProperty(root, 'clientHeight', {
+            configurable: true,
+            value: height,
+        });
+    }
+
     beforeEach(() => {
         vi.restoreAllMocks();
         document.body.innerHTML = '';
@@ -62,70 +70,109 @@ describe('TableModule', () => {
     });
 
     describe('adjustTableHeight', () => {
-        it('sets maxHeight on root even when no tables exist', () => {
+        it('never resizes the content area — the editor owns its height', () => {
+            setContentBoxHeight(420);
+            root.style.minHeight = '420px';
+            root.style.maxHeight = '420px';
             root.innerHTML = '<p>some content</p>';
             const module = new TableModule(editor);
 
             module.adjustTableHeight();
 
-            expect(root.style.maxHeight).toBeTruthy();
-            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+            expect(root.style.minHeight).toBe('420px');
+            expect(root.style.maxHeight).toBe('420px');
         });
 
-        it('bounds the editor to the viewport on construction (init may fire before async module load)', () => {
+        it('keeps the content area stable when the page is scrolled past the editor', () => {
+            // Regression: the cap used to be derived from the viewport, so
+            // scrolling the page grew the content box until the page itself
+            // scrolled — carrying the toolbar and status bar away and hiding
+            // the inner scrollbar.
+            setContentBoxHeight(420);
+            root.style.maxHeight = '420px';
+            wrapper.getBoundingClientRect = () => ({
+                top: -600,
+                bottom: -100,
+                left: 0,
+                right: 800,
+                width: 800,
+                height: 500,
+            });
+            vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(900);
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(root.style.maxHeight).toBe('420px');
+        });
+
+        it('caps a table on construction so initial content is bounded too', () => {
             vi.useFakeTimers();
-            root.innerHTML = '<p>some content</p>';
+            setContentBoxHeight(420);
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
 
             new TableModule(editor);
-            expect(root.style.maxHeight).toBe('');
+            const table = root.querySelector('table.ife-table');
+            expect(table.style.maxHeight).toBe('');
 
             vi.advanceTimersByTime(0);
-            expect(root.style.maxHeight).toBeTruthy();
-            expect(root.style.maxHeight).toMatch(/^\d+px$/);
+            expect(table.style.maxHeight).toBe('420px');
 
             vi.useRealTimers();
         });
 
-        it('sets maxHeight clamped to minimum of 200px', () => {
-            const module = new TableModule(editor);
-
-            vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(50);
-
-            module.adjustTableHeight();
-
-            expect(root.style.maxHeight).toBe('200px');
-        });
-
-        it('sets maxHeight on root and table when a table is present', () => {
+        it('caps a table to the content box height', () => {
+            setContentBoxHeight(420);
             root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
             const module = new TableModule(editor);
 
             module.adjustTableHeight();
 
-            expect(root.style.maxHeight).toBeTruthy();
-            expect(root.style.maxHeight).toMatch(/^\d+px$/);
-
-            const table = root.querySelector('table.ife-table');
-            expect(table.style.maxHeight).toBeTruthy();
-            expect(table.style.maxHeight).toMatch(/^\d+px$/);
+            expect(root.querySelector('table.ife-table').style.maxHeight).toBe('420px');
         });
 
-        it('accounts for content padding in table maxHeight', () => {
+        it('subtracts content padding from the table cap', () => {
             root.style.paddingTop = '30px';
             root.style.paddingBottom = '30px';
+            setContentBoxHeight(420);
             root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
             const module = new TableModule(editor);
 
             module.adjustTableHeight();
 
-            const table = root.querySelector('table.ife-table');
-            const tableMaxHeight = parseFloat(table.style.maxHeight);
-            const rootMaxHeight = parseFloat(root.style.maxHeight);
+            expect(root.querySelector('table.ife-table').style.maxHeight).toBe('360px');
+        });
 
-            expect(tableMaxHeight).toBeLessThan(rootMaxHeight);
+        it('clamps the table cap to a minimum of 200px', () => {
+            setContentBoxHeight(250);
+            const p = document.createElement('p');
+            p.style.marginBottom = '100px';
+            p.textContent = 'text';
+            const table = document.createElement('table');
+            table.className = 'ife-table';
+            table.innerHTML = '<tr><td>cell</td></tr>';
+            root.append(p, table);
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(table.style.maxHeight).toBe('200px');
+        });
+
+        it('leaves tables untouched while the content box has no measurable height', () => {
+            // jsdom, like a pre-layout frame, reports 0 — better to leave the
+            // table alone than to collapse it to the 200px floor.
+            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
+            const module = new TableModule(editor);
+
+            module.adjustTableHeight();
+
+            expect(root.querySelector('table.ife-table').style.maxHeight).toBe('');
         });
 
         it('adjusts each table independently based on preceding content', () => {
+            setContentBoxHeight(1000);
+
             const p1 = document.createElement('p');
             p1.style.marginBottom = '100px';
             p1.textContent = 'text';
@@ -154,56 +201,25 @@ describe('TableModule', () => {
 
             expect(h2).toBeLessThan(h1);
         });
-
-        it('subtracts toolbar height when toolbar is present', () => {
-            createEditor(true, false);
-
-            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
-            const module = new TableModule(editor);
-
-            module.adjustTableHeight();
-
-            expect(root.style.maxHeight).toBeTruthy();
-            expect(root.style.maxHeight).toMatch(/^\d+px$/);
-        });
-
-        it('subtracts statusbar height when statusbar is present', () => {
-            createEditor(false, true);
-
-            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
-            const module = new TableModule(editor);
-
-            module.adjustTableHeight();
-
-            expect(root.style.maxHeight).toBeTruthy();
-            expect(root.style.maxHeight).toMatch(/^\d+px$/);
-        });
-
-        it('subtracts context toolbar height when visible', () => {
-            root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
-            const module = new TableModule(editor);
-
-            module.contextToolbar.style.display = 'flex';
-            module.contextToolbar.style.height = '36px';
-
-            module.adjustTableHeight();
-
-            expect(root.style.maxHeight).toBeTruthy();
-        });
     });
 
     describe('destroy', () => {
-        it('clears maxHeight on root', () => {
+        it('clears the table caps but keeps the editor content height', () => {
+            setContentBoxHeight(420);
+            root.style.minHeight = '420px';
+            root.style.maxHeight = '420px';
             root.innerHTML = '<table class="ife-table"><tr><td>cell</td></tr></table>';
             const module = new TableModule(editor);
 
             module.adjustTableHeight();
-            expect(root.style.maxHeight).toBeTruthy();
+            const table = root.querySelector('table.ife-table');
+            expect(table.style.maxHeight).toBe('420px');
 
             module.destroy();
-            expect(root.style.maxHeight).toBe('');
-        });
 
+            expect(table.style.maxHeight).toBe('');
+            expect(root.style.maxHeight).toBe('420px');
+        });
     });
 
     describe('DOM mutations', () => {

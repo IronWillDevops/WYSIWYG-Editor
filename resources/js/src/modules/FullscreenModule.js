@@ -25,6 +25,13 @@ export default class FullscreenModule {
                 await this.editor.wrapper.requestFullscreen();
             }
             this.editor.wrapper.classList.add('ife-fullscreen');
+            // Let the editor hand its content bounds over to the fullscreen
+            // flex column (see `.ife-fullscreen .ife-content` in the
+            // stylesheet) rather than snapshotting and restoring them here:
+            // the bounds are re-derived from the `height` option on the way
+            // back, so neither a second exit path (the native `fullscreenchange`
+            // event) nor a repeated round trip can leave the editor unbounded.
+            this.editor.applyHeight(true);
             this.active = true;
         } catch {
             return;
@@ -40,12 +47,14 @@ export default class FullscreenModule {
             // Ignore — element may already have left fullscreen (e.g. Esc key).
         }
         this.editor.wrapper.classList.remove('ife-fullscreen');
+        this.editor.applyHeight(false);
         this.active = false;
     }
 
     handleChange() {
         if (!document.fullscreenElement) {
             this.editor.wrapper.classList.remove('ife-fullscreen');
+            this.editor.applyHeight(false);
             this.active = false;
         }
     }

@@ -25,3 +25,23 @@ it('renders the <x-editor> Blade component without errors', function () {
     expect($html)->toContain('name="content"')
         ->and($html)->toContain('&lt;p&gt;hi&lt;/p&gt;');
 });
+
+it('sizes the editor from the config height by default', function () {
+    expect(config('wysiwyg-editor.height'))->toBe(420);
+
+    $html = Blade::render('<x-editor name="content" />');
+
+    expect($html)->toContain('"height":420');
+});
+
+it('takes the editor height from the config when the app sets one', function () {
+    config(['wysiwyg-editor.height' => '640px']);
+
+    expect(Blade::render('<x-editor name="content" />'))->toContain('"height":"640px"');
+});
+
+it('lets the height prop override the config height', function () {
+    config(['wysiwyg-editor.height' => 640]);
+
+    expect(Blade::render('<x-editor name="content" :height="300" />'))->toContain('"height":300');
+});

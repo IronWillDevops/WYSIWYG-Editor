@@ -1,5 +1,5 @@
-import { D as H } from "./index-B3jrLqjz.js";
-class A {
+import { D as b } from "./index-Biyk3i6Z.js";
+class g {
   constructor(e) {
     this.editor = e, this.buildContextToolbar(), this.editor.root.addEventListener("click", () => this.syncContextToolbar()), this.editor.root.addEventListener("keyup", () => this.syncContextToolbar()), this.editor.on("selectionchange", () => this.syncContextToolbar()), this.adjustTableHeight = this.adjustTableHeight.bind(this), this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this), window.addEventListener("resize", this.adjustTableHeight), this.editor.on("init", () => setTimeout(this.adjustTableHeight, 0)), this.editor.on("change", this.adjustTableHeight), setTimeout(this.adjustTableHeight, 0), this.editor.root.addEventListener("mousedown", (t) => this.handleColumnResizeStart(t)), this.editor.on("paste", () => this.addColumnResizeHandles());
   }
@@ -20,38 +20,38 @@ class A {
       ["Merge right", () => this.mergeRight()],
       ["Split cell", () => this.splitCell()],
       ["Delete table", () => this.deleteTable(), !0]
-    ].forEach(([i, c, a]) => {
+    ].forEach(([s, c, a]) => {
       const d = document.createElement("button");
-      d.type = "button", d.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${a ? " ife-table-toolbar__btn--danger" : ""}`, d.textContent = i, d.title = i, d.addEventListener("mousedown", (u) => u.preventDefault()), d.addEventListener("click", () => {
+      d.type = "button", d.className = `ife-btn ife-btn--ghost ife-table-toolbar__btn${a ? " ife-table-toolbar__btn--danger" : ""}`, d.textContent = s, d.title = s, d.addEventListener("mousedown", (h) => h.preventDefault()), d.addEventListener("click", () => {
         this.editor.selection.restore(), c(), this.syncContextToolbar();
       }), this.contextToolbar.appendChild(d);
     });
     const t = document.createElement("label");
     t.className = "ife-table-toolbar__color", t.title = "Cell background color", t.textContent = "Bg";
     const o = document.createElement("input");
-    o.type = "color", o.setAttribute("aria-label", "Cell background color"), o.addEventListener("mousedown", (i) => i.stopPropagation()), o.addEventListener("input", () => {
+    o.type = "color", o.setAttribute("aria-label", "Cell background color"), o.addEventListener("mousedown", (s) => s.stopPropagation()), o.addEventListener("input", () => {
       this.editor.selection.restore(), this.setCellBackground(o.value);
     }), t.appendChild(o), this.contextToolbar.appendChild(t);
-    const n = document.createElement("label");
-    n.className = "ife-table-toolbar__color", n.title = "Cell border color", n.textContent = "Bd";
+    const i = document.createElement("label");
+    i.className = "ife-table-toolbar__color", i.title = "Cell border color", i.textContent = "Bd";
     const l = document.createElement("input");
-    l.type = "color", l.setAttribute("aria-label", "Cell border color"), l.addEventListener("mousedown", (i) => i.stopPropagation()), l.addEventListener("input", () => {
+    l.type = "color", l.setAttribute("aria-label", "Cell border color"), l.addEventListener("mousedown", (s) => s.stopPropagation()), l.addEventListener("input", () => {
       this.editor.selection.restore(), this.setCellBorderColor(l.value);
-    }), n.appendChild(l), this.contextToolbar.appendChild(n);
-    const s = document.createElement("select");
-    s.className = "ife-toolbar__select", s.setAttribute("aria-label", "Cell border width"), [["", "Bd W"], ["1px", "1px"], ["2px", "2px"], ["3px", "3px"], ["4px", "4px"]].forEach(([i, c]) => {
-      const a = document.createElement("option");
-      a.value = i, a.textContent = c, s.appendChild(a);
-    }), s.addEventListener("mousedown", (i) => i.stopPropagation()), s.addEventListener("change", () => {
-      this.editor.selection.restore(), this.setCellBorderWidth(s.value);
-    }), this.contextToolbar.appendChild(s);
+    }), i.appendChild(l), this.contextToolbar.appendChild(i);
     const r = document.createElement("select");
-    r.className = "ife-toolbar__select", r.setAttribute("aria-label", "Table alignment"), [["left", "Align left"], ["center", "Align center"], ["right", "Align right"]].forEach(([i, c]) => {
+    r.className = "ife-toolbar__select", r.setAttribute("aria-label", "Cell border width"), [["", "Bd W"], ["1px", "1px"], ["2px", "2px"], ["3px", "3px"], ["4px", "4px"]].forEach(([s, c]) => {
       const a = document.createElement("option");
-      a.value = i, a.textContent = c, r.appendChild(a);
-    }), r.addEventListener("mousedown", (i) => i.stopPropagation()), r.addEventListener("change", () => {
-      this.editor.selection.restore(), this.setTableAlignment(r.value);
+      a.value = s, a.textContent = c, r.appendChild(a);
+    }), r.addEventListener("mousedown", (s) => s.stopPropagation()), r.addEventListener("change", () => {
+      this.editor.selection.restore(), this.setCellBorderWidth(r.value);
     }), this.contextToolbar.appendChild(r);
+    const n = document.createElement("select");
+    n.className = "ife-toolbar__select", n.setAttribute("aria-label", "Table alignment"), [["left", "Align left"], ["center", "Align center"], ["right", "Align right"]].forEach(([s, c]) => {
+      const a = document.createElement("option");
+      a.value = s, a.textContent = c, n.appendChild(a);
+    }), n.addEventListener("mousedown", (s) => s.stopPropagation()), n.addEventListener("change", () => {
+      this.editor.selection.restore(), this.setTableAlignment(n.value);
+    }), this.contextToolbar.appendChild(n);
   }
   openInsertDialog() {
     const e = `
@@ -68,36 +68,36 @@ class A {
                 <span>Include header row</span>
             </label>
         `;
-    this.editor.selection.save(), new H(this.editor.wrapper, {
+    this.editor.selection.save(), new b(this.editor.wrapper, {
       title: "Insert table",
       bodyHtml: e,
       confirmLabel: "Insert",
       onConfirm: (o) => {
-        const n = new FormData(o);
-        this.insertTable(Number(n.get("rows")), Number(n.get("cols")), !!n.get("header"));
+        const i = new FormData(o);
+        this.insertTable(Number(i.get("rows")), Number(i.get("cols")), !!i.get("header"));
       }
     }).open();
   }
   insertTable(e, t, o) {
     this.editor.history.push(), this.editor.selection.restore();
-    const n = document.createElement("table");
-    if (n.className = "ife-table", o) {
-      const c = n.createTHead().insertRow();
+    const i = document.createElement("table");
+    if (i.className = "ife-table", o) {
+      const c = i.createTHead().insertRow();
       for (let a = 0; a < t; a += 1) {
         const d = document.createElement("th");
         d.contentEditable = "true", d.innerHTML = "<br>", c.appendChild(d);
       }
     }
-    const l = n.createTBody(), s = o ? e - 1 : e;
-    for (let i = 0; i < Math.max(s, 1); i += 1) {
+    const l = i.createTBody(), r = o ? e - 1 : e;
+    for (let s = 0; s < Math.max(r, 1); s += 1) {
       const c = l.insertRow();
       for (let a = 0; a < t; a += 1) {
         const d = c.insertCell();
         d.innerHTML = "<br>";
       }
     }
-    const r = this.editor.selection.getRange();
-    r == null || r.deleteContents(), r == null || r.insertNode(n), this.editor.emitChange(), this.adjustTableHeight();
+    const n = this.editor.selection.getRange();
+    n == null || n.deleteContents(), n == null || n.insertNode(i), this.editor.emitChange(), this.adjustTableHeight();
   }
   getCurrentCell() {
     return this.editor.selection.closest("td, th");
@@ -109,23 +109,23 @@ class A {
     const t = this.getCurrentCell(), o = t == null ? void 0 : t.closest("tr");
     if (!o) return;
     this.editor.selection.save(), this.editor.history.push();
-    const n = o.cloneNode(!0);
-    [...n.children].forEach((l) => {
+    const i = o.cloneNode(!0);
+    [...i.children].forEach((l) => {
       l.innerHTML = "<br>";
-    }), o.parentNode.insertBefore(n, e ? o : o.nextSibling), this.editor.selection.restore(), this.editor.selection.focus(), this.editor.emitChange();
+    }), o.parentNode.insertBefore(i, e ? o : o.nextSibling), this.editor.selection.restore(), this.editor.selection.focus(), this.editor.emitChange();
   }
   deleteRow() {
     var l;
     const e = (l = this.getCurrentCell()) == null ? void 0 : l.closest("tr");
     if (!e) return;
-    const t = e.closest("table"), o = e.nextElementSibling, n = e.previousElementSibling;
+    const t = e.closest("table"), o = e.nextElementSibling, i = e.previousElementSibling;
     if (this.editor.history.push(), e.remove(), t && t.isConnected) {
-      const s = o || n;
-      if (s) {
-        const r = s.querySelector("td, th");
-        if (r) {
-          const i = document.createRange();
-          i.setStart(r, 0), i.collapse(!0), this.editor.selection.setRange(i);
+      const r = o || i;
+      if (r) {
+        const n = r.querySelector("td, th");
+        if (n) {
+          const s = document.createRange();
+          s.setStart(n, 0), s.collapse(!0), this.editor.selection.setRange(s);
         }
       }
     }
@@ -134,14 +134,14 @@ class A {
   addColumn(e = !1) {
     const t = this.getCurrentTable(), o = this.getCurrentCell();
     if (!t || !o) return;
-    const n = o.parentNode;
-    if (!n) return;
-    let l = [...n.children].indexOf(o);
-    l < 0 || (this.editor.selection.save(), this.editor.history.push(), t.querySelectorAll("tr").forEach((s) => {
-      const r = s.children[l];
-      if (!r) return;
-      const i = document.createElement(r.tagName.toLowerCase() === "th" ? "th" : "td");
-      i.innerHTML = "<br>", s.insertBefore(i, e ? r : r.nextSibling);
+    const i = o.parentNode;
+    if (!i) return;
+    let l = [...i.children].indexOf(o);
+    l < 0 || (this.editor.selection.save(), this.editor.history.push(), t.querySelectorAll("tr").forEach((r) => {
+      const n = r.children[l];
+      if (!n) return;
+      const s = document.createElement(n.tagName.toLowerCase() === "th" ? "th" : "td");
+      s.innerHTML = "<br>", r.insertBefore(s, e ? n : n.nextSibling);
     }), this.editor.selection.restore(), this.editor.selection.focus(), this.editor.emitChange());
   }
   deleteColumn() {
@@ -149,18 +149,18 @@ class A {
     if (!e || !t) return;
     const o = t.parentNode;
     if (!o) return;
-    const n = [...o.children].indexOf(t);
-    if (!(n < 0)) {
+    const i = [...o.children].indexOf(t);
+    if (!(i < 0)) {
       if (this.editor.history.push(), e.querySelectorAll("tr").forEach((l) => {
-        var s;
-        return (s = l.children[n]) == null ? void 0 : s.remove();
+        var r;
+        return (r = l.children[i]) == null ? void 0 : r.remove();
       }), e.isConnected) {
         const l = e.querySelector("tr");
         if (l) {
-          const s = l.querySelector("td, th");
-          if (s) {
-            const r = document.createRange();
-            r.setStart(s, 0), r.collapse(!0), this.editor.selection.setRange(r);
+          const r = l.querySelector("td, th");
+          if (r) {
+            const n = document.createRange();
+            n.setStart(r, 0), n.collapse(!0), this.editor.selection.setRange(n);
           }
         }
       }
@@ -206,28 +206,28 @@ class A {
     if (!t) return;
     const o = t.closest("tr");
     if (!o) return;
-    const n = o.closest("table");
-    if (!n) return;
-    const l = [...n.querySelectorAll("tr")], s = l.indexOf(o), r = [...o.children], i = r.indexOf(t);
+    const i = o.closest("table");
+    if (!i) return;
+    const l = [...i.querySelectorAll("tr")], r = l.indexOf(o), n = [...o.children], s = n.indexOf(t);
     let c, a, d;
     if (e === "next")
-      if (i < r.length - 1)
-        d = i + 1, a = r, c = o;
-      else if (s < l.length - 1)
-        c = l[s + 1], a = [...c.children], d = Math.min(i, a.length - 1);
+      if (s < n.length - 1)
+        d = s + 1, a = n, c = o;
+      else if (r < l.length - 1)
+        c = l[r + 1], a = [...c.children], d = Math.min(s, a.length - 1);
       else if (this.addRow(!1), c = o.nextElementSibling, c)
         a = [...c.children], d = 0;
       else return;
-    else if (i > 0)
-      d = i - 1, a = r, c = o;
     else if (s > 0)
-      c = l[s - 1], a = [...c.children], d = a.length - 1;
+      d = s - 1, a = n, c = o;
+    else if (r > 0)
+      c = l[r - 1], a = [...c.children], d = a.length - 1;
     else return;
     if (!c || !a) return;
-    const u = a[d];
-    if (!u) return;
-    const h = document.createRange();
-    h.setStart(u, 0), h.collapse(!0), this.editor.selection.setRange(h), this.editor.selection.focus();
+    const h = a[d];
+    if (!h) return;
+    const u = document.createRange();
+    u.setStart(h, 0), u.collapse(!0), this.editor.selection.setRange(u), this.editor.selection.focus();
   }
   handleColumnResizeStart(e) {
     const t = e.target;
@@ -235,25 +235,25 @@ class A {
     e.preventDefault(), e.stopPropagation();
     const o = t.closest("table");
     if (!o) return;
-    const n = e.clientX, l = parseInt(t.dataset.col, 10), s = t.dataset.startWidth ? parseFloat(t.dataset.startWidth) : 0, r = (c) => {
-      const a = c.clientX - n, d = Math.max(20, s + a);
-      o.querySelectorAll("tr").forEach((u) => {
-        const h = u.children[l];
-        h && (h.style.width = `${d}px`);
+    const i = e.clientX, l = parseInt(t.dataset.col, 10), r = t.dataset.startWidth ? parseFloat(t.dataset.startWidth) : 0, n = (c) => {
+      const a = c.clientX - i, d = Math.max(20, r + a);
+      o.querySelectorAll("tr").forEach((h) => {
+        const u = h.children[l];
+        u && (u.style.width = `${d}px`);
       });
-    }, i = () => {
-      document.removeEventListener("mousemove", r), document.removeEventListener("mouseup", i), this.addColumnResizeHandles(), this.editor.emitChange();
+    }, s = () => {
+      document.removeEventListener("mousemove", n), document.removeEventListener("mouseup", s), this.addColumnResizeHandles(), this.editor.emitChange();
     };
-    document.addEventListener("mousemove", r), document.addEventListener("mouseup", i);
+    document.addEventListener("mousemove", n), document.addEventListener("mouseup", s);
   }
   addColumnResizeHandles() {
     this.editor.root.querySelectorAll(".ife-col-resize-handle").forEach((t) => t.remove()), this.editor.root.querySelectorAll("table.ife-table").forEach((t) => {
       const o = t.querySelector("tr");
-      o && [...o.children].forEach((n, l) => {
-        const s = document.createElement("div");
-        s.className = "ife-col-resize-handle", s.dataset.col = l, s.dataset.startWidth = n.getBoundingClientRect().width, s.style.left = `${n.offsetLeft + n.offsetWidth - 3}px`;
-        const r = o;
-        r.style.position = "relative", s.style.top = "0", t.appendChild(s);
+      o && [...o.children].forEach((i, l) => {
+        const r = document.createElement("div");
+        r.className = "ife-col-resize-handle", r.dataset.col = l, r.dataset.startWidth = i.getBoundingClientRect().width, r.style.left = `${i.offsetLeft + i.offsetWidth - 3}px`;
+        const n = o;
+        n.style.position = "relative", r.style.top = "0", t.appendChild(r);
       });
     });
   }
@@ -268,31 +268,41 @@ class A {
     const t = this.contextToolbar.style.display === "none";
     this.contextToolbar.style.display = e ? "flex" : "none", (e || !t) && this.adjustTableHeight(), this.editor.events.emit("table:context", e);
   }
-  /** Constrains content area and table height to fit within the viewport. */
+  /**
+   * Caps oversized tables to the content box they live in, so a long table
+   * scrolls together with the surrounding content instead of stretching the
+   * editor.
+   *
+   * The editor's own content height belongs to `Editor.buildDom` (the
+   * `height` option) and is deliberately left untouched here: sizing it from
+   * viewport geometry (the wrapper's position plus `window.innerHeight`) made
+   * the editor resize itself on every scroll/paste/selection change, which
+   * broke the pinned toolbar/status-bar layout and hid the inner scrollbar.
+   */
   adjustTableHeight() {
-    var g, f, C;
-    if (!((g = this.editor.root) != null && g.isConnected)) return;
-    const e = this.editor.wrapper, t = window.innerHeight, o = e.getBoundingClientRect(), n = e.querySelector(".ife-toolbar"), l = n ? n.offsetHeight : 0, r = ((f = this.contextToolbar) == null ? void 0 : f.style.display) !== "none" && ((C = this.contextToolbar) == null ? void 0 : C.offsetHeight) || 0, i = e.querySelector(".ife-statusbar"), c = i ? i.offsetHeight : 0, a = getComputedStyle(e), d = parseFloat(a.borderTopWidth) || 0, u = parseFloat(a.borderBottomWidth) || 0, h = t - o.top - d - l - r - c - u;
-    this.editor.root.style.maxHeight = `${Math.max(200, Math.floor(h))}px`;
-    const m = this.editor.root.querySelectorAll("table.ife-table");
-    if (!m.length) return;
-    const w = parseFloat(getComputedStyle(this.editor.root).paddingTop) || 16, v = parseFloat(getComputedStyle(this.editor.root).paddingBottom) || 16;
-    m.forEach((p) => {
-      let x = 0, b = p.previousElementSibling;
-      for (; b; ) {
-        const y = getComputedStyle(b);
-        x += b.offsetHeight + (parseFloat(y.marginTop) || 0) + (parseFloat(y.marginBottom) || 0), b = b.previousElementSibling;
+    var i;
+    if (!((i = this.editor.root) != null && i.isConnected)) return;
+    const e = this.editor.root.querySelectorAll("table.ife-table");
+    if (!e.length) return;
+    const t = getComputedStyle(this.editor.root), o = this.editor.root.clientHeight - (parseFloat(t.paddingTop) || 0) - (parseFloat(t.paddingBottom) || 0);
+    o <= 0 || e.forEach((l) => {
+      let r = 0, n = l.previousElementSibling;
+      for (; n; ) {
+        const h = getComputedStyle(n);
+        r += n.offsetHeight + (parseFloat(h.marginTop) || 0) + (parseFloat(h.marginBottom) || 0), n = n.previousElementSibling;
       }
-      const T = getComputedStyle(p), E = parseFloat(T.marginTop) || 0, R = parseFloat(T.marginBottom) || 0, S = h - w - x - E - R - v;
-      p.style.maxHeight = `${Math.max(200, Math.floor(S))}px`;
+      const s = getComputedStyle(l), c = parseFloat(s.marginTop) || 0, a = parseFloat(s.marginBottom) || 0, d = o - r - c - a;
+      l.style.maxHeight = `${Math.max(200, Math.floor(d))}px`;
     });
   }
   destroy() {
-    var e;
-    window.removeEventListener("resize", this.adjustTableHeight), this.editor.root.style.maxHeight = "", (e = this.contextToolbar) == null || e.remove();
+    var e, t;
+    window.removeEventListener("resize", this.adjustTableHeight), (e = this.editor.root) == null || e.querySelectorAll("table.ife-table").forEach((o) => {
+      o.style.maxHeight = "";
+    }), (t = this.contextToolbar) == null || t.remove();
   }
 }
 export {
-  A as default
+  g as default
 };
-//# sourceMappingURL=TableModule-V3fOW7hn.js.map
+//# sourceMappingURL=TableModule-BG0FLd7K.js.map

@@ -48,6 +48,15 @@ describe('Toolbar', () => {
         expect(groups.length).toBeGreaterThan(0);
     });
 
+    it('mounts as a sibling directly above the scrollable content area', () => {
+        // The toolbar must stay outside the scroll container, otherwise it
+        // scrolls away with the content it is meant to stay above.
+        toolbar = new Toolbar(editor);
+        expect(toolbar.el.parentNode).toBe(editor.wrapper);
+        expect(toolbar.el.nextElementSibling).toBe(editor.root);
+        expect(editor.root.contains(toolbar.el)).toBe(false);
+    });
+
     it('renders a bold button', () => {
         toolbar = new Toolbar(editor);
         const btn = toolbar.el.querySelector('[data-command="bold"]');
@@ -298,6 +307,22 @@ describe('Toolbar', () => {
         const btn = toolbar.buttons.get('blockquote');
         toolbar.syncActiveStates();
         expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('activates codeBlock button when the caret is inside a <pre>', () => {
+        editor.commands.queryState = vi.fn((name) => name === 'codeBlock');
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('codeBlock');
+        expect(btn).not.toBeNull();
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('does not activate codeBlock button outside a code block', () => {
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('codeBlock');
+        toolbar.syncActiveStates();
+        expect(btn.classList.contains('is-active')).toBe(false);
     });
 
     it('renders a blockFormat select control', () => {

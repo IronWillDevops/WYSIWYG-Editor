@@ -38,6 +38,7 @@ export default {
     findReplace: 'Find & Replace',
     sourceCode: 'Source code',
     fullscreen: 'Fullscreen',
+    resizeHandle: 'Drag to change the editor height',
     uploadFailed: 'Failed to upload the file. Please try again.',
     paragraph: 'Paragraph',
     heading1: 'Heading 1',

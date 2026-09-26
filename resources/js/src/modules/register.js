@@ -14,6 +14,7 @@ const BUILTIN_LOADERS = {
     emoji: () => import('./EmojiModule.js'),
     contextMenu: () => import('./ContextMenu.js'),
     templates: () => import('./TemplateModule.js'),
+    resize: () => import('./ResizeModule.js'),
 };
 
 Object.entries(BUILTIN_LOADERS).forEach(([name, loader]) => {

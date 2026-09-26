@@ -235,6 +235,7 @@ export default class Toolbar {
             subscript: 'subscript',
             bulletList: 'insertUnorderedList',
             orderedList: 'insertOrderedList',
+            codeBlock: 'codeBlock',
         };
 
         Object.entries(stateMap).forEach(([id, command]) => {

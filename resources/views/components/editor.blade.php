@@ -5,7 +5,7 @@
     'theme' => config('wysiwyg-editor.theme', 'auto'),
     'locale' => config('wysiwyg-editor.locale', app()->getLocale()),
     'toolbar' => null,
-    'height' => 420,
+    'height' => config('wysiwyg-editor.height', 420),
     'autosave' => null,
     'disabledPlugins' => null,
     'sanitizer' => null,
@@ -46,7 +46,7 @@
         name="{{ $name }}"
         id="{{ $elementId }}"
         style="display:none"
-    >{!! preg_replace('/<\/textarea>/i', '&lt;/textarea&gt;', $value) !!}</textarea>
+    >{{ e($value, false) }}</textarea>
 </div>
 
 @once
