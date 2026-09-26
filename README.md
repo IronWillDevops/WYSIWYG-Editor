@@ -153,6 +153,50 @@ import '@wysiwyg/editor/style.css';
 Editor.init('#editor', { theme: 'auto', locale: 'en' });
 ```
 
+### 4. CDN (jsDelivr) — no build step
+
+The built bundles are committed to the repository, so a page can load them
+straight from a CDN without installing or building anything:
+
+```blade
+@push('styles')
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.30/resources/js/dist/wysiwyg-editor.css">
+@endpush
+
+@push('scripts')
+    <script defer
+        src="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.30/resources/js/dist/wysiwyg-editor.umd.js">
+    </script>
+@endpush
+```
+
+```js
+WysiwygEditor.init('#post-editor', { theme: 'auto' });
+```
+
+- The version in the URL is a **git tag**, and it is part of the URL on purpose:
+  a tag is immutable, so the CDN caches it for good and every visitor gets the
+  same build. The flip side is that the URL keeps serving *that* build forever —
+  a page pinned to an old tag runs that old editor, because the editor's own
+  layout rules (the height bounds that keep the content area scrolling *inside*
+  the editor) travel in the bundle, not in your page. **Bump the tag on every
+  upgrade**; a freshly pushed tag is served by the CDN within a minute or two.
+- Load the stylesheet and the script from the **same** tag. They ship one
+  contract — the box sizes the editor, the content area takes whatever the
+  toolbar and status bar leave — and a mixed pair breaks in a way that reads as
+  a content bug rather than a versioning one: a new script on an old stylesheet
+  leaves the editing area unbounded (the box is not a flex column yet), so a
+  long document grows the editor instead of scrolling inside it, the status bar
+  is pushed out of the editor's own box, and the box shows no scrollbar.
+- `wysiwyg-editor.umd.js` is self-contained and exposes the global
+  `WysiwygEditor` (`init` / `get` / `destroyAll` / `registerPlugin`).
+  `wysiwyg-editor.esm.js` is the same build as an ES module, and it imports its
+  own per-module chunks next to it, so the whole `dist/` directory has to be
+  reachable (a CDN serves that for you; with your own server, copy all of it).
+- `wysiwyg-editor.css` carries the editor UI *and* the content styles. To render
+  published content only, load `wysiwyg-content.css` instead.
+
 ## Framework integration examples
 
 ### Livewire
