@@ -26,6 +26,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Editor height
+    |--------------------------------------------------------------------------
+    |
+    | Height of the editing area in pixels, or any CSS length that does not
+    | depend on a parent box ("600", "600px", "40rem", "75vh"). The content
+    | area never grows past it: larger content scrolls inside the editor, so
+    | the toolbar and status bar stay put. Overridable per instance with the
+    | `height` prop of the <x-editor> component, or by dragging the editor's
+    | resize grip.
+    |
+    */
+
+    'height' => env('WYSIWYG_EDITOR_HEIGHT', 420),
+
+    /*
+    |--------------------------------------------------------------------------
     | Toolbar
     |--------------------------------------------------------------------------
     |

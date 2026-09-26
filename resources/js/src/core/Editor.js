@@ -9,7 +9,7 @@ import Sanitizer from './Sanitizer.js';
  * @property {string} [theme]
  * @property {string} [locale]
  * @property {Array<string[]>} [toolbar]
- * @property {number} [height]
+ * @property {number|string} [height] px number or CSS length
  * @property {string} [uploadUrl]
  * @property {object} [history]
  * @property {object} [autosave]
@@ -23,6 +23,33 @@ const DEFAULT_OPTIONS = {
     history: { max_steps: 1000, debounce_ms: 300 },
     autosave: { enabled: false, interval_ms: 15000, storage_key: 'wysiwyg-editor-autosave' },
 };
+
+/**
+ * Units that resolve without a containing block, so a height built from them
+ * always yields a real, bounded box. Relative units (`%`) are rejected on
+ * purpose: `max-height: 100%` on a parent of `height: auto` computes to
+ * `none`, which is exactly the unbounded editor this bounds prevent.
+ */
+const ABSOLUTE_LENGTH_UNITS = 'px|em|rem|ch|ex|vh|vw|vmin|vmax|cm|mm|in|pt|pc|Q';
+const CSS_LENGTH = new RegExp(`^(\\d+(?:\\.\\d+)?)(${ABSOLUTE_LENGTH_UNITS})?$`, 'i');
+
+/**
+ * Turns the `height` option into a CSS length, or `null` when it cannot size
+ * a box (missing, `null`, a keyword, a relative length, a negative number).
+ * A bare number is read as pixels so config/env values ("500") work.
+ *
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+function resolveHeight(value) {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? `${value}px` : null;
+    }
+    if (typeof value !== 'string') return null;
+    const match = value.trim().match(CSS_LENGTH);
+    if (!match) return null;
+    return `${match[1]}${match[2] ?? 'px'}`;
+}
 
 /** Registry of plugin factories added via Editor.registerPlugin(). */
 const pluginRegistry = new Map();
@@ -111,17 +138,17 @@ export default class Editor {
      * option instead of being snapshotted, so no number of fullscreen round
      * trips (or a native Esc) can leave the editor without them.
      *
+     * A `height` that cannot size a box (missing, a keyword, a relative
+     * length) falls back to the default instead of emitting a declaration the
+     * browser drops, which would leave the content area unbounded.
+     *
      * @param {boolean} [fullscreen]
      */
     applyHeight(fullscreen = false) {
         if (!this.root) return;
-        // An unusable option (missing, null, a CSS length, ...) must not
-        // silently drop the bounds — fall back to the default height instead
-        // of leaving the content area unbounded.
-        const configured = Number(this.options.height);
-        const height = Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_OPTIONS.height;
-        this.root.style.minHeight = fullscreen ? '0' : `${height}px`;
-        this.root.style.maxHeight = fullscreen ? 'none' : `${height}px`;
+        const height = resolveHeight(this.options.height) ?? `${DEFAULT_OPTIONS.height}px`;
+        this.root.style.minHeight = fullscreen ? '0' : height;
+        this.root.style.maxHeight = fullscreen ? 'none' : height;
     }
 
     bindEvents() {

@@ -1,6 +1,6 @@
 var B = Object.defineProperty;
 var A = (l, e, t) => e in l ? B(l, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : l[e] = t;
-var _ = (l, e, t) => A(l, typeof e != "symbol" ? e + "" : e, t);
+var H = (l, e, t) => A(l, typeof e != "symbol" ? e + "" : e, t);
 class I {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
@@ -273,7 +273,7 @@ class P {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const O = /* @__PURE__ */ new Set([
+const z = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -291,15 +291,15 @@ const O = /* @__PURE__ */ new Set([
   "rgba(255,255,255,1)",
   "rgba(255, 255, 255, 1)"
 ]);
-function M(l) {
+function _(l) {
   const e = String(l).trim().toLowerCase().replace(/\s+/g, " ");
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
 function V(l) {
-  return O.has(M(l));
+  return z.has(_(l));
 }
 function F(l) {
-  return N.has(M(l));
+  return N.has(_(l));
 }
 const w = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
 class q {
@@ -1246,7 +1246,7 @@ const W = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), U = {
+]), $ = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -1285,7 +1285,7 @@ const W = /* @__PURE__ */ new Set([
   input: /* @__PURE__ */ new Set(["type", "checked", "disabled"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
   ul: /* @__PURE__ */ new Set(["class", "style"])
-}, $ = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+}, U = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
 class X {
   /**
    * @param {object} [options]
@@ -1294,7 +1294,7 @@ class X {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : W, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : U, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : $;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : W, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : $, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : U;
   }
   /**
    * @param {string} dirtyHtml
@@ -1400,8 +1400,8 @@ class X {
   isThemeNeutralColor(e) {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
-    const n = t[1].toLowerCase(), i = M(t[2]);
-    return n === "color" ? O.has(i) : n === "background-color" ? N.has(i) : n === "background" ? this.isSolidBalancedColor(i) && N.has(i) : !1;
+    const n = t[1].toLowerCase(), i = _(t[2]);
+    return n === "color" ? z.has(i) : n === "background-color" ? N.has(i) : n === "background" ? this.isSolidBalancedColor(i) && N.has(i) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1426,13 +1426,21 @@ class X {
     }
   }
 }
-const H = {
+const M = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
-}, R = /* @__PURE__ */ new Map();
+}, j = "px|em|rem|ch|ex|vh|vw|vmin|vmax|cm|mm|in|pt|pc|Q", G = new RegExp(`^(\\d+(?:\\.\\d+)?)(${j})?$`, "i");
+function K(l) {
+  if (typeof l == "number")
+    return Number.isFinite(l) && l > 0 ? `${l}px` : null;
+  if (typeof l != "string") return null;
+  const e = l.trim().match(G);
+  return e ? `${e[1]}${e[2] ?? "px"}` : null;
+}
+const R = /* @__PURE__ */ new Map();
 class x {
   /**
    * @param {HTMLTextAreaElement} textarea
@@ -1440,7 +1448,7 @@ class x {
    */
   constructor(e, t = {}) {
     var n, i;
-    this.textarea = e, this.options = { ...H, ...t }, this.events = new I(), this.sanitizer = new X(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new D(this.root), this.commands = new q(this), this.history = new P({
+    this.textarea = e, this.options = { ...M, ...t }, this.events = new I(), this.sanitizer = new X(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new D(this.root), this.commands = new q(this), this.history = new P({
       getContent: () => this.root.innerHTML,
       setContent: (o) => {
         this.root.innerHTML = o;
@@ -1475,12 +1483,16 @@ class x {
    * option instead of being snapshotted, so no number of fullscreen round
    * trips (or a native Esc) can leave the editor without them.
    *
+   * A `height` that cannot size a box (missing, a keyword, a relative
+   * length) falls back to the default instead of emitting a declaration the
+   * browser drops, which would leave the content area unbounded.
+   *
    * @param {boolean} [fullscreen]
    */
   applyHeight(e = !1) {
     if (!this.root) return;
-    const t = Number(this.options.height), n = Number.isFinite(t) && t > 0 ? t : H.height;
-    this.root.style.minHeight = e ? "0" : `${n}px`, this.root.style.maxHeight = e ? "none" : `${n}px`;
+    const t = K(this.options.height) ?? `${M.height}px`;
+    this.root.style.minHeight = e ? "0" : t, this.root.style.maxHeight = e ? "none" : t;
   }
   bindEvents() {
     this.root.addEventListener("input", () => {
@@ -1677,8 +1689,8 @@ class x {
         r.textContent = d;
         const p = document.createElement("p");
         if (g ? p.textContent = g : p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), !a.textContent.trim()) {
-          const b = a.parentNode, z = document.createTextNode("");
-          b.replaceChild(z, a);
+          const b = a.parentNode, O = document.createTextNode("");
+          b.replaceChild(O, a);
         }
         const f = document.createRange(), v = p.firstChild || p;
         f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f);
@@ -1940,7 +1952,7 @@ const u = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   listProps: u('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
   paragraph: u('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
-class j {
+class J {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1952,7 +1964,7 @@ class j {
    * @param {() => void} [config.onClose]
    */
   constructor(e, { title: t, bodyHtml: n, confirmLabel: i = "OK", cancelLabel: o = "Cancel", onConfirm: s, onClose: a }) {
-    _(this, "handleEscape", (e) => {
+    H(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.onClose = a, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -2003,7 +2015,7 @@ class j {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const K = {
+const Y = {
   blockFormat: {
     icon: m.paragraph,
     label: "Block format",
@@ -2208,7 +2220,7 @@ const K = {
                         <option value="upper-roman" ${i === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, s = new j(l.wrapper, {
+            `, s = new J(l.wrapper, {
         title: "List properties",
         bodyHtml: o,
         confirmLabel: "Apply",
@@ -2220,7 +2232,7 @@ const K = {
       l.selection.save(), s.open();
     }
   }
-}, G = {
+}, Q = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -2260,6 +2272,7 @@ const K = {
   findReplace: "Find & Replace",
   sourceCode: "Source code",
   fullscreen: "Fullscreen",
+  resizeHandle: "Drag to change the editor height",
   uploadFailed: "Failed to upload the file. Please try again.",
   paragraph: "Paragraph",
   heading1: "Heading 1",
@@ -2285,7 +2298,7 @@ const K = {
   listProps: "List properties",
   blockFormat: "Block format",
   madeBy: "Made by ITkha"
-}, J = {
+}, Z = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -2325,6 +2338,7 @@ const K = {
   findReplace: "Знайти та замінити",
   sourceCode: "Вихідний код",
   fullscreen: "Повноекранний режим",
+  resizeHandle: "Перетягніть, щоб змінити висоту редактора",
   uploadFailed: "Не вдалося завантажити файл. Спробуйте ще раз.",
   paragraph: "Параграф",
   heading1: "Заголовок 1",
@@ -2350,7 +2364,7 @@ const K = {
   listProps: "Властивості списку",
   blockFormat: "Формат блоку",
   madeBy: "Зроблено в ITkha"
-}, Y = {
+}, ee = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -2390,6 +2404,7 @@ const K = {
   findReplace: "Найти и заменить",
   sourceCode: "Исходный код",
   fullscreen: "Полноэкранный режим",
+  resizeHandle: "Потяните, чтобы изменить высоту редактора",
   uploadFailed: "Не удалось загрузить файл. Попробуйте ещё раз.",
   paragraph: "Параграф",
   heading1: "Заголовок 1",
@@ -2416,9 +2431,9 @@ const K = {
   blockFormat: "Формат блока",
   madeBy: "Сделано в ITkha"
 }, C = /* @__PURE__ */ new Map([
-  ["en", G],
-  ["uk", J],
-  ["ru", Y]
+  ["en", Q],
+  ["uk", Z],
+  ["ru", ee]
 ]), y = {
   /**
    * @param {string} code
@@ -2438,7 +2453,7 @@ const K = {
   available() {
     return [...C.keys()];
   }
-}, Q = [
+}, te = [
   "#000000",
   "#444444",
   "#777777",
@@ -2489,7 +2504,7 @@ function T(l, e, t) {
   const c = (h) => Math.round((h + o) * 255).toString(16).padStart(2, "0");
   return `#${c(s)}${c(a)}${c(r)}`;
 }
-class Z {
+class ne {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {HTMLElement} triggerEl toolbar button that opens this picker
@@ -2542,7 +2557,7 @@ class Z {
       this.onClear && this.onClear(), this.close();
     }), i.appendChild(o), i.appendChild(s), i.appendChild(a), i.appendChild(r);
     const c = document.createElement("div");
-    c.className = "ife-color-picker__swatches", c.setAttribute("role", "group"), c.setAttribute("aria-label", "Preset colours"), Q.forEach((h) => {
+    c.className = "ife-color-picker__swatches", c.setAttribute("role", "group"), c.setAttribute("aria-label", "Preset colours"), te.forEach((h) => {
       const d = document.createElement("button");
       d.type = "button", d.className = "ife-color-picker__swatch", d.style.backgroundColor = h, d.title = h, d.setAttribute("aria-label", h), d.setAttribute("data-color", h), d.addEventListener("mousedown", (g) => g.preventDefault()), d.addEventListener("click", () => {
         const [g, p, f] = L(h);
@@ -2626,7 +2641,7 @@ class Z {
     this.close();
   }
 }
-const ee = [
+const ie = [
   ["undo", "redo"],
   ["blockFormat"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -2641,13 +2656,13 @@ const ee = [
   ["markdown"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class te {
+class oe {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? ee, this.buttons = /* @__PURE__ */ new Map(), this._colorPickers = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
+    this.editor = e, this.layout = t ?? ie, this.buttons = /* @__PURE__ */ new Map(), this._colorPickers = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
       if (!this._liveColor) return;
       const n = this.editor.selection.getNativeSelection();
       if (!n || n.rangeCount === 0 || n.isCollapsed) return;
@@ -2667,7 +2682,7 @@ class te {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const i = K[n];
+        const i = Y[n];
         if (!i) return;
         const o = this.buildControl(n, i);
         o && t.appendChild(o);
@@ -2707,7 +2722,7 @@ class te {
   buildColorPicker(e, t) {
     const n = this.editor.options.locale ?? "en", i = y.t(n, e) !== e ? y.t(n, e) : t.label, o = document.createElement("button");
     o.type = "button", o.className = "ife-toolbar__btn ife-toolbar__color", o.dataset.command = e, o.title = i, o.setAttribute("aria-label", i), o.setAttribute("aria-haspopup", "dialog"), o.innerHTML = t.icon;
-    const s = t.command === "backColor" ? "backgroundColor" : "color", a = new Z(this.editor, o, {
+    const s = t.command === "backColor" ? "backgroundColor" : "color", a = new ne(this.editor, o, {
       id: e,
       cssProp: s,
       label: i,
@@ -2812,28 +2827,29 @@ class te {
     this.disarmLiveColor(), this._colorPickers.forEach((e) => e.destroy()), this._colorPickers.clear(), document.removeEventListener("selectionchange", this._handleLiveSelection), document.removeEventListener("mouseup", this._handleLiveSelection), this.el.remove();
   }
 }
-const ne = {
-  link: () => import("./LinkModule-BBYkevM0.js"),
-  image: () => import("./ImageModule-CPWU0JoA.js"),
-  table: () => import("./TableModule-C8x2akXK.js"),
-  codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
+const se = {
+  link: () => import("./LinkModule-C3GZ-i55.js"),
+  image: () => import("./ImageModule-DPEsnSUK.js"),
+  table: () => import("./TableModule-D6Y1Zkbz.js"),
+  codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-Dt8eylmq.js"),
-  note: () => import("./NoteModule-CAyzj0JH.js"),
-  media: () => import("./MediaModule-C4F8QcMk.js"),
+  find: () => import("./FindModule-CogwV5ea.js"),
+  note: () => import("./NoteModule-T3t8J7En.js"),
+  media: () => import("./MediaModule-Bwm6-VrV.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-BQaT7Iaq.js"),
+  statusBar: () => import("./StatusBar-BF2lg3X3.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CWPCK4m7.js")
+  templates: () => import("./TemplateModule-DcKKbJrR.js"),
+  resize: () => import("./ResizeModule-B9lviRJC.js")
 };
-Object.entries(ne).forEach(([l, e]) => {
+Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
 });
-const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), oe = {
+const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), ae = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -2847,7 +2863,7 @@ const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), oe = {
       throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
     if (E.has(t))
       return E.get(t);
-    const n = new x(t, e), i = new te(n, e.toolbar);
+    const n = new x(t, e), i = new oe(n, e.toolbar);
     return n.on("destroy", () => i.destroy()), E.set(t, n), S.add(n), n.on("destroy", () => {
       E.delete(t), S.delete(n);
     }), n;
@@ -2867,9 +2883,9 @@ const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), oe = {
   registerPlugin: x.registerPlugin
 };
 export {
-  j as D,
+  J as D,
   m as I,
   y as L,
-  oe as W
+  ae as W
 };
-//# sourceMappingURL=index-DilqqVa3.js.map
+//# sourceMappingURL=index-CO1fWwaT.js.map

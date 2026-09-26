@@ -45,6 +45,11 @@ proper Laravel package with a one-line Blade component.
   above and below it (also in fullscreen). The `height` option is the only
   thing that sizes the editor — it is never silently re-fitted to the viewport
   as the page scrolls.
+- **Manual height resize** — a grip on the editor's bottom edge
+  (mouse, touch or the arrow keys once focused) changes the height. It writes
+  the same `height` option, so the toolbar, status bar and internal scrollbar
+  keep working at the new size; the grip is hidden in fullscreen, where the
+  editor fills the window by definition.
 - **Themes** — light / dark / auto (`prefers-color-scheme`).
 - **i18n** — English, Українська, Русский, easy to extend.
 - **Security** — whitelist HTML sanitizer, paste sanitizer, URL validation,
@@ -294,8 +299,14 @@ properties on `.ife-content` (or an ancestor) exactly as the editor's
 ## Configuration reference
 
 See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,
-commented list of options: `theme`, `locale`, `toolbar`, `plugins`,
+commented list of options: `theme`, `locale`, `toolbar`, `height`, `plugins`,
 `history`, `autosave`, `sanitizer`, `upload`.
+
+`height` sets the height of the editing area (`WYSIWYG_EDITOR_HEIGHT`, default
+`420`); it accepts a pixel number or any CSS length that does not depend on a
+parent box (`"600"`, `"600px"`, `"40rem"`, `"75vh"`). Larger content scrolls
+inside the editor instead of growing it, and the grip on the editor's bottom
+edge overrides it per instance.
 
 ## JavaScript API
 

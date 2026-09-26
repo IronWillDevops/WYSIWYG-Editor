@@ -5,7 +5,7 @@
     'theme' => config('wysiwyg-editor.theme', 'auto'),
     'locale' => config('wysiwyg-editor.locale', app()->getLocale()),
     'toolbar' => null,
-    'height' => 420,
+    'height' => config('wysiwyg-editor.height', 420),
     'autosave' => null,
     'disabledPlugins' => null,
     'sanitizer' => null,

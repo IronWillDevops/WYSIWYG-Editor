@@ -46,6 +46,9 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* Containing block for the absolutely positioned resize handle, so the
+       handle tracks the editor's own box instead of a viewport-sized one. */
+    position: relative;
 }
 
 .ife-wrapper[data-resolved-theme="dark"] {
@@ -351,6 +354,78 @@
 
 .ife-statusbar__value {
     font-variant-numeric: tabular-nums;
+}
+
+/* Height resize handle
+   A drag grip on the editor's bottom edge. It is chrome only: the height it
+   produces is written back into the `height` option and applied by
+   Editor.applyHeight(), so a manual resize follows exactly the same path as
+   the configured height. It is a 6px strip at the bottom of the wrapper, so it
+   never takes part in the column flow and can never shift the bars. */
+.ife-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 6px;
+    /* Above the status bar: a pointer drag on it must never reach the content
+       area and place the caret or select text. */
+    z-index: 2;
+    cursor: ns-resize;
+    touch-action: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.ife-resize-handle::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 44px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    background: var(--ife-border);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+/* The grip stays out of the way until the pointer is on it (or it has keyboard
+   focus), so the editor looks exactly as before until it is used. */
+.ife-resize-handle:hover::after,
+.ife-resize-handle:focus-visible::after,
+.ife-wrapper.ife-resizing .ife-resize-handle::after {
+    opacity: 1;
+}
+
+.ife-resize-handle:focus-visible {
+    outline: 2px solid var(--ife-accent);
+    outline-offset: -2px;
+}
+
+.ife-resize-handle:hover::after,
+.ife-resize-handle:focus-visible::after {
+    background: var(--ife-accent);
+}
+
+/* While dragging, the whole editor stops selecting text so the gesture is not
+   interrupted by a text selection. */
+.ife-wrapper.ife-resizing,
+.ife-wrapper.ife-resizing .ife-content {
+    user-select: none;
+}
+
+/* In fullscreen the content fills the window by definition, so there is no
+   height left to drag; the source view keeps its own native textarea resize
+   (`.ife-source-view { resize: vertical }`). */
+.ife-wrapper.ife-fullscreen .ife-resize-handle {
+    display: none;
+}
+
+.ife-wrapper.ife-source-open .ife-resize-handle {
+    display: none;
 }
 
 /* Dialogs */

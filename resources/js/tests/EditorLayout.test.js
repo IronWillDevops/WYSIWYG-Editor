@@ -85,6 +85,42 @@ describe('editor layout stylesheet contract', () => {
         expect(fullscreen.position).toBe('fixed');
         expect(fullscreen.inset).toBe('0');
     });
+
+    it('anchors the resize grip to the wrapper instead of the viewport', () => {
+        // Without a positioned wrapper the grip would be laid out against the
+        // initial containing block and detach from the editor's bottom edge.
+        expect(ruleFor('.ife-wrapper').position).toBe('relative');
+    });
+
+    it('keeps the resize grip out of the column flow so it cannot shift the bars', () => {
+        // Absolute + its own fixed height: the grip adds no flex item, so the
+        // toolbar, content area and status bar keep their places at any height.
+        const grip = ruleFor('.ife-resize-handle');
+        expect(grip.position).toBe('absolute');
+        expect(grip.height).toBe('6px');
+        expect(grip.cursor).toBe('ns-resize');
+        // A touch drag on the grip must not be stolen by the page's pan gesture.
+        expect(grip['touch-action']).toBe('none');
+    });
+
+    it('gives the grip no stylesheet height of its own', () => {
+        // The grip's size is chrome; the editor's height comes from the
+        // `height` option via Editor.applyHeight(), never from a second rule.
+        const grip = ruleFor('.ife-resize-handle');
+        expect(grip['min-height']).toBeUndefined();
+        expect(grip['max-height']).toBeUndefined();
+    });
+
+    it('offers exactly one resize affordance per surface', () => {
+        // Fullscreen fills the window by definition, and the source view is
+        // itself a resizable textarea, so the grip is hidden in both.
+        for (const selector of [
+            '.ife-wrapper.ife-fullscreen .ife-resize-handle',
+            '.ife-wrapper.ife-source-open .ife-resize-handle',
+        ]) {
+            expect(ruleFor(selector).display, selector).toBe('none');
+        }
+    });
 });
 
 describe('editor layout with a mounted editor', () => {
@@ -102,14 +138,33 @@ describe('editor layout with a mounted editor', () => {
     it('mounts the toolbar and status bar around — not inside — the scroll area', async () => {
         const editor = mount();
         await vi.waitFor(() => expect(editor.wrapper.querySelector('.ife-statusbar')).not.toBeNull());
+        await vi.waitFor(() => expect(editor.wrapper.querySelector('.ife-resize-handle')).not.toBeNull());
 
         const toolbar = editor.wrapper.querySelector('.ife-toolbar');
         const statusbar = editor.wrapper.querySelector('.ife-statusbar');
+        const grip = editor.wrapper.querySelector('.ife-resize-handle');
 
         expect(editor.root.contains(toolbar)).toBe(false);
         expect(editor.root.contains(statusbar)).toBe(false);
+        expect(editor.root.contains(grip)).toBe(false);
         expect(toolbar.nextElementSibling).toBe(editor.root);
-        expect(statusbar.nextElementSibling).toBeNull();
+        // Only chrome (the grip) may follow the status bar; the content area
+        // and the source view are the things that would push it around.
+        const after = statusbar.nextElementSibling;
+        expect(after === null || after === grip).toBe(true);
+    });
+
+    it('mounts the resize grip beside — not inside — the scroll area', async () => {
+        const editor = mount();
+        await vi.waitFor(() => expect(editor.wrapper.querySelector('.ife-resize-handle')).not.toBeNull());
+
+        const grip = editor.wrapper.querySelector('.ife-resize-handle');
+        // Inside the content area the grip would scroll away with the text.
+        expect(editor.root.contains(grip)).toBe(false);
+        expect(editor.wrapper.contains(grip)).toBe(true);
+        // Absolute positioning is what keeps it out of the column flow; the
+        // order in which the async modules mount is irrelevant.
+        expect(grip.style.position).toBe('');
     });
 
     it('keeps the status bar below the scroll area when the source view is open', async () => {
@@ -123,7 +178,10 @@ describe('editor layout with a mounted editor', () => {
         const statusbar = editor.wrapper.querySelector('.ife-statusbar');
         expect(source).not.toBeNull();
         expect(editor.root.contains(source)).toBe(false);
-        expect(statusbar.nextElementSibling).toBeNull();
+        // Only the grip may follow the status bar (it is out of flow, and
+        // hidden in this state), never the source view itself.
+        const after = statusbar.nextElementSibling;
+        expect(after === null || after.classList.contains('ife-resize-handle')).toBe(true);
     });
 
     it('keeps the configured content height when a large amount of text is inserted', async () => {
@@ -175,6 +233,33 @@ describe('editor layout with a mounted editor', () => {
             expect(editor.root.style.minHeight, `height: ${String(height)}`).toBe('420px');
             WysiwygEditor.destroyAll();
         }
+    });
+
+    it('accepts a height given as a CSS length or a numeric string', () => {
+        // Config and .env values arrive as strings, and Blade props are often
+        // quoted numbers; both must still produce a real, bounded box instead
+        // of falling back to the default height.
+        for (const [height, expected] of [
+            ['600', '600px'],
+            ['600px', '600px'],
+            ['40rem', '40rem'],
+            ['75vh', '75vh'],
+            [600, '600px'],
+        ]) {
+            const editor = mount({ height });
+            expect(editor.root.style.maxHeight, `height: ${String(height)}`).toBe(expected);
+            expect(editor.root.style.minHeight, `height: ${String(height)}`).toBe(expected);
+            WysiwygEditor.destroyAll();
+        }
+    });
+
+    it('rejects a relative height, which would compute to no bound at all', () => {
+        // `max-height: 100%` against a parent of `height: auto` computes to
+        // `none` — the exact unbounded editor the bounds exist to prevent.
+        const editor = mount({ height: '100%' });
+
+        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.root.style.minHeight).toBe('420px');
     });
 
     it('keeps the configured content height after a fullscreen round trip', async () => {
