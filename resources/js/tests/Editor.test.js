@@ -725,16 +725,22 @@ describe('Editor', () => {
     });
 
     describe('buildDom', () => {
-        it('bounds the content area height so large content scrolls internally', () => {
+        it('bounds the editor box so large content scrolls internally', () => {
+            // The bound belongs to the box the host page can constrain, not to
+            // the content area: a bound on the innermost element is a floor
+            // nothing above it can lower, so a shorter host box pushed the whole
+            // editor outside itself.
             const editor = new Editor(textarea);
-            expect(editor.root.style.minHeight).toBe('420px');
-            expect(editor.root.style.maxHeight).toBe('420px');
+            expect(editor.wrapper.style.height).toBe('420px');
+            expect(editor.wrapper.style.maxHeight).toBe('420px');
+            expect(editor.root.style.minHeight).toBe('');
+            expect(editor.root.style.maxHeight).toBe('');
         });
 
-        it('uses the configured height option for the content bounds', () => {
+        it('uses the configured height option for the editor box', () => {
             const editor = new Editor(textarea, { height: 600 });
-            expect(editor.root.style.minHeight).toBe('600px');
-            expect(editor.root.style.maxHeight).toBe('600px');
+            expect(editor.wrapper.style.height).toBe('600px');
+            expect(editor.wrapper.style.maxHeight).toBe('600px');
         });
     });
 

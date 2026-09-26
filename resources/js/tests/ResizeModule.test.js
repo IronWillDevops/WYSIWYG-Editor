@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import WysiwygEditor from '../src/index.js';
 import ResizeModule from '../src/modules/ResizeModule.js';
 
-/** Mounts an editor whose content box has a measurable height. */
+/** Mounts an editor whose box has a measurable height. */
 function mount(options = {}) {
     document.body.innerHTML = '<textarea id="target">start</textarea>';
     const editor = WysiwygEditor.init('#target', { height: 420, ...options });
@@ -10,14 +10,13 @@ function mount(options = {}) {
 }
 
 /**
- * jsdom performs no layout, so the content box is simulated: it reports the
- * padding plus whatever `applyHeight()` last wrote, exactly like a browser
- * would. The 16px padding mirrors `.ife-content` in the stylesheet.
+ * jsdom performs no layout, so the editor's box is simulated: it reports
+ * whatever `applyHeight()` last wrote to the wrapper, exactly like a browser
+ * would (`.ife-wrapper` is `box-sizing: border-box`, so the border is already
+ * part of the number and there is nothing to subtract).
  */
-const PADDING = 16;
-
 function stubLayout(el) {
-    const boxHeight = () => (parseFloat(el.style.maxHeight) || 0) + PADDING * 2;
+    const boxHeight = () => parseFloat(el.style.height) || 0;
     el.getBoundingClientRect = () => {
         const height = boxHeight();
         return {
@@ -33,15 +32,6 @@ function stubLayout(el) {
         };
     };
     Object.defineProperty(el, 'offsetHeight', { configurable: true, get: boxHeight });
-
-    // jsdom resolves no stylesheet, so `.ife-content`'s padding is reported here
-    // instead. Without it the module could not subtract the padding and every
-    // drag would be off by exactly that amount.
-    const computed = window.getComputedStyle.bind(window);
-    vi.spyOn(window, 'getComputedStyle').mockImplementation((node, pseudo) => {
-        if (node !== el) return computed(node, pseudo);
-        return { ...computed(node, pseudo), paddingTop: `${PADDING}px`, paddingBottom: `${PADDING}px` };
-    });
 }
 
 function pointer(type, { clientY = 0, button = 0 } = {}) {
@@ -81,71 +71,71 @@ describe('ResizeModule', () => {
         expect(handle.getAttribute('aria-label')).toBe('Drag to change the editor height');
     });
 
-    it('applies a taller content box when the grip is dragged down', () => {
-        stubLayout(editor.root);
+    it('applies a taller box when the grip is dragged down', () => {
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 260 }));
 
-        expect(editor.root.style.maxHeight).toBe('580px');
-        expect(editor.root.style.minHeight).toBe('580px');
+        expect(editor.wrapper.style.height).toBe('580px');
+        expect(editor.wrapper.style.maxHeight).toBe('580px');
     });
 
-    it('applies a shorter content box when the grip is dragged up', () => {
-        stubLayout(editor.root);
+    it('applies a shorter box when the grip is dragged up', () => {
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 300 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 180 }));
 
-        expect(editor.root.style.maxHeight).toBe('300px');
+        expect(editor.wrapper.style.height).toBe('300px');
     });
 
     it('writes the dragged height into the height option, not into a private field', () => {
         // A second height source is exactly what made the editor unbounded
         // before; the grip must go through the option Editor.applyHeight reads.
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 100 }));
 
         expect(editor.options.height).toBe(520);
-        expect(editor.root.style.maxHeight).toBe('520px');
+        expect(editor.wrapper.style.height).toBe('520px');
     });
 
-    it('keeps min-height and max-height in step so the box stays exactly that tall', () => {
-        stubLayout(editor.root);
+    it('keeps height and max-height in step so the box stays exactly that tall', () => {
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 40 }));
 
-        expect(editor.root.style.minHeight).toBe(editor.root.style.maxHeight);
+        expect(editor.wrapper.style.height).toBe(editor.wrapper.style.maxHeight);
     });
 
     it('repeats cleanly: dragging again starts from the current height', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 80 }));
         window.dispatchEvent(pointer('pointerup', { clientY: 80 }));
-        expect(editor.root.style.maxHeight).toBe('500px');
+        expect(editor.wrapper.style.height).toBe('500px');
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 200 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 260 }));
 
-        expect(editor.root.style.maxHeight).toBe('560px');
+        expect(editor.wrapper.style.height).toBe('560px');
     });
 
     it('never collapses the editor below the minimum height', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 400 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 0 }));
 
-        expect(editor.root.style.maxHeight).toBe('120px');
+        expect(editor.wrapper.style.height).toBe('120px');
     });
 
     it('marks the editor while dragging and cleans up on release', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         expect(editor.wrapper.classList.contains('ife-resizing')).toBe(true);
@@ -155,65 +145,65 @@ describe('ResizeModule', () => {
     });
 
     it('stops listening for moves after the pointer is released', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 50 }));
         window.dispatchEvent(pointer('pointerup', { clientY: 50 }));
-        const height = editor.root.style.maxHeight;
+        const height = editor.wrapper.style.height;
 
         window.dispatchEvent(pointer('pointermove', { clientY: 500 }));
-        expect(editor.root.style.maxHeight).toBe(height);
+        expect(editor.wrapper.style.height).toBe(height);
     });
 
     it('cancels the drag when the pointer is cancelled', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointercancel', { clientY: 0 }));
-        const height = editor.root.style.maxHeight;
+        const height = editor.wrapper.style.height;
 
         window.dispatchEvent(pointer('pointermove', { clientY: 300 }));
-        expect(editor.root.style.maxHeight).toBe(height);
+        expect(editor.wrapper.style.height).toBe(height);
     });
 
     it('ignores a non-primary button so the context menu still opens', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0, button: 2 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 200 }));
 
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
     });
 
     it('resizes with the arrow keys once the grip is focused', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
-        expect(editor.root.style.maxHeight).toBe('452px');
+        expect(editor.wrapper.style.height).toBe('452px');
 
         handle.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true }));
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
     });
 
     it('takes bigger keyboard steps with shift', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true, cancelable: true }));
 
-        expect(editor.root.style.maxHeight).toBe('516px');
+        expect(editor.wrapper.style.height).toBe('516px');
     });
 
     it('leaves other keys to the editor', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true }));
 
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
     });
 
     it('publishes the current size for assistive technology', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 30 }));
@@ -222,7 +212,7 @@ describe('ResizeModule', () => {
     });
 
     it('reports the size as soon as a drag starts, before it changes it', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
 
         handle.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
 
@@ -242,7 +232,7 @@ describe('ResizeModule', () => {
     });
 
     it('removes the grip and its listeners on destroy', () => {
-        stubLayout(editor.root);
+        stubLayout(editor.wrapper);
         const el = handle;
 
         editor.destroy();
@@ -251,7 +241,7 @@ describe('ResizeModule', () => {
         // A drag in flight must not keep writing to a destroyed editor.
         el.dispatchEvent(pointer('pointerdown', { clientY: 0 }));
         window.dispatchEvent(pointer('pointermove', { clientY: 300 }));
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
     });
 });
 

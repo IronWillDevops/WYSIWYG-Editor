@@ -122,56 +122,71 @@ export default class Editor {
     }
 
     /**
-     * Applies the `height` option to the content area — the only thing that
-     * sizes the editor, and the only place allowed to write these bounds.
+     * Applies the `height` option to the editor's own box — the only thing
+     * that sizes the editor, and the only place allowed to write it.
      *
-     * The area is bounded rather than grown, so very large content (long code
-     * blocks, huge tables, a big paste, ...) scrolls *inside* the editor
-     * instead of stretching it: the wrapper is overflow:hidden, so an
-     * unbounded root would be clipped with no way to reach the rest of the
-     * content, the page would become the only scroll area and the toolbar and
-     * status bar would travel with it.
+     * The bound lives on the wrapper, not on the content area, because the
+     * wrapper is the box the host page can actually constrain: a component
+     * wrapper, a panel, a grid row, a `class="h-64"` on `<x-editor>`. A bound on
+     * the content area is a floor that nothing above it can lower, so a host
+     * box shorter than the configured height simply had the editor rendered
+     * outside it — content area *and* status bar — with the wrapper's
+     * `overflow: hidden` clipping the difference away and no scrollbar to reach
+     * it. Sizing the box instead lets the content area (the only flexible part,
+     * `flex: 1 1 0; min-height: 0; overflow: auto`) take whatever is left
+     * between the two bars and scroll inside it, so large content (long code
+     * blocks, huge tables, a big paste, ...) never grows the editor, never
+     * reaches past the status bar and never turns the page into the only scroll
+     * area.
      *
-     * `fullscreen: true` lifts the bounds so the fullscreen flex column owns
-     * the scrolling (see `.ife-fullscreen .ife-content` in the stylesheet);
-     * calling it again re-applies them. The bounds are re-derived from the
-     * option instead of being snapshotted, so no number of fullscreen round
-     * trips (or a native Esc) can leave the editor without them.
+     * `fullscreen: true` hands the box over to the viewport, which then defines
+     * its size; calling it again re-applies that. The height is re-derived from
+     * the option instead of being snapshotted, so no number of fullscreen round
+     * trips (or a native Esc) can leave the editor without it.
      *
      * A `height` that cannot size a box (missing, a keyword, a relative
      * length) falls back to the default instead of emitting a declaration the
-     * browser drops, which would leave the content area unbounded.
+     * browser drops, which would leave the editor unbounded.
      *
      * @param {boolean} [fullscreen]
      */
     applyHeight(fullscreen = false) {
-        if (!this.root) return;
+        if (!this.wrapper) return;
         const height = resolveHeight(this.options.height) ?? `${DEFAULT_OPTIONS.height}px`;
         // Remembered so `ensureHeightBounds()` can re-assert exactly what was
         // applied, and so the last mode (fullscreen or not) is never guessed.
-        this._bounds = fullscreen ? { min: '0', max: 'none' } : { min: height, max: height };
-        this.root.style.minHeight = this._bounds.min;
-        this.root.style.maxHeight = this._bounds.max;
+        // Fullscreen sizes the box against the viewport instead of the
+        // configured height. It is a percentage rather than `auto` on purpose:
+        // the box's floor is `min-content` (its own bars, see the stylesheet),
+        // and Chromium resolves a content-based `min-height` on an absolutely
+        // positioned box against the box's own content — which drops the
+        // `position: fixed; inset: 0` stretch and left fullscreen exactly as
+        // tall as the two bars. A percentage resolves against the viewport in
+        // both the fullscreen element and the class fallback, with no
+        // dependence on the insets at all.
+        this._bounds = fullscreen ? { height: '100%', max: 'none' } : { height, max: height };
+        this.wrapper.style.height = this._bounds.height;
+        this.wrapper.style.maxHeight = this._bounds.max;
     }
 
     /**
-     * Re-asserts the content area's bounds after a change.
+     * Re-asserts the editor's box after a change.
      *
-     * The bounds live in the area's inline `min-height`/`max-height`, so
-     * anything that rewrites that style attribute takes the editor's layout
-     * with it: the content area stops being a bounded scroll container, large
-     * content stretches the editor, the page becomes the only scroll area, the
-     * toolbar and status bar travel with it and the editor never shows a
-     * scrollbar of its own. The bounds are therefore re-asserted on every
-     * change, so no such path — a formatting command, a plugin, a host page's
-     * own script — can leave the editor unbounded for longer than one edit.
+     * The height lives in the wrapper's inline `style` attribute, so anything
+     * that rewrites that attribute takes the editor's layout with it: the
+     * content area stops being a bounded scroll container, large content
+     * stretches the editor, the page becomes the only scroll area, the toolbar
+     * and status bar travel with it and the editor never shows a scrollbar of
+     * its own. The height is therefore re-asserted on every change, so no such
+     * path — a plugin, a host page's own script — can leave the editor unbounded
+     * for longer than one edit.
      */
     ensureHeightBounds() {
-        if (this.destroyed || !this.root || !this._bounds) return;
-        const { min, max } = this._bounds;
-        if (this.root.style.minHeight === min && this.root.style.maxHeight === max) return;
-        this.root.style.minHeight = min;
-        this.root.style.maxHeight = max;
+        if (this.destroyed || !this.wrapper || !this._bounds) return;
+        const { height, max } = this._bounds;
+        if (this.wrapper.style.height === height && this.wrapper.style.maxHeight === max) return;
+        this.wrapper.style.height = height;
+        this.wrapper.style.maxHeight = max;
     }
 
     bindEvents() {

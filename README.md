@@ -40,18 +40,23 @@ proper Laravel package with a one-line Blade component.
 - **Autosave**, **fullscreen**, **keyboard shortcuts**, **spellcheck**.
 - **Status bar** — live word & character counts, block-type and
   link/code/table context, always reachable. Long content never grows the
-  editor: the content area is bounded to the configured `height` and scrolls
-  internally with its own scrollbar, so the toolbar and status bar stay pinned
-  above and below it (also in fullscreen). The `height` option is the only
+  editor: the `height` option sizes the editor's own box, the editing area
+  takes whatever is left between the two bars and scrolls internally with its
+  own scrollbar, so the toolbar and status bar stay pinned above and below it
+  (also in fullscreen, and in the source view). The `height` option is the only
   thing that sizes the editor — it is never silently re-fitted to the viewport
-  as the page scrolls. The editor also never grows wider than the box that holds
-  it: long unbreakable text (a URL, a base64 blob, minified code) wraps inside
-  the content area instead of pushing the bars and the scrollbar off-screen.
+  as the page scrolls — and a host box that is shorter than it wins over it: put
+  the editor in a panel, a grid row or on a fixed-height `class` and the editing
+  area scrolls in the room there is, with the status bar still at the bottom. The
+  editor also never grows wider than the box that holds it: long unbreakable
+  text (a URL, a base64 blob, minified code) wraps inside the content area
+  instead of pushing the bars and the scrollbar off-screen.
 - **Manual height resize** — a grip on the editor's bottom edge
   (mouse, touch or the arrow keys once focused) changes the height. It writes
   the same `height` option, so the toolbar, status bar and internal scrollbar
   keep working at the new size; the grip is hidden in fullscreen, where the
-  editor fills the window by definition.
+  editor fills the window by definition, and while the source view is open,
+  which is the only other height affordance then.
 - **Themes** — light / dark / auto (`prefers-color-scheme`).
 - **i18n** — English, Українська, Русский, easy to extend.
 - **Security** — whitelist HTML sanitizer, paste sanitizer, URL validation,
@@ -304,11 +309,14 @@ See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,
 commented list of options: `theme`, `locale`, `toolbar`, `height`, `plugins`,
 `history`, `autosave`, `sanitizer`, `upload`.
 
-`height` sets the height of the editing area (`WYSIWYG_EDITOR_HEIGHT`, default
-`420`); it accepts a pixel number or any CSS length that does not depend on a
-parent box (`"600"`, `"600px"`, `"40rem"`, `"75vh"`). Larger content scrolls
-inside the editor instead of growing it, and the grip on the editor's bottom
-edge overrides it per instance.
+`height` sets the height of the editor (`WYSIWYG_EDITOR_HEIGHT`, default `420`);
+it accepts a pixel number or any CSS length that does not depend on a parent box
+(`"600"`, `"600px"`, `"40rem"`, `"75vh"`). It sizes the editor's own box —
+toolbar and status bar included — and the editing area takes the rest and
+scrolls inside it, so larger content never grows the editor. A host box that is
+shorter than `height` (a panel, a grid row, a `class` on the component) wins
+over it and the editing area scrolls in whatever room there is. The grip on the
+editor's bottom edge overrides the value per instance.
 
 ## JavaScript API
 

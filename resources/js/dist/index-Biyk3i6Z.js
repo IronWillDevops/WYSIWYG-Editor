@@ -560,14 +560,14 @@ class q {
    * the selection's own container (only when it carries inline styles) plus
    * its descendants.
    *
-   * The editing surface itself is never a target. `.ife-content` keeps the
-   * editor's height bounds in its inline `min-height`/`max-height` (see
-   * `Editor.applyHeight`), and a select-all made that container the root —
-   * "clear formatting" then stripped the whole style attribute off it, which
-   * left the editor unbounded: large content (a big paste, a long document)
-   * grew the editor instead of scrolling inside it, the page became the only
-   * scroll area, the toolbar and status bar travelled with it and the editor
-   * had no scrollbar of its own.
+   * The editing surface itself is never a target. A select-all makes it the
+   * container the sweep starts from, and "clear formatting" then stripped its
+   * whole style attribute — which is the element the content itself is
+   * styled through, so host code that reads or relies on those styles (and
+   * any future layout bound written there) lost them in one keystroke. The
+   * editor's own height lives on the wrapper (see `Editor.applyHeight`), so
+   * the layout is safe either way; this keeps the surface's own attributes
+   * out of a command that is meant to clear the *content's* formatting.
    *
    * @param {HTMLElement} container the selection's common-ancestor element
    * @returns {HTMLElement[]}
@@ -1486,49 +1486,55 @@ class x {
     this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.applyHeight(), this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
   }
   /**
-   * Applies the `height` option to the content area — the only thing that
-   * sizes the editor, and the only place allowed to write these bounds.
+   * Applies the `height` option to the editor's own box — the only thing
+   * that sizes the editor, and the only place allowed to write it.
    *
-   * The area is bounded rather than grown, so very large content (long code
-   * blocks, huge tables, a big paste, ...) scrolls *inside* the editor
-   * instead of stretching it: the wrapper is overflow:hidden, so an
-   * unbounded root would be clipped with no way to reach the rest of the
-   * content, the page would become the only scroll area and the toolbar and
-   * status bar would travel with it.
+   * The bound lives on the wrapper, not on the content area, because the
+   * wrapper is the box the host page can actually constrain: a component
+   * wrapper, a panel, a grid row, a `class="h-64"` on `<x-editor>`. A bound on
+   * the content area is a floor that nothing above it can lower, so a host
+   * box shorter than the configured height simply had the editor rendered
+   * outside it — content area *and* status bar — with the wrapper's
+   * `overflow: hidden` clipping the difference away and no scrollbar to reach
+   * it. Sizing the box instead lets the content area (the only flexible part,
+   * `flex: 1 1 0; min-height: 0; overflow: auto`) take whatever is left
+   * between the two bars and scroll inside it, so large content (long code
+   * blocks, huge tables, a big paste, ...) never grows the editor, never
+   * reaches past the status bar and never turns the page into the only scroll
+   * area.
    *
-   * `fullscreen: true` lifts the bounds so the fullscreen flex column owns
-   * the scrolling (see `.ife-fullscreen .ife-content` in the stylesheet);
-   * calling it again re-applies them. The bounds are re-derived from the
-   * option instead of being snapshotted, so no number of fullscreen round
-   * trips (or a native Esc) can leave the editor without them.
+   * `fullscreen: true` hands the box over to the viewport, which then defines
+   * its size; calling it again re-applies that. The height is re-derived from
+   * the option instead of being snapshotted, so no number of fullscreen round
+   * trips (or a native Esc) can leave the editor without it.
    *
    * A `height` that cannot size a box (missing, a keyword, a relative
    * length) falls back to the default instead of emitting a declaration the
-   * browser drops, which would leave the content area unbounded.
+   * browser drops, which would leave the editor unbounded.
    *
    * @param {boolean} [fullscreen]
    */
   applyHeight(e = !1) {
-    if (!this.root) return;
+    if (!this.wrapper) return;
     const t = K(this.options.height) ?? `${M.height}px`;
-    this._bounds = e ? { min: "0", max: "none" } : { min: t, max: t }, this.root.style.minHeight = this._bounds.min, this.root.style.maxHeight = this._bounds.max;
+    this._bounds = e ? { height: "100%", max: "none" } : { height: t, max: t }, this.wrapper.style.height = this._bounds.height, this.wrapper.style.maxHeight = this._bounds.max;
   }
   /**
-   * Re-asserts the content area's bounds after a change.
+   * Re-asserts the editor's box after a change.
    *
-   * The bounds live in the area's inline `min-height`/`max-height`, so
-   * anything that rewrites that style attribute takes the editor's layout
-   * with it: the content area stops being a bounded scroll container, large
-   * content stretches the editor, the page becomes the only scroll area, the
-   * toolbar and status bar travel with it and the editor never shows a
-   * scrollbar of its own. The bounds are therefore re-asserted on every
-   * change, so no such path — a formatting command, a plugin, a host page's
-   * own script — can leave the editor unbounded for longer than one edit.
+   * The height lives in the wrapper's inline `style` attribute, so anything
+   * that rewrites that attribute takes the editor's layout with it: the
+   * content area stops being a bounded scroll container, large content
+   * stretches the editor, the page becomes the only scroll area, the toolbar
+   * and status bar travel with it and the editor never shows a scrollbar of
+   * its own. The height is therefore re-asserted on every change, so no such
+   * path — a plugin, a host page's own script — can leave the editor unbounded
+   * for longer than one edit.
    */
   ensureHeightBounds() {
-    if (this.destroyed || !this.root || !this._bounds) return;
-    const { min: e, max: t } = this._bounds;
-    this.root.style.minHeight === e && this.root.style.maxHeight === t || (this.root.style.minHeight = e, this.root.style.maxHeight = t);
+    if (this.destroyed || !this.wrapper || !this._bounds) return;
+    const { height: e, max: t } = this._bounds;
+    this.wrapper.style.height === e && this.wrapper.style.maxHeight === t || (this.wrapper.style.height = e, this.wrapper.style.maxHeight = t);
   }
   bindEvents() {
     this.root.addEventListener("input", () => {
@@ -2864,20 +2870,20 @@ class oe {
   }
 }
 const se = {
-  link: () => import("./LinkModule-Lleg82I-.js"),
-  image: () => import("./ImageModule-C30RoPBY.js"),
-  table: () => import("./TableModule-D2xp_gAc.js"),
+  link: () => import("./LinkModule-6HxE4Lal.js"),
+  image: () => import("./ImageModule-CjPJkaNl.js"),
+  table: () => import("./TableModule-BG0FLd7K.js"),
   codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-U1Plu-Bt.js"),
-  note: () => import("./NoteModule-CKubxqdq.js"),
-  media: () => import("./MediaModule-CmPoU8D_.js"),
+  find: () => import("./FindModule-DDqd2PGc.js"),
+  note: () => import("./NoteModule-CQj3qj7Z.js"),
+  media: () => import("./MediaModule-WEQ0O5KY.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar--VVUJOqA.js"),
+  statusBar: () => import("./StatusBar-D5CGP547.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BAbnz5xL.js"),
-  resize: () => import("./ResizeModule-B_NNJm2S.js")
+  templates: () => import("./TemplateModule-D2QE9Yd3.js"),
+  resize: () => import("./ResizeModule-rkE05Kfg.js")
 };
 Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -2924,4 +2930,4 @@ export {
   y as L,
   ae as W
 };
-//# sourceMappingURL=index-BD_mRa9A.js.map
+//# sourceMappingURL=index-Biyk3i6Z.js.map

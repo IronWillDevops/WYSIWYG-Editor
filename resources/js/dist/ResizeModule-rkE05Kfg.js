@@ -1,32 +1,30 @@
-import { L as o } from "./index-BD_mRa9A.js";
-const s = 120, r = 32;
-class d {
+import { L as s } from "./index-Biyk3i6Z.js";
+const n = 120, r = 32;
+class a {
   constructor(e) {
     this.editor = e, this.drag = null, this.handlePointerDown = this.handlePointerDown.bind(this), this.handlePointerMove = this.handlePointerMove.bind(this), this.handlePointerUp = this.handlePointerUp.bind(this), this.handleKeyDown = this.handleKeyDown.bind(this), this.buildDom(), this.bindEvents();
   }
   buildDom() {
-    this.el = document.createElement("div"), this.el.className = "ife-resize-handle", this.el.setAttribute("role", "separator"), this.el.setAttribute("aria-orientation", "horizontal"), this.el.setAttribute("aria-valuemin", String(s)), this.el.tabIndex = 0, this.updateAriaLabel(), this.editor.wrapper.appendChild(this.el);
+    this.el = document.createElement("div"), this.el.className = "ife-resize-handle", this.el.setAttribute("role", "separator"), this.el.setAttribute("aria-orientation", "horizontal"), this.el.setAttribute("aria-valuemin", String(n)), this.el.tabIndex = 0, this.updateAriaLabel(), this.editor.wrapper.appendChild(this.el);
   }
   bindEvents() {
     this.el.addEventListener("pointerdown", this.handlePointerDown), this.el.addEventListener("keydown", this.handleKeyDown);
   }
   updateAriaLabel() {
     const e = this.editor.options.locale ?? "en";
-    this.el.setAttribute("aria-label", o.t(e, "resizeHandle"));
+    this.el.setAttribute("aria-label", s.t(e, "resizeHandle"));
   }
   /**
-   * The content box height in px, measured from the live layout.
+   * The editor's box height in px, measured from the live layout.
    *
-   * `min-height`/`max-height` size the *content* box (box-sizing is
-   * content-box here), so the padding is excluded — otherwise the first drag
-   * step would jump by twice the padding.
+   * The height is applied to the wrapper (`box-sizing: border-box`), so the
+   * border is already part of the measurement — no padding arithmetic, and
+   * therefore no chance of the first drag step jumping.
    *
    * @returns {number}
    */
   getHeight() {
-    var n;
-    const e = this.editor.root, t = (n = window.getComputedStyle) == null ? void 0 : n.call(window, e), i = t ? (parseFloat(t.paddingTop) || 0) + (parseFloat(t.paddingBottom) || 0) : 0;
-    return (e.getBoundingClientRect().height || e.offsetHeight) - i;
+    return this.editor.wrapper.getBoundingClientRect().height || this.editor.wrapper.offsetHeight || 0;
   }
   /**
    * The single write path for a user-driven height: the option is the source
@@ -35,7 +33,7 @@ class d {
    * @param {number} height px
    */
   setHeight(e) {
-    const t = Math.max(s, Math.round(e));
+    const t = Math.max(n, Math.round(e));
     this.editor.options.height = t, this.editor.applyHeight(), this.updateAriaValue();
   }
   updateAriaValue() {
@@ -67,6 +65,6 @@ class d {
   }
 }
 export {
-  d as default
+  a as default
 };
-//# sourceMappingURL=ResizeModule-B_NNJm2S.js.map
+//# sourceMappingURL=ResizeModule-rkE05Kfg.js.map

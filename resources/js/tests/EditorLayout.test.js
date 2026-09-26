@@ -15,6 +15,12 @@ function ruleFor(selector) {
     return declarations(match[1]);
 }
 
+/** Whether a rule for `selector` exists at all. */
+function hasRule(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`^\\s*${escaped}\\s*\\{`, 'm').test(editorCss);
+}
+
 function declarations(block) {
     return Object.fromEntries(
         block
@@ -26,12 +32,16 @@ function declarations(block) {
 }
 
 /**
- * Guards the editor layout contract: the toolbar and status bar are pinned
- * flex items of the wrapper and `.ife-content` is the only scroll container.
+ * Guards the editor layout contract: the editor's own box is sized by the
+ * `height` option (inline, from `Editor.applyHeight`), the toolbar and status
+ * bar are pinned flex items of it, and `.ife-content` is the only flexible,
+ * self-scrolling part.
  *
- * The content bounds themselves come from the `height` option as inline
- * styles (Editor.buildDom); CSS must not reintroduce a competing height for
- * the content area, otherwise the layout stops being height-stable.
+ * The bound deliberately lives on the *box*, not on the content area: a bound
+ * on the innermost element is a floor nothing above it can lower, so a host box
+ * shorter than the configured height pushed the whole editor — content area and
+ * status bar — outside it, clipped and unreachable by the wrapper's
+ * `overflow: hidden`. CSS must not reintroduce a competing height either.
  */
 describe('editor layout stylesheet contract', () => {
     it('lays the editor out as a column so the bars keep their places', () => {
@@ -39,6 +49,9 @@ describe('editor layout stylesheet contract', () => {
         expect(wrapper.display).toBe('flex');
         expect(wrapper['flex-direction']).toBe('column');
         expect(wrapper.overflow).toBe('hidden');
+        // `height` is then the editor's visible height, border included, so the
+        // configured number needs no arithmetic to become the box it measures.
+        expect(wrapper['box-sizing']).toBe('border-box');
     });
 
     it('never compresses the toolbar, the table toolbar or the status bar', () => {
@@ -50,40 +63,85 @@ describe('editor layout stylesheet contract', () => {
     it('makes the content area the single scroll container that may shrink', () => {
         // `min-height: 0` is what allows a column flex item to shrink below its
         // content; without it the content keeps its full height, the page
-        // scrolls and the bars travel with it.
+        // scrolls and the bars travel with it. `flex: 1 1 auto` is what makes it
+        // take the space the bars leave rather than only as much as it needs.
         const content = ruleFor('.ife-content');
         expect(content.overflow).toBe('auto');
         expect(content['min-height']).toBe('0');
-        expect(content.flex).toBe('0 1 auto');
+        // `flex-basis: 0` keeps the base size at 0 instead of the content's
+        // height, which is what makes the wrapper's `min-content` floor come
+        // out as the two bars rather than as the whole document.
+        expect(content.flex).toBe('1 1 0');
     });
 
-    it('gives the configured height to the content area, not to the stylesheet', () => {
-        // The `height` option is applied inline by Editor.buildDom; a stylesheet
-        // height would either duplicate or override that single source.
+    it('gives the content area no height of its own', () => {
+        // The `height` option is applied to the wrapper by Editor.applyHeight; a
+        // height here would either duplicate that single source or — as a
+        // min-height — reintroduce a floor no host box can lower.
         const content = ruleFor('.ife-content');
         expect(content.height).toBeUndefined();
         expect(content['max-height']).toBeUndefined();
     });
 
-    it('lets the content fill the viewport in fullscreen', () => {
-        const fullscreen = ruleFor('.ife-wrapper.ife-fullscreen .ife-content');
-        expect(fullscreen.flex).toBe('1 1 auto');
-        expect(fullscreen['min-height']).toBe('0');
-        expect(fullscreen['max-height']).toBe('none');
+    it('lets the host box size the editor instead of the other way round', () => {
+        // `.ife-wrapper` is the box the `height` option sizes; these two
+        // declarations are what let a host box that is *shorter* win: it is
+        // capped at the host's definite height and, as a flex item, may shrink
+        // below its own content.
+        const wrapper = ruleFor('.ife-wrapper');
+        expect(wrapper['max-height']).toBe('100%');
+        expect(wrapper.flex).toBe('1 1 auto');
     });
 
-    it('lets the source view fill the viewport in fullscreen too', () => {
-        // The source view replaces the content area inside the wrapper, so it
-        // must not push the status bar out of a short fullscreen window.
-        const sourceView = ruleFor('.ife-wrapper.ife-fullscreen .ife-source-view');
+    it('never lets the editor shrink below its own bars', () => {
+        // The content area contributes nothing to the wrapper's min-content (it
+        // is a scroll container), so this floor is exactly toolbar + status bar.
+        // A host box smaller than the bars themselves — a 300px panel on a phone,
+        // where the toolbar wraps to several rows — used to squeeze the editing
+        // area to nothing and push the status bar past the bottom of the
+        // `overflow: hidden` wrapper, where it was clipped and unreachable.
+        expect(ruleFor('.ife-wrapper')['min-height']).toBe('min-content');
+    });
+
+    it('uses one content rule for both normal mode and fullscreen', () => {
+        // Fullscreen only changes what defines the box (`position: fixed;
+        // inset: 0`); the content area's own rule already fills whatever box it
+        // is given, so a mode-specific override would be duplicated CSS.
+        expect(hasRule('.ife-wrapper.ife-fullscreen .ife-content')).toBe(false);
+    });
+
+    it('gives the source view the same flexible, self-scrolling box', () => {
+        // It replaces the content area inside the wrapper, so the fixed
+        // `min-height` it used to carry grew the editor past its own box and
+        // pushed the status bar out of it.
+        const sourceView = ruleFor('.ife-source-view');
         expect(sourceView.flex).toBe('1 1 auto');
         expect(sourceView['min-height']).toBe('0');
+        expect(sourceView.overflow).toBe('auto');
+        expect(sourceView.height).toBeUndefined();
+        expect(hasRule('.ife-wrapper.ife-fullscreen .ife-source-view')).toBe(false);
+    });
+
+    it('leaves the source view no resize affordance of its own', () => {
+        // The editor's grip is the single height affordance (and it is hidden
+        // while the source view is open). A native `resize: vertical` could
+        // drag the textarea past the bottom of the `overflow: hidden` wrapper,
+        // clipping the status bar and the grip away with no way to reach them.
+        expect(ruleFor('.ife-source-view').resize).toBe('none');
     });
 
     it('keeps the fullscreen wrapper inside the viewport', () => {
         const fullscreen = ruleFor('.ife-wrapper.ife-fullscreen');
         expect(fullscreen.position).toBe('fixed');
         expect(fullscreen.inset).toBe('0');
+        // The box's height there is the one `Editor.applyHeight()` writes inline
+        // (a percentage of the viewport), so a height in this rule would either
+        // be a second source or — as `auto` — let the wrapper's `min-content`
+        // floor win: Chromium resolves a content-based min-height on an
+        // absolutely positioned box against the box's own content, which drops
+        // the `inset: 0` stretch and left fullscreen as tall as the two bars.
+        expect(fullscreen.height).toBeUndefined();
+        expect(fullscreen['max-height']).toBeUndefined();
     });
 
     it('anchors the resize grip to the wrapper instead of the viewport', () => {
@@ -104,10 +162,16 @@ describe('editor layout stylesheet contract', () => {
 
     it('lets the <x-editor> wrapper element shrink too', () => {
         // The component wraps the editor in its own div, so that div — not
-        // `.ife-wrapper` — is the box a flex/grid/table-cell parent sizes.
+        // `.ife-wrapper` — is the box a flex/grid/table-cell parent sizes. It
+        // has to pass that size down, which is what being a shrinkable column
+        // capped at the host's definite height does.
         const host = ruleFor('div[data-wysiwyg-editor-wrapper]');
+        expect(host.display).toBe('flex');
+        expect(host['flex-direction']).toBe('column');
         expect(host['min-width']).toBe('0');
         expect(host['max-width']).toBe('100%');
+        expect(host['min-height']).toBe('0');
+        expect(host['max-height']).toBe('100%');
     });
 
     it('lets an unbreakable run of text wrap inside the editor surface', () => {
@@ -140,8 +204,9 @@ describe('editor layout stylesheet contract', () => {
     });
 
     it('offers exactly one resize affordance per surface', () => {
-        // Fullscreen fills the window by definition, and the source view is
-        // itself a resizable textarea, so the grip is hidden in both.
+        // Fullscreen fills the window by definition, and the source view takes
+        // the content area's slot (its own resize is removed in CSS), so the
+        // grip is hidden in both.
         for (const selector of [
             '.ife-wrapper.ife-fullscreen .ife-resize-handle',
             '.ife-wrapper.ife-source-open .ife-resize-handle',
@@ -212,7 +277,37 @@ describe('editor layout with a mounted editor', () => {
         expect(after === null || after.classList.contains('ife-resize-handle')).toBe(true);
     });
 
-    it('keeps the configured content height when a large amount of text is inserted', async () => {
+    it('sizes the editor box, not the content area', () => {
+        // One place owns the height, and it is the box the host page constrains.
+        // The content area takes what is left between the two bars and scrolls.
+        const editor = mount();
+
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
+        expect(editor.root.style.height).toBe('');
+        expect(editor.root.style.maxHeight).toBe('');
+        expect(editor.root.style.minHeight).toBe('');
+    });
+
+    it('lets a host box that is shorter than the configured height win', () => {
+        // The regression: a bound on the content area is a floor nothing above
+        // it can lower, so a host box shorter than the configured height (a
+        // panel, a grid row, a `class` on the <x-editor> component) had the whole
+        // editor — content area *and* status bar — rendered outside it, clipped
+        // and unreachable by the wrapper's `overflow: hidden`. The chain from
+        // the host box down to the content area must therefore be shrinkable end
+        // to end, with `max-height: 100%` passing the host's height down.
+        for (const selector of ['div[data-wysiwyg-editor-wrapper]', '.ife-wrapper']) {
+            const block = ruleFor(selector);
+            expect(block['max-height'], selector).toBe('100%');
+        }
+        // The only height floor left in the chain is the one that lets the
+        // content area and the source view yield.
+        expect(ruleFor('.ife-content')['min-height']).toBe('0');
+        expect(ruleFor('.ife-source-view')['min-height']).toBe('0');
+    });
+
+    it('keeps the editor height when a large amount of text is inserted', async () => {
         const editor = mount();
         // The table module used to recompute this bound from viewport geometry
         // on every change, which made the editor resize with the page scroll.
@@ -225,11 +320,11 @@ describe('editor layout with a mounted editor', () => {
         editor.setHTML(bigHtml);
         editor.emitChange();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('keeps the configured content height after the text is deleted again', async () => {
+    it('keeps the editor height after the text is deleted again', async () => {
         const editor = mount();
         await vi.waitFor(() => expect(editor.module('table')).toBeDefined());
 
@@ -238,27 +333,27 @@ describe('editor layout with a mounted editor', () => {
         editor.setHTML('<p>Short again.</p>');
         editor.emitChange();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('leaves the content height alone when the window is resized', async () => {
+    it('leaves the editor height alone when the window is resized', async () => {
         const editor = mount();
         await vi.waitFor(() => expect(editor.module('table')).toBeDefined());
 
         window.dispatchEvent(new Event('resize'));
 
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
     it('falls back to the default height when the height option is unusable', () => {
         // An unusable value used to produce an invalid `height` declaration
-        // ("undefinedpx"), which the browser drops — leaving the content area
+        // ("undefinedpx"), which the browser drops — leaving the editor
         // unbounded, i.e. no inner scrollbar and bars that travel with the page.
         for (const height of [undefined, null, '', 'tall', -10, NaN]) {
             const editor = mount({ height });
-            expect(editor.root.style.maxHeight, `height: ${String(height)}`).toBe('420px');
-            expect(editor.root.style.minHeight, `height: ${String(height)}`).toBe('420px');
+            expect(editor.wrapper.style.height, `height: ${String(height)}`).toBe('420px');
+            expect(editor.wrapper.style.maxHeight, `height: ${String(height)}`).toBe('420px');
             WysiwygEditor.destroyAll();
         }
     });
@@ -275,45 +370,52 @@ describe('editor layout with a mounted editor', () => {
             [600, '600px'],
         ]) {
             const editor = mount({ height });
-            expect(editor.root.style.maxHeight, `height: ${String(height)}`).toBe(expected);
-            expect(editor.root.style.minHeight, `height: ${String(height)}`).toBe(expected);
+            expect(editor.wrapper.style.height, `height: ${String(height)}`).toBe(expected);
+            expect(editor.wrapper.style.maxHeight, `height: ${String(height)}`).toBe(expected);
             WysiwygEditor.destroyAll();
         }
     });
 
     it('rejects a relative height, which would compute to no bound at all', () => {
         // `max-height: 100%` against a parent of `height: auto` computes to
-        // `none` — the exact unbounded editor the bounds exist to prevent.
+        // `none` — the exact unbounded editor the bounds exist to prevent. The
+        // stylesheet still uses `max-height: 100%` on the wrapper, but only so a
+        // *definite* host height can win, which is the opposite case.
         const editor = mount({ height: '100%' });
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('keeps the configured content height after a fullscreen round trip', async () => {
+    it('hands the box over to fullscreen and takes it back on exit', async () => {
         const editor = mount();
         // The module is loaded asynchronously, so wait for it to be registered.
         await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
         const fullscreen = editor.module('fullscreen');
 
         await fullscreen.toggle();
-        expect(editor.root.style.maxHeight).toBe('none');
-        expect(editor.root.style.minHeight).toBe('0');
+        // The box is handed to the viewport. It must be a percentage and not
+        // `auto`: the box's floor is `min-content` (its own bars), and
+        // Chromium resolves a content-based min-height on an absolutely
+        // positioned box against the box's own content, which drops the
+        // `position: fixed; inset: 0` stretch and left fullscreen exactly as
+        // tall as the two bars.
+        expect(editor.wrapper.style.height).toBe('100%');
+        expect(editor.wrapper.style.maxHeight).toBe('none');
 
         await fullscreen.toggle();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('keeps the configured content height when the exit is repeated', async () => {
+    it('keeps the editor height when the fullscreen exit is repeated', async () => {
         // Leaving fullscreen by the toolbar button *and* the native
-        // `fullscreenchange` event both run the exit path. The bounds used to
-        // be snapshotted on the way in and restored — then cleared — on the
-        // way out, so the second run wrote the empty snapshot over the
-        // editor's own bounds and the content area grew with the document from
-        // then on: no inner scrollbar, and the toolbar and status bar scrolled
-        // away with the page.
+        // `fullscreenchange` event both run the exit path. The height used to be
+        // snapshotted on the way in and restored — then cleared — on the way
+        // out, so the second run wrote the empty snapshot over the editor's own
+        // height and the editor grew with the document from then on: no inner
+        // scrollbar, and the toolbar and status bar scrolled away with the page.
         const editor = mount();
         await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
         const fullscreen = editor.module('fullscreen');
@@ -323,13 +425,13 @@ describe('editor layout with a mounted editor', () => {
         fullscreen.handleChange();
         fullscreen.handleChange();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
-        expect(editor.root.style.minHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
 
         editor.setHTML(Array.from({ length: 50 }, (_, i) => `<p>Paragraph ${i}</p>`).join(''));
         editor.emitChange();
 
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
     });
 
     /** Selects the whole editing surface, as Ctrl+A does. */
@@ -342,23 +444,24 @@ describe('editor layout with a mounted editor', () => {
         editor.selection.save();
     }
 
-    it('keeps the content bounds when a select-all is cleared of formatting', () => {
-        // "Clear formatting" treated the editing surface as a formatting
-        // target and stripped its style attribute — which is where the height
-        // bounds live. The editor was then unbounded, so a large paste grew it
-        // instead of scrolling inside: the page became the only scroll area, the
-        // toolbar and status bar travelled with it, and no scrollbar appeared.
+    it('keeps the editor height when a select-all is cleared of formatting', () => {
+        // "Clear formatting" used to treat the editing surface as a formatting
+        // target and strip its style attribute, which is where the height lived
+        // before the bound moved to the box. The editor was then unbounded, so a
+        // large paste grew it instead of scrolling inside: the page became the
+        // only scroll area, the toolbar and status bar travelled with it, and no
+        // scrollbar appeared.
         const editor = mount();
         editor.setHTML('<p><span style="color: red;">red</span> text</p>');
         selectAll(editor);
 
         editor.commands.clearInlineStyles();
 
-        expect(editor.root.style.minHeight).toBe('420px');
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('keeps the content bounds when a select-all has a colour cleared', () => {
+    it('keeps the editor height when a select-all has a colour cleared', () => {
         // Same hazard through the colour picker's "clear" control: it swept the
         // selection's common ancestor, which is the editing surface itself.
         const editor = mount();
@@ -367,8 +470,8 @@ describe('editor layout with a mounted editor', () => {
 
         editor.commands.clearColor('color');
 
-        expect(editor.root.style.minHeight).toBe('420px');
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
     it('still clears the content formatting around a select-all', () => {
@@ -385,53 +488,50 @@ describe('editor layout with a mounted editor', () => {
         expect(editor.root.textContent).toContain('red');
     });
 
-    it('restores the content bounds when something drops them', () => {
-        // Defence in depth: whatever clears the inline bounds (a command, a
-        // plugin, a host page's own script) can no longer leave the editor
-        // unbounded — the next change re-asserts them, so a following large
-        // paste scrolls inside the editor again.
+    it('restores the editor height when something drops it', () => {
+        // Defence in depth: whatever clears the inline height (a plugin, a host
+        // page's own script) can no longer leave the editor unbounded — the next
+        // change re-asserts it, so a following large paste scrolls inside again.
         const editor = mount();
-        editor.root.style.minHeight = '';
-        editor.root.style.maxHeight = '';
-        editor.root.removeAttribute('style');
+        editor.wrapper.removeAttribute('style');
 
         editor.setHTML(Array.from({ length: 50 }, (_, i) => `<p>Paragraph ${i}</p>`).join(''));
 
-        expect(editor.root.style.minHeight).toBe('420px');
-        expect(editor.root.style.maxHeight).toBe('420px');
+        expect(editor.wrapper.style.height).toBe('420px');
+        expect(editor.wrapper.style.maxHeight).toBe('420px');
     });
 
-    it('leaves the fullscreen bounds alone while restoring the dropped ones', async () => {
-        // The guard must re-assert the *current* mode's bounds, not always the
-        // configured height: in fullscreen the content area fills the window.
+    it('leaves the fullscreen height alone while restoring the dropped one', async () => {
+        // The guard must re-assert the *current* mode's height, not always the
+        // configured one: in fullscreen the box is defined by the viewport.
         const editor = mount();
         await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
 
         await editor.module('fullscreen').toggle();
-        editor.root.style.minHeight = '123px';
-        editor.root.style.maxHeight = '123px';
+        editor.wrapper.style.height = '123px';
+        editor.wrapper.style.maxHeight = '123px';
 
         editor.emitChange();
 
-        expect(editor.root.style.minHeight).toBe('0');
-        expect(editor.root.style.maxHeight).toBe('none');
+        expect(editor.wrapper.style.height).toBe('100%');
+        expect(editor.wrapper.style.maxHeight).toBe('none');
     });
 
-    it('keeps the content bounds on every change, not just the first', async () => {
-        // The bounds belong to the editor, so a long editing session that
-        // re-applies them (drag resize, undo/redo, formatting) must not
+    it('keeps the editor height on every change, not just the first', async () => {
+        // The height belongs to the editor, so a long editing session that
+        // re-applies it (drag resize, undo/redo, formatting) must not
         // accumulate a second, competing height.
         const editor = mount();
         await vi.waitFor(() => expect(editor.module('resize')).toBeDefined());
 
         editor.module('resize').setHeight(600);
-        expect(editor.root.style.maxHeight).toBe('600px');
+        expect(editor.wrapper.style.height).toBe('600px');
 
         editor.emitChange();
         editor.setHTML('<p>short</p>');
         editor.emitChange();
 
-        expect(editor.root.style.minHeight).toBe('600px');
-        expect(editor.root.style.maxHeight).toBe('600px');
+        expect(editor.wrapper.style.height).toBe('600px');
+        expect(editor.wrapper.style.maxHeight).toBe('600px');
     });
 });

@@ -29,10 +29,14 @@ return [
     | Editor height
     |--------------------------------------------------------------------------
     |
-    | Height of the editing area in pixels, or any CSS length that does not
-    | depend on a parent box ("600", "600px", "40rem", "75vh"). The content
-    | area never grows past it: larger content scrolls inside the editor, so
-    | the toolbar and status bar stay put. Overridable per instance with the
+    | Height of the editor in pixels, or any CSS length that does not depend on
+    | a parent box ("600", "600px", "40rem", "75vh"). It sizes the editor's own
+    | box, toolbar and status bar included, and is the only thing that does:
+    | the editing area takes the space left between the two bars and never
+    | grows past it, so larger content scrolls inside the editor while the bars
+    | stay put. A host box that is shorter than this (a panel, a grid row, a
+    | `class` on the <x-editor> component) wins over it and the editing area
+    | scrolls in whatever room there is. Overridable per instance with the
     | `height` prop of the <x-editor> component, or by dragging the editor's
     | resize grip.
     |

@@ -10,10 +10,10 @@ const KEYBOARD_STEP = 32;
  *
  * The grip is chrome only — it owns no layout. Every height it produces is
  * written back into the `height` option and then applied by
- * `Editor.applyHeight()`, the single place allowed to size the content area.
- * A manual resize therefore follows exactly the same path as the configured
- * height, so the bounds survive fullscreen, code view, module reloads and
- * `destroy()`, and there is no second, competing height mechanism.
+ * `Editor.applyHeight()`, the single place allowed to size the editor. A manual
+ * resize therefore follows exactly the same path as the configured height, so
+ * the bounds survive fullscreen, code view, module reloads and `destroy()`,
+ * and there is no second, competing height mechanism.
  */
 export default class ResizeModule {
     constructor(editor) {
@@ -58,21 +58,16 @@ export default class ResizeModule {
     }
 
     /**
-     * The content box height in px, measured from the live layout.
+     * The editor's box height in px, measured from the live layout.
      *
-     * `min-height`/`max-height` size the *content* box (box-sizing is
-     * content-box here), so the padding is excluded — otherwise the first drag
-     * step would jump by twice the padding.
+     * The height is applied to the wrapper (`box-sizing: border-box`), so the
+     * border is already part of the measurement — no padding arithmetic, and
+     * therefore no chance of the first drag step jumping.
      *
      * @returns {number}
      */
     getHeight() {
-        const root = this.editor.root;
-        const styles = window.getComputedStyle?.(root);
-        const padding = styles
-            ? (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0)
-            : 0;
-        return (root.getBoundingClientRect().height || root.offsetHeight) - padding;
+        return this.editor.wrapper.getBoundingClientRect().height || this.editor.wrapper.offsetHeight || 0;
     }
 
     /**

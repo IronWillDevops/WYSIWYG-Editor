@@ -412,14 +412,14 @@ export default class Commands {
      * the selection's own container (only when it carries inline styles) plus
      * its descendants.
      *
-     * The editing surface itself is never a target. `.ife-content` keeps the
-     * editor's height bounds in its inline `min-height`/`max-height` (see
-     * `Editor.applyHeight`), and a select-all made that container the root —
-     * "clear formatting" then stripped the whole style attribute off it, which
-     * left the editor unbounded: large content (a big paste, a long document)
-     * grew the editor instead of scrolling inside it, the page became the only
-     * scroll area, the toolbar and status bar travelled with it and the editor
-     * had no scrollbar of its own.
+     * The editing surface itself is never a target. A select-all makes it the
+     * container the sweep starts from, and "clear formatting" then stripped its
+     * whole style attribute — which is the element the content itself is
+     * styled through, so host code that reads or relies on those styles (and
+     * any future layout bound written there) lost them in one keystroke. The
+     * editor's own height lives on the wrapper (see `Editor.applyHeight`), so
+     * the layout is safe either way; this keeps the surface's own attributes
+     * out of a command that is meant to clear the *content's* formatting.
      *
      * @param {HTMLElement} container the selection's common-ancestor element
      * @returns {HTMLElement[]}
@@ -741,8 +741,8 @@ export default class Commands {
 
         candidates.forEach((el) => {
             if (!this.root.contains(el) || !range.intersectsNode(el)) return;
-            // Belt and braces: the editing surface holds the editor's height
-            // bounds in its style attribute, so it is never stripped.
+            // Belt and braces: the editing surface is the container a select-all
+            // starts from, and it is never the content's formatting to clear.
             if (el === this.root) return;
             el.removeAttribute('style');
             if (['SPAN', 'FONT'].includes(el.tagName) && el.attributes.length === 0) {
