@@ -47,10 +47,13 @@ proper Laravel package with a one-line Blade component.
   thing that sizes the editor — it is never silently re-fitted to the viewport
   as the page scrolls — and a host box that is shorter than it wins over it: put
   the editor in a panel, a grid row or on a fixed-height `class` and the editing
-  area scrolls in the room there is, with the status bar still at the bottom. The
-  editor also never grows wider than the box that holds it: long unbreakable
-  text (a URL, a base64 blob, minified code) wraps inside the content area
-  instead of pushing the bars and the scrollbar off-screen.
+  area scrolls in the room there is, with the status bar still at the bottom. A
+  host that bounds itself with `max-height` and hides the overflow works the same
+  way — the editor measures the room left inside the clip instead of being cut
+  off by it, and follows it when the host is resized. The editor also never
+  grows wider than the box that holds it: long unbreakable text (a URL, a
+  base64 blob, minified code) wraps inside the content area instead of pushing
+  the bars and the scrollbar off-screen.
 - **Manual height resize** — a grip on the editor's bottom edge
   (mouse, touch or the arrow keys once focused) changes the height. It writes
   the same `height` option, so the toolbar, status bar and internal scrollbar
@@ -315,8 +318,9 @@ it accepts a pixel number or any CSS length that does not depend on a parent box
 toolbar and status bar included — and the editing area takes the rest and
 scrolls inside it, so larger content never grows the editor. A host box that is
 shorter than `height` (a panel, a grid row, a `class` on the component) wins
-over it and the editing area scrolls in whatever room there is. The grip on the
-editor's bottom edge overrides the value per instance.
+over it and the editing area scrolls in whatever room there is — including a
+host that only bounds itself with `max-height` and clips, which the editor
+measures. The grip on the editor's bottom edge overrides the value per instance.
 
 ## JavaScript API
 

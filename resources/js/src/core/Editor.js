@@ -90,6 +90,7 @@ export default class Editor {
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
         this.applyTheme(this.options.theme);
+        this.observeClippingHost();
 
         this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300);
         this.loadPlugins().catch((err) => {
@@ -112,13 +113,15 @@ export default class Editor {
         this.root.className = 'ife-content';
         this.root.contentEditable = 'true';
         this.root.spellcheck = true;
-        this.applyHeight();
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
 
         this.wrapper.appendChild(this.root);
         this.textarea.insertAdjacentElement('afterend', this.wrapper);
+        // Applied once the box is in the document, so a host that clips the
+        // editor is measured against its real geometry instead of nothing.
+        this.applyHeight();
     }
 
     /**
@@ -144,6 +147,9 @@ export default class Editor {
      * the option instead of being snapshotted, so no number of fullscreen round
      * trips (or a native Esc) can leave the editor without it.
      *
+     * The height is a *max* as well, and that is what a host that clips without
+     * declaring a height needs: see `hostRoom()`.
+     *
      * A `height` that cannot size a box (missing, a keyword, a relative
      * length) falls back to the default instead of emitting a declaration the
      * browser drops, which would leave the editor unbounded.
@@ -164,9 +170,89 @@ export default class Editor {
         // tall as the two bars. A percentage resolves against the viewport in
         // both the fullscreen element and the class fallback, with no
         // dependence on the insets at all.
-        this._bounds = fullscreen ? { height: '100%', max: 'none' } : { height, max: height };
+        this._fullscreen = fullscreen;
+        // A clipping host may only *lower* the bound, so its room goes in as a
+        // `min()` rather than as a replacement: the configured height stays the
+        // editor's height, and a host with room to spare (or none at all) leaves
+        // the declaration exactly as it was.
+        const room = fullscreen ? null : this.hostRoom();
+        this._bounds = fullscreen
+            ? { height: '100%', max: 'none' }
+            : { height, max: room ? `min(${height}, ${room})` : height };
         this.wrapper.style.height = this._bounds.height;
         this.wrapper.style.maxHeight = this._bounds.max;
+    }
+
+    /**
+     * The nearest ancestor that would *hide* part of the editor's box.
+     *
+     * The stylesheet passes a host's height down with `max-height: 100%`, which
+     * only works when that host has a *definite* height. A host that bounds
+     * itself some other way has none to pass down: `max-h-80 overflow-hidden`
+     * (a card, a modal body, a scroll pane wrapped in `overflow-hidden`) keeps
+     * its box at an auto height that merely has a ceiling, so the editor stayed
+     * at its configured height and the rest of it — the bottom of the content
+     * area and the whole status bar — was clipped away with no way to scroll to
+     * it. Such a host is found by measurement instead.
+     *
+     * A *scrollable* ancestor (`auto`/`scroll`) is deliberately not one of them:
+     * there nothing is lost, the editor stays as tall as it is and the host
+     * scrolls, which is the host's business to decide.
+     *
+     * @returns {HTMLElement|null}
+     */
+    clippingAncestor() {
+        for (let el = this.wrapper?.parentElement; el; el = el.parentElement) {
+            const style = window.getComputedStyle?.(el);
+            if (!style) return null;
+            const overflow = style.overflowY || style.overflow || 'visible';
+            if (overflow === 'hidden' || overflow === 'clip') return el;
+            if (overflow === 'auto' || overflow === 'scroll') return null;
+        }
+        return null;
+    }
+
+    /**
+     * The room a clipping host leaves for the box, as a CSS length.
+     *
+     * Measured from the editor's own top edge to the bottom of the clip, so it
+     * is the height the box may occupy in place — everything above the editor in
+     * that host is the host's business.
+     *
+     * No room to measure is not a reason to shrink: a closed tab, a panel that
+     * is not on screen yet or a box that is not in the document clips nothing,
+     * and `observeClippingHost()` re-measures as soon as there is one.
+     *
+     * @returns {string|null}
+     */
+    hostRoom() {
+        const clip = this.clippingAncestor();
+        if (!clip) return null;
+        const room = clip.getBoundingClientRect().bottom - this.wrapper.getBoundingClientRect().top;
+        return room > 0 ? `${Math.floor(room)}px` : null;
+    }
+
+    /**
+     * Keeps the box inside a host that clips it as the host changes size.
+     *
+     * The room a clipping host leaves is geometry, not CSS, so it has to be
+     * re-measured when the host is: a sidebar opening, a modal resizing, a
+     * window resize. The observer watches only the clipping ancestor, so an
+     * ordinary page — which has none — costs nothing, and the editor never
+     * observes itself, so re-applying the height cannot feed the observer.
+     */
+    observeClippingHost() {
+        this.stopObservingClippingHost();
+        if (typeof ResizeObserver === 'undefined') return;
+        const clip = this.clippingAncestor();
+        if (!clip) return;
+        this._clipObserver = new ResizeObserver(() => this.applyHeight(this._fullscreen));
+        this._clipObserver.observe(clip);
+    }
+
+    stopObservingClippingHost() {
+        this._clipObserver?.disconnect();
+        this._clipObserver = null;
     }
 
     /**
@@ -878,6 +964,7 @@ export default class Editor {
         this.destroyed = true;
         this.plugins.forEach((instance) => instance?.destroy?.());
         this.events.emit('destroy', this);
+        this.stopObservingClippingHost();
         clearInterval(this.autosaveTimer);
         clearTimeout(this._debounceTimer);
         document.removeEventListener('keydown', this.handleShortcut);

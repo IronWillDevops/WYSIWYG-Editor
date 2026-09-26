@@ -535,3 +535,180 @@ describe('editor layout with a mounted editor', () => {
         expect(editor.wrapper.style.maxHeight).toBe('600px');
     });
 });
+
+/**
+ * A host that hides part of the editor without declaring a height: the card
+ * that bounds itself with `max-height` and clips with `overflow: hidden`.
+ *
+ * `max-height: 100%` cannot help there — a percentage against a parent of
+ * `height: auto` computes to `none`, and a `max-height` is not a height the
+ * child can resolve against — so the box has to be measured against the clip.
+ * Without it the editor stayed at its configured height and everything below
+ * the clip, the status bar included, was cut away with no way to scroll to it.
+ */
+describe('editor inside a host that clips it', () => {
+    const box = (x1, y1, x2, y2) => ({
+        x: x1, y: y1, top: y1, left: x1, right: x2, bottom: y2, width: x2 - x1, height: y2 - y1,
+    });
+
+    class FakeResizeObserver {
+        static instances = [];
+
+        constructor(callback) {
+            this.callback = callback;
+            this.observed = [];
+            this.disconnected = false;
+            FakeResizeObserver.instances.push(this);
+        }
+
+        observe(element) {
+            this.observed.push(element);
+        }
+
+        disconnect() {
+            this.disconnected = true;
+        }
+    }
+
+    /**
+     * Mounts the editor the way the <x-editor> component renders it, inside a
+     * host with the given `overflow`, and gives the host and the box a geometry
+     * jsdom cannot compute.
+     *
+     * @param {{overflow: string, clipBottom: number, editorTop?: number}} layout
+     * @param {object} [options] editor options
+     */
+    function mountInHost({ overflow, clipBottom, editorTop = 16 }, options = {}) {
+        document.body.innerHTML = `
+            <div id="clip" style="max-height: ${clipBottom}px; overflow: ${overflow}">
+                <div data-wysiwyg-editor-wrapper>
+                    <textarea id="target">start</textarea>
+                </div>
+            </div>`;
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function rect() {
+            if (this.id === 'clip') return box(0, 0, 900, clipBottom);
+            if (this.classList?.contains('ife-wrapper')) return box(0, editorTop, 900, editorTop + 500);
+            return box(0, 0, 0, 0);
+        });
+        return WysiwygEditor.init('#target', { height: 500, ...options });
+    }
+
+    beforeEach(() => {
+        vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+        FakeResizeObserver.instances = [];
+    });
+
+    afterEach(() => {
+        WysiwygEditor.destroyAll();
+        document.body.innerHTML = '';
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    it('caps the box at the room the clipping host leaves', () => {
+        // The clip ends 16px below the editor's top edge, so 288px is all there
+        // is. `height` stays the configured value — the cap is what the host
+        // allows, and the content area scrolls in the room that is left.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 304 });
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 288px)');
+    });
+
+    it('leaves the configured height alone when the host does not clip', () => {
+        const editor = mountInHost({ overflow: 'visible', clipBottom: 304 });
+
+        expect(editor.wrapper.style.maxHeight).toBe('500px');
+    });
+
+    it('leaves the configured height alone inside a scrollable host', () => {
+        // Nothing is lost here: the host scrolls, which is its business to
+        // decide. Capping the editor to a scroll pane would shrink it for no
+        // reason.
+        const editor = mountInHost({ overflow: 'auto', clipBottom: 304 });
+
+        expect(editor.wrapper.style.maxHeight).toBe('500px');
+    });
+
+    it('leaves the configured height alone when the host has room to spare', () => {
+        // A host may only lower the bound, never raise it: 884px of room is not
+        // a reason for a 500px editor to become an 884px one.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 900 });
+
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 884px)');
+        expect(editor.wrapper.style.height).toBe('500px');
+    });
+
+    it('never shrinks the box below its own bars', () => {
+        // The `min-content` floor in the stylesheet, not the cap: a host with
+        // 40px of room still shows both bars and scrolls the content area, and
+        // the page takes the difference rather than hiding the status bar.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 56 });
+
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 40px)');
+        expect(ruleFor('.ife-wrapper')['min-height']).toBe('min-content');
+    });
+
+    it('does not shrink the box while there is no room to measure', () => {
+        // A closed tab or an off-screen panel clips nothing, so measuring it
+        // must not collapse the editor; the observer re-measures when it opens.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 0 });
+
+        expect(editor.wrapper.style.maxHeight).toBe('500px');
+    });
+
+    it('re-measures the clipping host when it is resized', () => {
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 304 });
+        const observer = FakeResizeObserver.instances[0];
+        expect(observer.observed).toEqual([document.getElementById('clip')]);
+
+        // The host shrinks (a sidebar opens, a modal is resized).
+        document.getElementById('clip').getBoundingClientRect = () => box(0, 0, 900, 204);
+        observer.callback();
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 188px)');
+    });
+
+    it('watches nothing when the host does not clip', () => {
+        mountInHost({ overflow: 'visible', clipBottom: 304 });
+
+        expect(FakeResizeObserver.instances).toHaveLength(0);
+    });
+
+    it('stops watching the clipping host when the editor is destroyed', () => {
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 304 });
+        const observer = FakeResizeObserver.instances[0];
+
+        editor.destroy();
+
+        expect(observer.disconnected).toBe(true);
+    });
+
+    it('re-asserts the cap on every change, like the height itself', () => {
+        // The cap is part of the bound, so a plugin or a host script that
+        // rewrites the wrapper's style attribute cannot hand the editor back
+        // the height the clip is about to cut away.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 304 });
+        editor.wrapper.removeAttribute('style');
+
+        editor.setHTML('<p>edited</p>');
+        editor.emitChange();
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 288px)');
+    });
+
+    it('does not cap the fullscreen box against the host', async () => {
+        // In fullscreen the box is the viewport and no ancestor clips it, so
+        // the cap the host would impose has to get out of the way.
+        const editor = mountInHost({ overflow: 'hidden', clipBottom: 304 });
+        await vi.waitFor(() => expect(editor.module('fullscreen')).toBeDefined());
+
+        await editor.module('fullscreen').toggle();
+        expect(editor.wrapper.style.maxHeight).toBe('none');
+
+        await editor.module('fullscreen').toggle();
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 288px)');
+    });
+});

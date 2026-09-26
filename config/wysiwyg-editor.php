@@ -36,9 +36,10 @@ return [
     | grows past it, so larger content scrolls inside the editor while the bars
     | stay put. A host box that is shorter than this (a panel, a grid row, a
     | `class` on the <x-editor> component) wins over it and the editing area
-    | scrolls in whatever room there is. Overridable per instance with the
-    | `height` prop of the <x-editor> component, or by dragging the editor's
-    | resize grip.
+    | scrolls in whatever room there is — including a host that bounds itself
+    | with a `max-height` and hides the overflow, whose room the editor measures
+    | rather than being cut off by. Overridable per instance with the `height`
+    | prop of the <x-editor> component, or by dragging the editor's resize grip.
     |
     */
 

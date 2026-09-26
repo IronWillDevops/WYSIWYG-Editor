@@ -273,7 +273,7 @@ class P {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const z = /* @__PURE__ */ new Set([
+const O = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -296,7 +296,7 @@ function _(l) {
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
 function V(l) {
-  return z.has(_(l));
+  return O.has(_(l));
 }
 function F(l) {
   return N.has(_(l));
@@ -1420,7 +1420,7 @@ class X {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
     const n = t[1].toLowerCase(), i = _(t[2]);
-    return n === "color" ? z.has(i) : n === "background-color" ? N.has(i) : n === "background" ? this.isSolidBalancedColor(i) && N.has(i) : !1;
+    return n === "color" ? O.has(i) : n === "background-color" ? N.has(i) : n === "background" ? this.isSolidBalancedColor(i) && N.has(i) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1477,13 +1477,13 @@ class x {
       maxSteps: ((n = this.options.history) == null ? void 0 : n.max_steps) ?? 1e3,
       debounceMs: ((i = this.options.history) == null ? void 0 : i.debounce_ms) ?? 300,
       onChange: (o) => this.events.emit(o)
-    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleBackspaceDelete = this.handleBackspaceDelete.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((o) => {
+    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleBackspaceDelete = this.handleBackspaceDelete.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this.observeClippingHost(), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((o) => {
       console.error("WYSIWYG Editor: plugin loading failed", o);
     }), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
-    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.applyHeight(), this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper);
+    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper), this.applyHeight();
   }
   /**
    * Applies the `height` option to the editor's own box — the only thing
@@ -1508,6 +1508,9 @@ class x {
    * the option instead of being snapshotted, so no number of fullscreen round
    * trips (or a native Esc) can leave the editor without it.
    *
+   * The height is a *max* as well, and that is what a host that clips without
+   * declaring a height needs: see `hostRoom()`.
+   *
    * A `height` that cannot size a box (missing, a keyword, a relative
    * length) falls back to the default instead of emitting a declaration the
    * browser drops, which would leave the editor unbounded.
@@ -1517,7 +1520,75 @@ class x {
   applyHeight(e = !1) {
     if (!this.wrapper) return;
     const t = K(this.options.height) ?? `${M.height}px`;
-    this._bounds = e ? { height: "100%", max: "none" } : { height: t, max: t }, this.wrapper.style.height = this._bounds.height, this.wrapper.style.maxHeight = this._bounds.max;
+    this._fullscreen = e;
+    const n = e ? null : this.hostRoom();
+    this._bounds = e ? { height: "100%", max: "none" } : { height: t, max: n ? `min(${t}, ${n})` : t }, this.wrapper.style.height = this._bounds.height, this.wrapper.style.maxHeight = this._bounds.max;
+  }
+  /**
+   * The nearest ancestor that would *hide* part of the editor's box.
+   *
+   * The stylesheet passes a host's height down with `max-height: 100%`, which
+   * only works when that host has a *definite* height. A host that bounds
+   * itself some other way has none to pass down: `max-h-80 overflow-hidden`
+   * (a card, a modal body, a scroll pane wrapped in `overflow-hidden`) keeps
+   * its box at an auto height that merely has a ceiling, so the editor stayed
+   * at its configured height and the rest of it — the bottom of the content
+   * area and the whole status bar — was clipped away with no way to scroll to
+   * it. Such a host is found by measurement instead.
+   *
+   * A *scrollable* ancestor (`auto`/`scroll`) is deliberately not one of them:
+   * there nothing is lost, the editor stays as tall as it is and the host
+   * scrolls, which is the host's business to decide.
+   *
+   * @returns {HTMLElement|null}
+   */
+  clippingAncestor() {
+    var e, t;
+    for (let n = (e = this.wrapper) == null ? void 0 : e.parentElement; n; n = n.parentElement) {
+      const i = (t = window.getComputedStyle) == null ? void 0 : t.call(window, n);
+      if (!i) return null;
+      const o = i.overflowY || i.overflow || "visible";
+      if (o === "hidden" || o === "clip") return n;
+      if (o === "auto" || o === "scroll") return null;
+    }
+    return null;
+  }
+  /**
+   * The room a clipping host leaves for the box, as a CSS length.
+   *
+   * Measured from the editor's own top edge to the bottom of the clip, so it
+   * is the height the box may occupy in place — everything above the editor in
+   * that host is the host's business.
+   *
+   * No room to measure is not a reason to shrink: a closed tab, a panel that
+   * is not on screen yet or a box that is not in the document clips nothing,
+   * and `observeClippingHost()` re-measures as soon as there is one.
+   *
+   * @returns {string|null}
+   */
+  hostRoom() {
+    const e = this.clippingAncestor();
+    if (!e) return null;
+    const t = e.getBoundingClientRect().bottom - this.wrapper.getBoundingClientRect().top;
+    return t > 0 ? `${Math.floor(t)}px` : null;
+  }
+  /**
+   * Keeps the box inside a host that clips it as the host changes size.
+   *
+   * The room a clipping host leaves is geometry, not CSS, so it has to be
+   * re-measured when the host is: a sidebar opening, a modal resizing, a
+   * window resize. The observer watches only the clipping ancestor, so an
+   * ordinary page — which has none — costs nothing, and the editor never
+   * observes itself, so re-applying the height cannot feed the observer.
+   */
+  observeClippingHost() {
+    if (this.stopObservingClippingHost(), typeof ResizeObserver > "u") return;
+    const e = this.clippingAncestor();
+    e && (this._clipObserver = new ResizeObserver(() => this.applyHeight(this._fullscreen)), this._clipObserver.observe(e));
+  }
+  stopObservingClippingHost() {
+    var e;
+    (e = this._clipObserver) == null || e.disconnect(), this._clipObserver = null;
   }
   /**
    * Re-asserts the editor's box after a change.
@@ -1731,8 +1802,8 @@ class x {
         r.textContent = d;
         const p = document.createElement("p");
         if (g ? p.textContent = g : p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), !a.textContent.trim()) {
-          const b = a.parentNode, O = document.createTextNode("");
-          b.replaceChild(O, a);
+          const b = a.parentNode, z = document.createTextNode("");
+          b.replaceChild(z, a);
         }
         const f = document.createRange(), v = p.firstChild || p;
         f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f);
@@ -1929,7 +2000,7 @@ class x {
     this.destroyed || (this.destroyed = !0, this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), clearTimeout(this._debounceTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleEnter), document.removeEventListener("keydown", this.handleBackspaceDelete), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
+    }), this.events.emit("destroy", this), this.stopObservingClippingHost(), clearInterval(this.autosaveTimer), clearTimeout(this._debounceTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleEnter), document.removeEventListener("keydown", this.handleBackspaceDelete), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
   }
   /**
    * @param {string} event
@@ -1994,7 +2065,7 @@ const u = (l) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   listProps: u('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
   paragraph: u('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
-class J {
+class Y {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -2057,7 +2128,7 @@ class J {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const Y = {
+const J = {
   blockFormat: {
     icon: m.paragraph,
     label: "Block format",
@@ -2262,7 +2333,7 @@ const Y = {
                         <option value="upper-roman" ${i === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, s = new J(l.wrapper, {
+            `, s = new Y(l.wrapper, {
         title: "List properties",
         bodyHtml: o,
         confirmLabel: "Apply",
@@ -2724,7 +2795,7 @@ class oe {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const i = Y[n];
+        const i = J[n];
         if (!i) return;
         const o = this.buildControl(n, i);
         o && t.appendChild(o);
@@ -2870,20 +2941,20 @@ class oe {
   }
 }
 const se = {
-  link: () => import("./LinkModule-6HxE4Lal.js"),
-  image: () => import("./ImageModule-CjPJkaNl.js"),
-  table: () => import("./TableModule-BG0FLd7K.js"),
+  link: () => import("./LinkModule-DP-pPt5x.js"),
+  image: () => import("./ImageModule-CUNKSAtT.js"),
+  table: () => import("./TableModule-CnX3hezA.js"),
   codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-DDqd2PGc.js"),
-  note: () => import("./NoteModule-CQj3qj7Z.js"),
-  media: () => import("./MediaModule-WEQ0O5KY.js"),
+  find: () => import("./FindModule-C1tOciLg.js"),
+  note: () => import("./NoteModule-Dt4DmnBJ.js"),
+  media: () => import("./MediaModule-TFK3gNm7.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-D5CGP547.js"),
+  statusBar: () => import("./StatusBar-D0S_pO0U.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-D2QE9Yd3.js"),
-  resize: () => import("./ResizeModule-rkE05Kfg.js")
+  templates: () => import("./TemplateModule-CQZhzqmL.js"),
+  resize: () => import("./ResizeModule-DEcSCFis.js")
 };
 Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -2925,9 +2996,9 @@ const E = /* @__PURE__ */ new WeakMap(), S = /* @__PURE__ */ new Set(), ae = {
   registerPlugin: x.registerPlugin
 };
 export {
-  J as D,
+  Y as D,
   m as I,
   y as L,
   ae as W
 };
-//# sourceMappingURL=index-Biyk3i6Z.js.map
+//# sourceMappingURL=index-DjgMHsA9.js.map
