@@ -1520,7 +1520,7 @@ class x {
   applyHeight(e = !1) {
     if (!this.wrapper) return;
     const t = K(this.options.height) ?? `${M.height}px`;
-    this._fullscreen = e;
+    this._fullscreen = e, e || (this.wrapper.style.height = t, this.wrapper.style.maxHeight = "");
     const n = e ? null : this.hostRoom();
     this._bounds = e ? { height: "100%", max: "none" } : { height: t, max: n ? `min(${t}, ${n})` : t }, this.wrapper.style.height = this._bounds.height, this.wrapper.style.maxHeight = this._bounds.max;
   }
@@ -1559,6 +1559,13 @@ class x {
    * Measured from the editor's own top edge to the bottom of the clip, so it
    * is the height the box may occupy in place — everything above the editor in
    * that host is the host's business.
+   *
+   * The measurement is only meaningful when the box is already at the bound
+   * it is about to keep: `applyHeight()` puts it there (and clears the
+   * previous cap) before calling. A host that follows the box's own size
+   * then yields back at least the configured height and can never be
+   * mistaken for a host that constrains it — see `applyHeight()` for why
+   * that distinction is the whole ballgame.
    *
    * No room to measure is not a reason to shrink: a closed tab, a panel that
    * is not on screen yet or a box that is not in the document clips nothing,
@@ -2941,20 +2948,20 @@ class oe {
   }
 }
 const se = {
-  link: () => import("./LinkModule-DP-pPt5x.js"),
-  image: () => import("./ImageModule-CUNKSAtT.js"),
-  table: () => import("./TableModule-CnX3hezA.js"),
+  link: () => import("./LinkModule-kUXdCAgl.js"),
+  image: () => import("./ImageModule-RsXnSC-I.js"),
+  table: () => import("./TableModule-DF6CVQCm.js"),
   codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-C1tOciLg.js"),
-  note: () => import("./NoteModule-Dt4DmnBJ.js"),
-  media: () => import("./MediaModule-TFK3gNm7.js"),
+  find: () => import("./FindModule-BtG2PAWr.js"),
+  note: () => import("./NoteModule-Bn89kVVN.js"),
+  media: () => import("./MediaModule-WsdSEw-o.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-D0S_pO0U.js"),
+  statusBar: () => import("./StatusBar-DjmwD-kZ.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CQZhzqmL.js"),
-  resize: () => import("./ResizeModule-DEcSCFis.js")
+  templates: () => import("./TemplateModule-BGP-9N6_.js"),
+  resize: () => import("./ResizeModule-e710Je4M.js")
 };
 Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -3001,4 +3008,4 @@ export {
   y as L,
   ae as W
 };
-//# sourceMappingURL=index-DjgMHsA9.js.map
+//# sourceMappingURL=index-CBJUhElR.js.map

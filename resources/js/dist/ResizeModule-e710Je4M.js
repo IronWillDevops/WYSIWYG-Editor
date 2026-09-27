@@ -1,4 +1,4 @@
-import { L as s } from "./index-DjgMHsA9.js";
+import { L as s } from "./index-CBJUhElR.js";
 const n = 120, r = 32;
 class a {
   constructor(e) {
@@ -67,4 +67,4 @@ class a {
 export {
   a as default
 };
-//# sourceMappingURL=ResizeModule-DEcSCFis.js.map
+//# sourceMappingURL=ResizeModule-e710Je4M.js.map

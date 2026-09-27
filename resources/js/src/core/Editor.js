@@ -171,6 +171,25 @@ export default class Editor {
         // both the fullscreen element and the class fallback, with no
         // dependence on the insets at all.
         this._fullscreen = fullscreen;
+        // The box takes the size it is about to keep *before* the host is
+        // measured, and a cap from a previous round is cleared first: the room
+        // is `clip bottom − wrapper top`, and a host that sizes itself from its
+        // content — a card with `overflow: hidden` and no height of its own —
+        // has a bottom edge that follows the box. Measured while the box is
+        // still at whatever size the last round left it (at mount, its own
+        // content height), the room reads the box back to itself: the cap
+        // pins the box there, the box never reaches the configured height,
+        // and an edit that changes the content changes the box, the bars
+        // travelling with it — the toolbar and the status bar "run away" on
+        // every paste. Measured with the box already at its bound, the same
+        // host yields at least that bound back (it grows with the box), so
+        // the cap can only ever come from a host the box does not drive: one
+        // with a height or a `max-height` of its own — exactly the hosts the
+        // cap exists for.
+        if (!fullscreen) {
+            this.wrapper.style.height = height;
+            this.wrapper.style.maxHeight = '';
+        }
         // A clipping host may only *lower* the bound, so its room goes in as a
         // `min()` rather than as a replacement: the configured height stays the
         // editor's height, and a host with room to spare (or none at all) leaves
@@ -218,6 +237,13 @@ export default class Editor {
      * Measured from the editor's own top edge to the bottom of the clip, so it
      * is the height the box may occupy in place — everything above the editor in
      * that host is the host's business.
+     *
+     * The measurement is only meaningful when the box is already at the bound
+     * it is about to keep: `applyHeight()` puts it there (and clears the
+     * previous cap) before calling. A host that follows the box's own size
+     * then yields back at least the configured height and can never be
+     * mistaken for a host that constrains it — see `applyHeight()` for why
+     * that distinction is the whole ballgame.
      *
      * No room to measure is not a reason to shrink: a closed tab, a panel that
      * is not on screen yet or a box that is not in the document clips nothing,

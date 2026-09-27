@@ -536,6 +536,31 @@ describe('editor layout with a mounted editor', () => {
     });
 });
 
+/** A rect in the shape `getBoundingClientRect()` returns. */
+const box = (x1, y1, x2, y2) => ({
+    x: x1, y: y1, top: y1, left: x1, right: x2, bottom: y2, width: x2 - x1, height: y2 - y1,
+});
+
+/** ResizeObserver stand-in that can be fired by hand. */
+class FakeResizeObserver {
+    static instances = [];
+
+    constructor(callback) {
+        this.callback = callback;
+        this.observed = [];
+        this.disconnected = false;
+        FakeResizeObserver.instances.push(this);
+    }
+
+    observe(element) {
+        this.observed.push(element);
+    }
+
+    disconnect() {
+        this.disconnected = true;
+    }
+}
+
 /**
  * A host that hides part of the editor without declaring a height: the card
  * that bounds itself with `max-height` and clips with `overflow: hidden`.
@@ -547,29 +572,6 @@ describe('editor layout with a mounted editor', () => {
  * the clip, the status bar included, was cut away with no way to scroll to it.
  */
 describe('editor inside a host that clips it', () => {
-    const box = (x1, y1, x2, y2) => ({
-        x: x1, y: y1, top: y1, left: x1, right: x2, bottom: y2, width: x2 - x1, height: y2 - y1,
-    });
-
-    class FakeResizeObserver {
-        static instances = [];
-
-        constructor(callback) {
-            this.callback = callback;
-            this.observed = [];
-            this.disconnected = false;
-            FakeResizeObserver.instances.push(this);
-        }
-
-        observe(element) {
-            this.observed.push(element);
-        }
-
-        disconnect() {
-            this.disconnected = true;
-        }
-    }
-
     /**
      * Mounts the editor the way the <x-editor> component renders it, inside a
      * host with the given `overflow`, and gives the host and the box a geometry
@@ -709,6 +711,135 @@ describe('editor inside a host that clips it', () => {
         expect(editor.wrapper.style.maxHeight).toBe('none');
 
         await editor.module('fullscreen').toggle();
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 288px)');
+    });
+});
+
+/**
+ * A host that clips the editor and is sized *by* it: the `overflow: hidden`
+ * card that has a `max-height` ceiling but no height of its own, where the
+ * box's own top and bottom edges are what set the card's bottom edge.
+ *
+ * The clip's rect is derived from the wrapper's current box on every read,
+ * the way a browser derives it, so a measurement taken while the box is at
+ * the wrong size reads that wrong size straight back — the feedback loop
+ * that made the toolbar and the status bar travel with the content: at
+ * mount the box is still at its bare content height, the room comes back as
+ * that height, the cap pins the box there and every later round re-measures
+ * a box the previous round shrank. `applyHeight()` therefore sizes the box
+ * first and measures second, which is what these tests pin down.
+ */
+describe('editor inside a host sized from the editor itself', () => {
+    /** The gap the host keeps under the box, and the box's bare content height. */
+    const BELOW = 16;
+    const BARE = 140;
+
+    /** The `max-height` a wrapper declaration (`min(a, b)` or `b`) allows. */
+    function capOf(maxHeight) {
+        const min = maxHeight.match(/^min\([^,]+,\s*(\d+(?:\.\d+)?)px\)$/);
+        if (min) return parseFloat(min[1]);
+        const px = maxHeight.match(/^(\d+(?:\.\d+)?)px$/);
+        return px ? parseFloat(px[1]) : null;
+    }
+
+    /**
+     * Mounts the editor inside a host whose bottom edge follows the wrapper's
+     * box — and, with `ceiling`, is additionally bounded by a declared
+     * `max-height` — and gives both boxes a geometry jsdom cannot compute.
+     *
+     * @param {{ceiling?: number}} [layout]
+     * @param {object} [options] editor options
+     */
+    function mountInGrowingHost({ ceiling } = {}, options = {}) {
+        document.body.innerHTML = `
+            <div id="clip" style="overflow: hidden${ceiling ? `; max-height: ${ceiling}px` : ''}">
+                <div data-wysiwyg-editor-wrapper>
+                    <textarea id="target">start</textarea>
+                </div>
+            </div>`;
+        // The wrapper's *used* height: what the declarations on it actually
+        // allow, falling back to its bare content height while it carries
+        // none — the state the box is in before `applyHeight()` writes.
+        const wrapperRect = () => {
+            const wrap = document.querySelector('.ife-wrapper');
+            const declared = parseFloat(wrap?.style.height ?? '');
+            const cap = capOf(wrap?.style.maxHeight ?? '');
+            const used = Math.min(Number.isFinite(declared) ? declared : Infinity, cap ?? Infinity);
+            const height = Number.isFinite(used) ? used : BARE;
+            return box(0, 16, 900, 16 + height);
+        };
+        vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function rect() {
+            if (this.classList?.contains('ife-wrapper')) return wrapperRect();
+            if (this.id === 'clip') {
+                const wrap = wrapperRect();
+                return box(0, 0, 900, Math.min(ceiling ?? Infinity, wrap.bottom + BELOW));
+            }
+            return box(0, 0, 0, 0);
+        });
+        return WysiwygEditor.init('#target', { height: 500, ...options });
+    }
+
+    beforeEach(() => {
+        vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+        FakeResizeObserver.instances = [];
+    });
+
+    afterEach(() => {
+        WysiwygEditor.destroyAll();
+        document.body.innerHTML = '';
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    it('measures the host with the box already at its height, not at its content height', () => {
+        // The host follows the box: at 500px it leaves 516px to the box's top
+        // edge, room to spare. Measured before the box is sized (its bare
+        // 140px instead), the room comes back as 156px and the cap collapses
+        // the editor to a content-sized strip it can never grow back out of.
+        const editor = mountInGrowingHost();
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 516px)');
+    });
+
+    it('re-measures to the same room, so the bars never travel', () => {
+        // Every re-measure — the host resizing, a fullscreen round trip —
+        // must be idempotent: the room derives from the box at its bound,
+        // never from the box as content left it. A room that drifts is a box
+        // that drifts, and the toolbar and the status bar drift with it.
+        const editor = mountInGrowingHost();
+        const observer = FakeResizeObserver.instances[0];
+        expect(observer.observed).toEqual([document.getElementById('clip')]);
+
+        observer.callback();
+        observer.callback();
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 516px)');
+    });
+
+    it('recovers from a stale cap instead of measuring the box it shrank', () => {
+        // Something rewrote the bound (a plugin, a host script). Re-measuring
+        // against the shrunken box would bake the shrink into the next cap:
+        // each pass would ratchet the box further down and the host would be
+        // credited with "room" that is really the editor's own collapse.
+        const editor = mountInGrowingHost();
+        editor.wrapper.style.maxHeight = '100px';
+
+        editor.applyHeight();
+
+        expect(editor.wrapper.style.height).toBe('500px');
+        expect(editor.wrapper.style.maxHeight).toBe('min(500px, 516px)');
+    });
+
+    it('still caps the box at the ceiling the host declares', () => {
+        // The host both follows its content and declares a ceiling: the box
+        // is 500px tall when the host is measured, but the clip stops at the
+        // declaration — 304px − 16px = 288px of room — so the box stays
+        // inside it and the content area scrolls in what is left.
+        const editor = mountInGrowingHost({ ceiling: 304 });
+
+        expect(editor.wrapper.style.height).toBe('500px');
         expect(editor.wrapper.style.maxHeight).toBe('min(500px, 288px)');
     });
 });
