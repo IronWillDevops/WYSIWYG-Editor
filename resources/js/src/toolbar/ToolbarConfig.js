@@ -95,44 +95,32 @@ const ToolbarConfig = {
         if (insideBq) {
             // Unwrap: replace the outer blockquote with a plain <p>
             const bq = block.tagName === 'BLOCKQUOTE' ? block : block.closest('blockquote');
-            e.history.push();
             const p = document.createElement('p');
             p.innerHTML = bq.innerHTML;
             bq.replaceWith(p);
         } else {
             // Wrap: keep the block wrapper so Enter stays inside the blockquote
-            e.history.push();
             const bq = document.createElement('blockquote');
             bq.innerHTML = block.outerHTML;
             block.replaceWith(bq);
         }
+        // Push after the mutation: History.push() de-duplicates identical
+        // snapshots, so pushing before the DOM change would record nothing.
+        e.history.push();
         e.emitChange();
     } },
     codeInline: {
         icon: Icons.code,
         label: 'Inline code',
         type: 'action',
-        action: (e) => e.selection.wrap('code') && e.emitChange(),
+        action: (e) => {
+            const wrapped = e.selection.wrap('code');
+            if (!wrapped) return;
+            e.history.push();
+            e.emitChange();
+        },
     },
-    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'action', action: (e) => {
-        const block = e.selection.getBlockElement();
-        if (!block || block === e.root) return;
-
-        const insidePre = block.tagName === 'PRE' || block.closest('pre');
-        e.history.push();
-
-        if (insidePre) {
-            const pre = block.tagName === 'PRE' ? block : block.closest('pre');
-            const p = document.createElement('p');
-            p.innerHTML = pre.innerHTML;
-            pre.replaceWith(p);
-        } else {
-            const pre = document.createElement('pre');
-            pre.innerHTML = block.innerHTML;
-            block.replaceWith(pre);
-        }
-        e.emitChange();
-    } },
+    codeBlock: { icon: Icons.codeBlock, label: 'Code block', type: 'command', command: 'codeBlock' },
     note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note').open() },
 
     emoji: {
@@ -228,15 +216,16 @@ const ToolbarConfig = {
         action: (e) => {
             const name = prompt('Anchor name:');
             if (!name) return;
-            e.history.push();
             const a = document.createElement('a');
             a.name = name.trim();
             const range = e.selection.getRange();
             if (range) {
                 range.deleteContents();
                 range.insertNode(a);
+                // Push after the mutation so the anchor lands on the undo stack.
+                e.history.push();
+                e.emitChange();
             }
-            e.emitChange();
         },
     },
 
@@ -282,11 +271,12 @@ const ToolbarConfig = {
                     const data = new FormData(form);
                     const start = data.get('start');
                     const type = data.get('type');
-                    e.history.push();
                     if (start) list.setAttribute('start', String(start));
                     else list.removeAttribute('start');
                     if (type) list.style.listStyleType = type;
                     else list.style.listStyleType = '';
+                    // Push after mutating the list so the change is recorded.
+                    e.history.push();
                     e.emitChange();
                 },
             });

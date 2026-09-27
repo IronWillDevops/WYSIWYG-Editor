@@ -17,6 +17,32 @@
  * fallbacks used when no wrapper is present.
  */
 
+/* The wrapper element the <x-editor> component renders around the textarea —
+   the box the host page actually sizes, since it receives the component's
+   `class` attribute and is what a flex/grid/table-cell/panel parent lays out.
+   It has to pass that size *down* to the editor, so it is a shrinkable column:
+   `max-height: 100%` caps it at the host's definite height (a percentage
+   against an auto-height parent computes to `none`, i.e. no cap, so a host that
+   does not size the box is unaffected) and `min-height: 0` lets `.ife-wrapper`
+   shrink below its own content. Without them the editor sized itself from the
+   inside and the host box could not contain it: with a shorter host box the
+   whole editor — content area and status bar — was rendered outside it, and
+   with a taller one the editor left the box half empty.
+   The width bounds do the same job horizontally: without them a single
+   unbreakable run of text (a long URL, a base64 blob, minified code) sets the
+   min-content width, the editor grew to the full width of that text, the bars
+   ran off-screen and the content area's scrollbar ended up out of reach.
+   Editors mounted without the component are covered by the same declarations
+   on `.ife-wrapper` below. */
+div[data-wysiwyg-editor-wrapper] {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
 .ife-wrapper {
     --ife-bg: #ffffff;
     --ife-text: #1f2328;
@@ -41,7 +67,41 @@
     background: var(--ife-bg);
     color: var(--ife-text);
     font-family: var(--ife-font);
+    /* The editor's own box: `Editor.applyHeight()` writes the configured
+       `height` here (not on the content area), and `box-sizing: border-box`
+       makes that number the editor's visible height, border included. */
+    box-sizing: border-box;
+    /* Column layout: toolbar and status bar are siblings of the content area,
+       so scrolling the content can never move them. */
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    /* Fills the component wrapper when there is one, and yields to a host box
+       that is shorter than the configured height instead of spilling out of it
+       (a percentage max-height against an auto-height parent is `none`).
+       `min-height: min-content` is the floor: the content area contributes
+       nothing to it (it is a scroll container), so it is exactly the toolbar
+       plus the status bar. Without that floor a host box smaller than the bars
+       themselves — a 300px panel on a phone, where the toolbar wraps to several
+       rows — squeezed the editing area to nothing and pushed the status bar
+       past the bottom of the `overflow: hidden` wrapper, where it was clipped
+       and unreachable. */
+    flex: 1 1 auto;
+    min-height: min-content;
+    max-height: 100%;
+    /* Never wider than the box that holds it, and shrinkable below its own
+       content width. Without this a single unbreakable run of text (a long
+       URL, a base64 blob, minified code) sets the wrapper's max-content width:
+       inside a flex/grid/table-cell parent the editor grew to the full width
+       of that text, which pushed the toolbar and the status bar off-screen —
+       their right-hand ends (the brand labels) "ran away" — and moved the
+       content area's scrollbar far out of reach. The content itself still
+       wraps inside the bounded box, so no horizontal bar is needed. */
+    min-width: 0;
+    max-width: 100%;
+    /* Containing block for the absolutely positioned resize handle, so the
+       handle tracks the editor's own box instead of a viewport-sized one. */
+    position: relative;
 }
 
 .ife-wrapper[data-resolved-theme="dark"] {
@@ -61,13 +121,17 @@
     --ife-selection-fg: #ffffff;
 }
 
+/* Fullscreen. The box still needs a height — `Editor.applyHeight()` writes it
+   as `100%` inline, which resolves against the viewport both in the fullscreen
+   element and in this class fallback, and deliberately not as `auto`: an
+   intrinsic `min-height` (the floor below) makes Chromium resolve this
+   absolutely positioned box against its own content and drop the `inset: 0`
+   stretch, which left fullscreen exactly as tall as the two bars. */
 .ife-wrapper.ife-fullscreen {
     position: fixed;
     inset: 0;
     z-index: 2147483000;
     border-radius: 0;
-    display: flex;
-    flex-direction: column;
 }
 
 /* Content surface container (typographic styling of the HTML itself lives in
@@ -75,12 +139,36 @@
 .ife-content {
     padding: 16px;
     outline: none;
+    /* The single scroll container of the editor, and the only flexible part of
+       it: it takes whatever the editor's own box leaves between the toolbar and
+       the status bar, so both bars keep their place and content can never be
+       painted over or past them. `min-height: 0` is what lets a column flex
+       item shrink below its content — the automatic minimum size would keep
+       the content at full height and move the page scroll instead. The box it
+       fills is bounded by `Editor.applyHeight()` on `.ife-wrapper`, so this
+       rule needs no height of its own, and it is the same in fullscreen, where
+       the wrapper's box is the viewport and the same leftover applies.
+       `flex-basis: 0` is what makes this a pure "whatever is left" box: its
+       base size is 0 rather than its content's height, so the wrapper's own
+       `min-height: min-content` floor comes out as exactly the two bars and
+       never as the document. */
+    flex: 1 1 0;
+    min-height: 0;
     overflow: auto;
 }
 
-.ife-wrapper.ife-fullscreen .ife-content {
-    flex: 1;
-    max-height: none;
+/* Editor surface only: the shared content stylesheet wraps long runs of text
+   with `overflow-wrap: break-word`, which does not change the box's intrinsic
+   (min-content) width. Inside a host box that sizes itself from its content —
+   an auto-width table cell, a float, an inline-block — a single unbreakable
+   run (a URL, a base64 blob, minified code) therefore stretched the whole
+   editor to the length of that text, which pushed the bars off-screen and the
+   content area's scrollbar out of reach. `anywhere` keeps the same line breaks
+   at any given width (it only breaks a word that does not fit) and lets such a
+   run contribute a one-character min-content width. A published post renders
+   `.ife-content` on its own, so it keeps `break-word`. */
+.ife-wrapper .ife-content {
+    overflow-wrap: anywhere;
 }
 
 .ife-content:empty::before {
@@ -126,6 +214,8 @@
     padding: 6px 8px;
     background: var(--ife-toolbar-bg);
     border-bottom: 1px solid var(--ife-border);
+    /* Never compressed by the flexible content area. */
+    flex: 0 0 auto;
 }
 
 .ife-toolbar__group {
@@ -218,6 +308,7 @@
     padding: 6px 8px;
     background: var(--ife-toolbar-bg);
     border-bottom: 1px solid var(--ife-border);
+    flex: 0 0 auto;
 }
 
 .ife-table-toolbar__btn {
@@ -274,16 +365,25 @@
 .ife-source-view {
     box-sizing: border-box;
     width: 100%;
-    min-height: 300px;
     border: none;
     outline: none;
-    resize: vertical;
+    /* No native resize: the editor's own grip is the single height affordance
+       (ResizeModule hides it while the source view is open), and a native
+       `resize: vertical` could drag this textarea past the bottom of the
+       wrapper — which is `overflow: hidden`, so the status bar and the grip
+       would be clipped away with no way to scroll to them. */
+    resize: none;
     padding: 16px;
     font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
     font-size: 13px;
     background: var(--ife-bg);
     color: var(--ife-text);
-    overflow-x: auto;
+    /* Takes the content area's slot while it replaces it: the same flexible,
+       self-scrolling box, so it cannot push the status bar out of the editor
+       the way a fixed `min-height` did. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
 }
 
 /* Search & replace highlight */
@@ -303,14 +403,12 @@
     font-size: 12px;
     color: #6e7781;
     user-select: none;
+    /* Sits below the content area and is never compressed by it. */
+    flex: 0 0 auto;
 }
 
 .ife-wrapper[data-resolved-theme="dark"] .ife-statusbar {
     color: #9198a1;
-}
-
-.ife-wrapper.ife-fullscreen .ife-statusbar {
-    flex-shrink: 0;
 }
 
 .ife-statusbar__left {
@@ -332,6 +430,78 @@
 
 .ife-statusbar__value {
     font-variant-numeric: tabular-nums;
+}
+
+/* Height resize handle
+   A drag grip on the editor's bottom edge. It is chrome only: the height it
+   produces is written back into the `height` option and applied by
+   Editor.applyHeight(), so a manual resize follows exactly the same path as
+   the configured height. It is a 6px strip at the bottom of the wrapper, so it
+   never takes part in the column flow and can never shift the bars. */
+.ife-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 6px;
+    /* Above the status bar: a pointer drag on it must never reach the content
+       area and place the caret or select text. */
+    z-index: 2;
+    cursor: ns-resize;
+    touch-action: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.ife-resize-handle::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 44px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 2px;
+    background: var(--ife-border);
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+/* The grip stays out of the way until the pointer is on it (or it has keyboard
+   focus), so the editor looks exactly as before until it is used. */
+.ife-resize-handle:hover::after,
+.ife-resize-handle:focus-visible::after,
+.ife-wrapper.ife-resizing .ife-resize-handle::after {
+    opacity: 1;
+}
+
+.ife-resize-handle:focus-visible {
+    outline: 2px solid var(--ife-accent);
+    outline-offset: -2px;
+}
+
+.ife-resize-handle:hover::after,
+.ife-resize-handle:focus-visible::after {
+    background: var(--ife-accent);
+}
+
+/* While dragging, the whole editor stops selecting text so the gesture is not
+   interrupted by a text selection. */
+.ife-wrapper.ife-resizing,
+.ife-wrapper.ife-resizing .ife-content {
+    user-select: none;
+}
+
+/* In fullscreen the content fills the window by definition, so there is no
+   height left to drag; the source view keeps its own native textarea resize
+   (`.ife-source-view { resize: vertical }`). */
+.ife-wrapper.ife-fullscreen .ife-resize-handle {
+    display: none;
+}
+
+.ife-wrapper.ife-source-open .ife-resize-handle {
+    display: none;
 }
 
 /* Dialogs */

@@ -46,6 +46,17 @@ describe('StatusBar', () => {
         statusBar.destroy();
     });
 
+    it('mounts as a sibling below the scrollable content area', () => {
+        // Keeping the status bar outside the scroll container is what pins it to
+        // the bottom: scrolling the content must not carry it away.
+        editor = createMockEditor('some text');
+        const statusBar = new StatusBar(editor);
+        expect(statusBar.el.parentNode).toBe(editor.wrapper);
+        expect(statusBar.el.nextElementSibling).toBeNull();
+        expect(editor.root.contains(statusBar.el)).toBe(false);
+        statusBar.destroy();
+    });
+
     it('shows zero counts for empty content', () => {
         editor = createMockEditor('');
         const statusBar = new StatusBar(editor);

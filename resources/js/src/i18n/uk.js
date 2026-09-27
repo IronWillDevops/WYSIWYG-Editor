@@ -38,6 +38,7 @@ export default {
     findReplace: 'Знайти та замінити',
     sourceCode: 'Вихідний код',
     fullscreen: 'Повноекранний режим',
+    resizeHandle: 'Перетягніть, щоб змінити висоту редактора',
     uploadFailed: 'Не вдалося завантажити файл. Спробуйте ще раз.',
     paragraph: 'Параграф',
     heading1: 'Заголовок 1',

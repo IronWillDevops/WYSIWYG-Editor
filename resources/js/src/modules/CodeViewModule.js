@@ -22,6 +22,10 @@ export default class CodeViewModule {
 
         this.editor.root.insertAdjacentElement('afterend', this.source);
         this.editor.root.style.display = 'none';
+        // The source view is itself a resizable textarea, so the editor's own
+        // height grip is hidden while it is open (one resize affordance per
+        // surface, not two competing ones).
+        this.editor.wrapper.classList.add('ife-source-open');
         this.active = true;
     }
 
@@ -31,6 +35,7 @@ export default class CodeViewModule {
         this.editor.setHTML(html);
         this.source.remove();
         this.editor.root.style.display = '';
+        this.editor.wrapper.classList.remove('ife-source-open');
         this.active = false;
     }
 

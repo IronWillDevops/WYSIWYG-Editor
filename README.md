@@ -38,6 +38,28 @@ proper Laravel package with a one-line Blade component.
 - **Find & Replace** — with regex and case-sensitive matching.
 - **History** — up to 1000 undo/redo steps, debounced recording.
 - **Autosave**, **fullscreen**, **keyboard shortcuts**, **spellcheck**.
+- **Status bar** — live word & character counts, block-type and
+  link/code/table context, always reachable. Long content never grows the
+  editor: the `height` option sizes the editor's own box, the editing area
+  takes whatever is left between the two bars and scrolls internally with its
+  own scrollbar, so the toolbar and status bar stay pinned above and below it
+  (also in fullscreen, and in the source view). The `height` option is the only
+  thing that sizes the editor — it is never silently re-fitted to the viewport
+  as the page scrolls — and a host box that is shorter than it wins over it: put
+  the editor in a panel, a grid row or on a fixed-height `class` and the editing
+  area scrolls in the room there is, with the status bar still at the bottom. A
+  host that bounds itself with `max-height` and hides the overflow works the same
+  way — the editor measures the room left inside the clip instead of being cut
+  off by it, and follows it when the host is resized. The editor also never
+  grows wider than the box that holds it: long unbreakable text (a URL, a
+  base64 blob, minified code) wraps inside the content area instead of pushing
+  the bars and the scrollbar off-screen.
+- **Manual height resize** — a grip on the editor's bottom edge
+  (mouse, touch or the arrow keys once focused) changes the height. It writes
+  the same `height` option, so the toolbar, status bar and internal scrollbar
+  keep working at the new size; the grip is hidden in fullscreen, where the
+  editor fills the window by definition, and while the source view is open,
+  which is the only other height affordance then.
 - **Themes** — light / dark / auto (`prefers-color-scheme`).
 - **i18n** — English, Українська, Русский, easy to extend.
 - **Security** — whitelist HTML sanitizer, paste sanitizer, URL validation,
@@ -107,9 +129,15 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 />
 ```
 
+> **Escaping** — the initial value is printed with `{{ e($value, false) }}`:
+> stored markup such as `<p>hi</p>` is rendered as literal text (never live
+> HTML) until the editor mounts and replaces it, and already-encoded entities
+> (`&amp;`) are not double-encoded, so published content round-trips cleanly.
+
 ### 2. Plain `<textarea>` + JS
 
 ```html
+<link rel="stylesheet" href="/vendor/wysiwyg-editor/css/wysiwyg-editor.css">
 <textarea id="editor"></textarea>
 <script type="module">
     import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
@@ -117,14 +145,83 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 </script>
 ```
 
+> **The stylesheet is part of the editor, not a theme.** The bundle carries no CSS:
+> `wysiwyg-editor.css` is what makes the editor's box a bounded flex column with
+> the toolbar and status bar pinned to it and the editing area scrolling inside
+> it. Without it the editor still works, and the failure only shows up once the
+> content is big enough — a multiline paste then grows the editing area to the
+> full height of the document, the page becomes the only scroll area, and the
+> toolbar and status bar scroll out of view with it. Always load the stylesheet
+> from the same build as the script.
+
 ### 3. Bundler import (Vite/Webpack)
 
+This is a Composer package, so there is nothing to install from a registry:
+publish the assets (see [Installation](#installation)) and import them by path.
+They live in `public/`, which Vite already serves, so the import is the same in
+development and in the build.
+
 ```js
-import Editor from '@wysiwyg/editor';
-import '@wysiwyg/editor/style.css';
+// resources/js/app.js
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
 Editor.init('#editor', { theme: 'auto', locale: 'en' });
 ```
+
+The stylesheet may equally be imported from a shim module, or linked from the
+layout — the only rule is that it is loaded, and from the same build as the
+script.
+
+> `resources/js/package.json` also declares the npm specifiers `@wysiwyg/editor`
+> and `@wysiwyg/editor/style.css`, for a build that vendors `resources/js`
+> itself. Nothing is published to a registry under that name, so
+> `npm install @wysiwyg/editor` does not resolve — import the published assets as
+> above unless you are installing the build yourself.
+
+### 4. CDN (jsDelivr) — no build step
+
+The built bundles are committed to the repository, so a page can load them
+straight from a CDN without installing or building anything:
+
+```blade
+@push('styles')
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.31/resources/js/dist/wysiwyg-editor.css">
+@endpush
+
+@push('scripts')
+    <script defer
+        src="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.31/resources/js/dist/wysiwyg-editor.umd.js">
+    </script>
+@endpush
+```
+
+```js
+WysiwygEditor.init('#post-editor', { theme: 'auto' });
+```
+
+- The version in the URL is a **git tag**, and it is part of the URL on purpose:
+  a tag is immutable, so the CDN caches it for good and every visitor gets the
+  same build. The flip side is that the URL keeps serving *that* build forever —
+  a page pinned to an old tag runs that old editor, because the editor's own
+  layout rules (the height bounds that keep the content area scrolling *inside*
+  the editor) travel in the bundle, not in your page. **Bump the tag on every
+  upgrade**; a freshly pushed tag is served by the CDN within a minute or two.
+- Load the stylesheet and the script from the **same** tag. They ship one
+  contract — the box sizes the editor, the content area takes whatever the
+  toolbar and status bar leave — and a mixed pair breaks in a way that reads as
+  a content bug rather than a versioning one: a new script on an old stylesheet
+  leaves the editing area unbounded (the box is not a flex column yet), so a
+  long document grows the editor instead of scrolling inside it, the status bar
+  is pushed out of the editor's own box, and the box shows no scrollbar.
+- `wysiwyg-editor.umd.js` is self-contained and exposes the global
+  `WysiwygEditor` (`init` / `get` / `destroyAll` / `registerPlugin`).
+  `wysiwyg-editor.esm.js` is the same build as an ES module, and it imports its
+  own per-module chunks next to it, so the whole `dist/` directory has to be
+  reachable (a CDN serves that for you; with your own server, copy all of it).
+- `wysiwyg-editor.css` carries the editor UI *and* the content styles. To render
+  published content only, load `wysiwyg-content.css` instead.
 
 ## Framework integration examples
 
@@ -135,8 +232,14 @@ Editor.init('#editor', { theme: 'auto', locale: 'en' });
     <textarea id="editor">{{ $content }}</textarea>
 </div>
 
+{{-- Loaded once per page, like <x-editor> does. Required: without it the
+     editor's box stops bounding its content and the bars scroll away. --}}
+@once
+    <link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+@endonce
+
 <script type="module">
-    import Editor from '@wysiwyg/editor';
+    import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
     document.addEventListener('livewire:navigated', () => {
         const editor = Editor.init('#editor', {
@@ -157,11 +260,15 @@ component's state.
 ### Alpine.js
 
 ```blade
+@once
+    <link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+@endonce
+
 <div x-data="{
     content: @entangle('content'),
     editor: null,
     init() {
-        import('@wysiwyg/editor').then(({ default: Editor }) => {
+        import('/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js').then(({ default: Editor }) => {
             this.editor = Editor.init(this.$refs.textarea, { theme: 'light' });
             this.editor.on('change', (html) => { this.content = html; });
         });
@@ -174,9 +281,10 @@ component's state.
 ### Vanilla JavaScript (no Laravel view layer)
 
 ```html
+<link rel="stylesheet" href="/vendor/wysiwyg-editor/css/wysiwyg-editor.css">
 <textarea id="editor"></textarea>
 <script type="module">
-    import Editor from '@wysiwyg/editor';
+    import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
     const editor = Editor.init('#editor', {
         toolbar: [
@@ -201,7 +309,8 @@ component's state.
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
 
 const textarea = ref(null);
 let editor;
@@ -218,7 +327,8 @@ onBeforeUnmount(() => editor?.destroy());
 
 ```jsx
 import { useEffect, useRef } from 'react';
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
 
 export default function WysiwygEditor({ options = {} }) {
     const textareaRef = useRef(null);
@@ -282,8 +392,18 @@ properties on `.ife-content` (or an ancestor) exactly as the editor's
 ## Configuration reference
 
 See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,
-commented list of options: `theme`, `locale`, `toolbar`, `plugins`,
+commented list of options: `theme`, `locale`, `toolbar`, `height`, `plugins`,
 `history`, `autosave`, `sanitizer`, `upload`.
+
+`height` sets the height of the editor (`WYSIWYG_EDITOR_HEIGHT`, default `420`);
+it accepts a pixel number or any CSS length that does not depend on a parent box
+(`"600"`, `"600px"`, `"40rem"`, `"75vh"`). It sizes the editor's own box —
+toolbar and status bar included — and the editing area takes the rest and
+scrolls inside it, so larger content never grows the editor. A host box that is
+shorter than `height` (a panel, a grid row, a `class` on the component) wins
+over it and the editing area scrolls in whatever room there is — including a
+host that only bounds itself with `max-height` and clips, which the editor
+measures. The grip on the editor's bottom edge overrides the value per instance.
 
 ## JavaScript API
 
@@ -322,7 +442,7 @@ editor.on('destroy', (editor) => {});
 ### Plugin API
 
 ```js
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
 Editor.registerPlugin('word-count', (editor) => {
     const counter = document.createElement('div');

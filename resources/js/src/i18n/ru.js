@@ -38,6 +38,7 @@ export default {
     findReplace: 'Найти и заменить',
     sourceCode: 'Исходный код',
     fullscreen: 'Полноэкранный режим',
+    resizeHandle: 'Потяните, чтобы изменить высоту редактора',
     uploadFailed: 'Не удалось загрузить файл. Попробуйте ещё раз.',
     paragraph: 'Параграф',
     heading1: 'Заголовок 1',

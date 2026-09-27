@@ -9,7 +9,7 @@ import Sanitizer from './Sanitizer.js';
  * @property {string} [theme]
  * @property {string} [locale]
  * @property {Array<string[]>} [toolbar]
- * @property {number} [height]
+ * @property {number|string} [height] px number or CSS length
  * @property {string} [uploadUrl]
  * @property {object} [history]
  * @property {object} [autosave]
@@ -23,6 +23,33 @@ const DEFAULT_OPTIONS = {
     history: { max_steps: 1000, debounce_ms: 300 },
     autosave: { enabled: false, interval_ms: 15000, storage_key: 'wysiwyg-editor-autosave' },
 };
+
+/**
+ * Units that resolve without a containing block, so a height built from them
+ * always yields a real, bounded box. Relative units (`%`) are rejected on
+ * purpose: `max-height: 100%` on a parent of `height: auto` computes to
+ * `none`, which is exactly the unbounded editor this bounds prevent.
+ */
+const ABSOLUTE_LENGTH_UNITS = 'px|em|rem|ch|ex|vh|vw|vmin|vmax|cm|mm|in|pt|pc|Q';
+const CSS_LENGTH = new RegExp(`^(\\d+(?:\\.\\d+)?)(${ABSOLUTE_LENGTH_UNITS})?$`, 'i');
+
+/**
+ * Turns the `height` option into a CSS length, or `null` when it cannot size
+ * a box (missing, `null`, a keyword, a relative length, a negative number).
+ * A bare number is read as pixels so config/env values ("500") work.
+ *
+ * @param {unknown} value
+ * @returns {string|null}
+ */
+function resolveHeight(value) {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? `${value}px` : null;
+    }
+    if (typeof value !== 'string') return null;
+    const match = value.trim().match(CSS_LENGTH);
+    if (!match) return null;
+    return `${match[1]}${match[2] ?? 'px'}`;
+}
 
 /** Registry of plugin factories added via Editor.registerPlugin(). */
 const pluginRegistry = new Map();
@@ -58,10 +85,12 @@ export default class Editor {
         this.handleShortcut = this.handleShortcut.bind(this);
         this.handleTableTab = this.handleTableTab.bind(this);
         this.handleEnter = this.handleEnter.bind(this);
+        this.handleBackspaceDelete = this.handleBackspaceDelete.bind(this);
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
         this.applyTheme(this.options.theme);
+        this.observeClippingHost();
 
         this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300);
         this.loadPlugins().catch((err) => {
@@ -84,13 +113,202 @@ export default class Editor {
         this.root.className = 'ife-content';
         this.root.contentEditable = 'true';
         this.root.spellcheck = true;
-        this.root.style.minHeight = `${this.options.height}px`;
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
+        // The scroll contract, pinned where a host stylesheet cannot reset
+        // it: this element is the only thing allowed to scroll — the box is
+        // sized by `applyHeight()` and the bars are pinned flex items. A
+        // broad `overflow` reset on the host page (a wrapper rule, a
+        // wildcard) turns the content area into a growing page instead: its
+        // text grows the document instead of scrolling inside the box, the
+        // caret drags the window down on every line and both bars leave the
+        // top of the screen. The stylesheet declares the same value as the
+        // layout contract; this inline declaration is what wins the cascade.
+        this.root.style.overflow = 'auto';
 
         this.wrapper.appendChild(this.root);
         this.textarea.insertAdjacentElement('afterend', this.wrapper);
+        // Applied once the box is in the document, so a host that clips the
+        // editor is measured against its real geometry instead of nothing.
+        this.applyHeight();
+    }
+
+    /**
+     * Applies the `height` option to the editor's own box — the only thing
+     * that sizes the editor, and the only place allowed to write it.
+     *
+     * The bound lives on the wrapper, not on the content area, because the
+     * wrapper is the box the host page can actually constrain: a component
+     * wrapper, a panel, a grid row, a `class="h-64"` on `<x-editor>`. A bound on
+     * the content area is a floor that nothing above it can lower, so a host
+     * box shorter than the configured height simply had the editor rendered
+     * outside it — content area *and* status bar — with the wrapper's
+     * `overflow: hidden` clipping the difference away and no scrollbar to reach
+     * it. Sizing the box instead lets the content area (the only flexible part,
+     * `flex: 1 1 0; min-height: 0; overflow: auto`) take whatever is left
+     * between the two bars and scroll inside it, so large content (long code
+     * blocks, huge tables, a big paste, ...) never grows the editor, never
+     * reaches past the status bar and never turns the page into the only scroll
+     * area.
+     *
+     * `fullscreen: true` hands the box over to the viewport, which then defines
+     * its size; calling it again re-applies that. The height is re-derived from
+     * the option instead of being snapshotted, so no number of fullscreen round
+     * trips (or a native Esc) can leave the editor without it.
+     *
+     * The height is a *max* as well, and that is what a host that clips without
+     * declaring a height needs: see `hostRoom()`.
+     *
+     * A `height` that cannot size a box (missing, a keyword, a relative
+     * length) falls back to the default instead of emitting a declaration the
+     * browser drops, which would leave the editor unbounded.
+     *
+     * @param {boolean} [fullscreen]
+     */
+    applyHeight(fullscreen = false) {
+        if (!this.wrapper) return;
+        const height = resolveHeight(this.options.height) ?? `${DEFAULT_OPTIONS.height}px`;
+        // Remembered so `ensureHeightBounds()` can re-assert exactly what was
+        // applied, and so the last mode (fullscreen or not) is never guessed.
+        // Fullscreen sizes the box against the viewport instead of the
+        // configured height. It is a percentage rather than `auto` on purpose:
+        // the box's floor is `min-content` (its own bars, see the stylesheet),
+        // and Chromium resolves a content-based `min-height` on an absolutely
+        // positioned box against the box's own content — which drops the
+        // `position: fixed; inset: 0` stretch and left fullscreen exactly as
+        // tall as the two bars. A percentage resolves against the viewport in
+        // both the fullscreen element and the class fallback, with no
+        // dependence on the insets at all.
+        this._fullscreen = fullscreen;
+        // The box takes the size it is about to keep *before* the host is
+        // measured, and a cap from a previous round is cleared first: the room
+        // is `clip bottom − wrapper top`, and a host that sizes itself from its
+        // content — a card with `overflow: hidden` and no height of its own —
+        // has a bottom edge that follows the box. Measured while the box is
+        // still at whatever size the last round left it (at mount, its own
+        // content height), the room reads the box back to itself: the cap
+        // pins the box there, the box never reaches the configured height,
+        // and an edit that changes the content changes the box, the bars
+        // travelling with it — the toolbar and the status bar "run away" on
+        // every paste. Measured with the box already at its bound, the same
+        // host yields at least that bound back (it grows with the box), so
+        // the cap can only ever come from a host the box does not drive: one
+        // with a height or a `max-height` of its own — exactly the hosts the
+        // cap exists for.
+        if (!fullscreen) {
+            this.wrapper.style.height = height;
+            this.wrapper.style.maxHeight = '';
+        }
+        // A clipping host may only *lower* the bound, so its room goes in as a
+        // `min()` rather than as a replacement: the configured height stays the
+        // editor's height, and a host with room to spare (or none at all) leaves
+        // the declaration exactly as it was.
+        const room = fullscreen ? null : this.hostRoom();
+        this._bounds = fullscreen
+            ? { height: '100%', max: 'none' }
+            : { height, max: room ? `min(${height}, ${room})` : height };
+        this.wrapper.style.height = this._bounds.height;
+        this.wrapper.style.maxHeight = this._bounds.max;
+    }
+
+    /**
+     * The nearest ancestor that would *hide* part of the editor's box.
+     *
+     * The stylesheet passes a host's height down with `max-height: 100%`, which
+     * only works when that host has a *definite* height. A host that bounds
+     * itself some other way has none to pass down: `max-h-80 overflow-hidden`
+     * (a card, a modal body, a scroll pane wrapped in `overflow-hidden`) keeps
+     * its box at an auto height that merely has a ceiling, so the editor stayed
+     * at its configured height and the rest of it — the bottom of the content
+     * area and the whole status bar — was clipped away with no way to scroll to
+     * it. Such a host is found by measurement instead.
+     *
+     * A *scrollable* ancestor (`auto`/`scroll`) is deliberately not one of them:
+     * there nothing is lost, the editor stays as tall as it is and the host
+     * scrolls, which is the host's business to decide.
+     *
+     * @returns {HTMLElement|null}
+     */
+    clippingAncestor() {
+        for (let el = this.wrapper?.parentElement; el; el = el.parentElement) {
+            const style = window.getComputedStyle?.(el);
+            if (!style) return null;
+            const overflow = style.overflowY || style.overflow || 'visible';
+            if (overflow === 'hidden' || overflow === 'clip') return el;
+            if (overflow === 'auto' || overflow === 'scroll') return null;
+        }
+        return null;
+    }
+
+    /**
+     * The room a clipping host leaves for the box, as a CSS length.
+     *
+     * Measured from the editor's own top edge to the bottom of the clip, so it
+     * is the height the box may occupy in place — everything above the editor in
+     * that host is the host's business.
+     *
+     * The measurement is only meaningful when the box is already at the bound
+     * it is about to keep: `applyHeight()` puts it there (and clears the
+     * previous cap) before calling. A host that follows the box's own size
+     * then yields back at least the configured height and can never be
+     * mistaken for a host that constrains it — see `applyHeight()` for why
+     * that distinction is the whole ballgame.
+     *
+     * No room to measure is not a reason to shrink: a closed tab, a panel that
+     * is not on screen yet or a box that is not in the document clips nothing,
+     * and `observeClippingHost()` re-measures as soon as there is one.
+     *
+     * @returns {string|null}
+     */
+    hostRoom() {
+        const clip = this.clippingAncestor();
+        if (!clip) return null;
+        const room = clip.getBoundingClientRect().bottom - this.wrapper.getBoundingClientRect().top;
+        return room > 0 ? `${Math.floor(room)}px` : null;
+    }
+
+    /**
+     * Keeps the box inside a host that clips it as the host changes size.
+     *
+     * The room a clipping host leaves is geometry, not CSS, so it has to be
+     * re-measured when the host is: a sidebar opening, a modal resizing, a
+     * window resize. The observer watches only the clipping ancestor, so an
+     * ordinary page — which has none — costs nothing, and the editor never
+     * observes itself, so re-applying the height cannot feed the observer.
+     */
+    observeClippingHost() {
+        this.stopObservingClippingHost();
+        if (typeof ResizeObserver === 'undefined') return;
+        const clip = this.clippingAncestor();
+        if (!clip) return;
+        this._clipObserver = new ResizeObserver(() => this.applyHeight(this._fullscreen));
+        this._clipObserver.observe(clip);
+    }
+
+    stopObservingClippingHost() {
+        this._clipObserver?.disconnect();
+        this._clipObserver = null;
+    }
+
+    /**
+     * Re-asserts the editor's box after a change.
+     *
+     * The height lives in the wrapper's inline `style` attribute, so anything
+     * that rewrites that attribute takes the editor's layout with it: the
+     * content area stops being a bounded scroll container, large content
+     * stretches the editor, the page becomes the only scroll area, the toolbar
+     * and status bar travel with it and the editor never shows a scrollbar of
+     * its own. The height is therefore re-asserted on every change, so no such
+     * path — a plugin, a host page's own script — can leave the editor unbounded
+     * for longer than one edit.
+     */
+    ensureHeightBounds() {
+        if (this.destroyed || !this.wrapper || !this._bounds) return;
+        const { height, max } = this._bounds;
+        if (this.wrapper.style.height === height && this.wrapper.style.maxHeight === max) return;
+        this.wrapper.style.height = height;
+        this.wrapper.style.maxHeight = max;
     }
 
     bindEvents() {
@@ -116,6 +334,7 @@ export default class Editor {
         document.addEventListener('keydown', this.handleShortcut);
         document.addEventListener('keydown', this.handleTableTab);
         document.addEventListener('keydown', this.handleEnter);
+        document.addEventListener('keydown', this.handleBackspaceDelete);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -189,11 +408,18 @@ export default class Editor {
         let timer;
         return (...args) => {
             clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
+            // Keep the pending timer on the instance so destroy() can cancel a
+            // scheduled textarea sync even when it was queued long ago (the
+            // closure timer alone would be unreachable from outside).
+            this._debounceTimer = timer = setTimeout(() => fn(...args), delay);
         };
     }
 
     emitChange() {
+        // Every content change re-asserts the content area's bounds, so an
+        // unbounded editor (bars drifting, no inner scrollbar) can never
+        // survive an edit — see `ensureHeightBounds()`.
+        this.ensureHeightBounds();
         this._debouncedSyncTextarea();
         this.events.emit('change', this.getHTML());
     }
@@ -208,7 +434,7 @@ export default class Editor {
         if (html) {
             clean = this.sanitizer.sanitize(html);
         } else {
-            clean = this.escapeHtml(this.autoLink(text));
+            clean = this.autoLink(this.escapeHtml(text));
         }
         this.commands.insertHTML(clean);
         this.events.emit('paste', { html, text });
@@ -216,9 +442,19 @@ export default class Editor {
 
     /** Converts URLs in plain text to clickable <a> links. */
     autoLink(text) {
+        // Called with already-escapeHtml()-escaped text, so '&' inside a URL will
+        // already be '&amp;' (and '"' already '&quot;'). Escape any remaining
+        // raw '&'/'"' without double-escaping existing entities — keeping the URL
+        // valid inside href="..." and safe to round-trip through getHTML().
+        const escapeHrefPart = (value) => value
+            .replace(/&(?!(?:amp|lt|gt|quot|#\d+|#x[0-9a-f]+);)/gi, '&amp;')
+            .replace(/"/g, '&quot;');
         return text.replace(
             /(https?:\/\/[^\s<]+)/gi,
-            '<a href="$1">$1</a>'
+            (match) => {
+                const escaped = escapeHrefPart(match);
+                return `<a href="${escaped}">${escaped}</a>`;
+            }
         );
     }
 
@@ -241,8 +477,17 @@ export default class Editor {
             u: () => this.commands.exec('underline'),
             k: () => this.module('link')?.open(),
             f: () => this.module('find')?.open(),
-            z: () => (event.shiftKey ? this.history.redo() : this.history.undo()),
-            y: () => this.history.redo(),
+            z: () => {
+                if (event.shiftKey) this.history.redo();
+                else this.history.undo();
+                // Undo/redo restore the caret and content — refresh the toolbar's
+                // active states so formatting buttons match the restored position.
+                this.syncSelectionState();
+            },
+            y: () => {
+                this.history.redo();
+                this.syncSelectionState();
+            },
             s: () => this.events.emit('save', this.getHTML()),
         };
 
@@ -289,9 +534,9 @@ export default class Editor {
 
         event.preventDefault();
 
-        this.history.push();
-
         if (isPre) {
+            // A code block with no content at all is removed by Enter (the caret
+            // exits into a fresh paragraph), matching the established behavior.
             const isEmpty = !block.textContent.trim();
             if (isEmpty) {
                 const p = document.createElement('p');
@@ -302,10 +547,29 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
+                this.commit();
+                return;
+            }
+
+            // The block has content: work out which line holds the caret (a <pre>
+            // can hold several lines separated by <br>). Enter on an empty or
+            // whitespace-only line exits the code block right there; Enter on any
+            // other line just inserts a line break inside the block.
+            const { children, startIndex, endIndex } = this.commands._getLineWindow(
+                block,
+                range.startContainer,
+                range.startOffset
+            );
+            const lineText = children
+                .slice(startIndex, endIndex + 1)
+                .map((node) => node.textContent ?? '')
+                .join('');
+            if (lineText.trim() === '') {
+                this._exitPreFromEmptyLine(block, startIndex - 1, endIndex + 1);
             } else {
                 this._insertBreakInPre(range);
             }
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -323,7 +587,7 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
-                this.emitChange();
+                this.commit();
                 return;
             }
 
@@ -348,7 +612,7 @@ export default class Editor {
             newRange.collapse(true);
             this.selection.setRange(newRange);
 
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -363,7 +627,7 @@ export default class Editor {
                 newRange.setStart(p, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
-                this.emitChange();
+                this.commit();
                 return;
             }
 
@@ -388,7 +652,7 @@ export default class Editor {
             newRange.collapse(true);
             this.selection.setRange(newRange);
 
-            this.emitChange();
+            this.commit();
             return;
         }
 
@@ -437,8 +701,14 @@ export default class Editor {
                 this.selection.setRange(newRange);
             }
 
-            this.emitChange();
+            this.commit();
         }
+    }
+
+    /** Records a history snapshot and notifies listeners after a mutation */
+    commit() {
+        this.history.push();
+        this.emitChange();
     }
 
     _insertBreakInPre(range) {
@@ -455,15 +725,152 @@ export default class Editor {
                 const afterText = document.createTextNode(after);
                 startContainer.parentNode.insertBefore(afterText, br.nextSibling);
             }
+        } else if (startContainer.tagName === 'BR') {
+            // A caret anchored directly on a <br> (e.g. the position the browser
+            // leaves after a previous Enter) means the caret sits *after* that
+            // break — inserting into the <br> itself (its child list) would
+            // corrupt the DOM, so insert at the parent level instead.
+            startContainer.parentNode.insertBefore(br, startContainer.nextSibling);
         } else {
             const refNode = startContainer.childNodes[startOffset] || null;
             startContainer.insertBefore(br, refNode);
+        }
+
+        // Normalize the break's container: a <br> must be a direct child of the
+        // <pre> so the next Enter still resolves against the pre's own line
+        // window. A break left inside an inline wrapper (e.g. a nested <code>)
+        // would trap every subsequent Enter inside that wrapper and the block
+        // could never reach an "empty line" to exit from.
+        const pre = this.commands.closestPre(br);
+        if (pre && br.parentNode !== pre) {
+            let holder = br;
+            while (holder.parentNode && holder.parentNode !== pre) holder = holder.parentNode;
+            pre.insertBefore(br, holder.nextSibling);
         }
 
         const newRange = document.createRange();
         newRange.setStartAfter(br);
         newRange.collapse(true);
         this.selection.setRange(newRange);
+    }
+
+    /**
+     * Exits a code block from an empty line: splits the <pre> around the empty
+     * line into [<pre>left</pre> <p><br></p> <pre>right</pre>] and places the
+     * caret in the new paragraph. The seam <br>s consumed by the split are
+     * dropped when the side keeps other content (a lone <br> is a real empty
+     * line and is preserved).
+     * @param {HTMLElement} pre the code block
+     * @param {number} lo index in pre.childNodes of the separator before the empty line
+     * @param {number} hi index in pre.childNodes of the separator after the empty line
+     */
+    _exitPreFromEmptyLine(pre, lo, hi) {
+        const children = [...pre.childNodes];
+        const makePre = () => {
+            const el = document.createElement('pre');
+            const cls = pre.getAttribute('class');
+            if (cls) el.setAttribute('class', cls);
+            return el;
+        };
+
+        const left = makePre();
+        for (let i = 0; i <= lo; i++) left.appendChild(children[i]);
+        const right = makePre();
+        for (let i = hi; i < children.length; i++) right.appendChild(children[i]);
+
+        this.commands._dropSeamBr(left, 'end');
+        this.commands._dropSeamBr(right, 'start');
+
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+
+        const parent = pre.parentNode;
+        if (left.firstChild) parent.insertBefore(left, pre);
+        parent.insertBefore(p, pre);
+        if (right.firstChild) parent.insertBefore(right, pre);
+        pre.remove();
+
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Keydown handler for Backspace/Delete inside a code block. Native
+     * contenteditable handles editing fine in most browsers, but an empty
+     * <pre> (the placeholder a code block leaves behind once its content is
+     * gone) can get stuck: Chrome does not remove an empty <pre> on Backspace
+     * the way it removes an empty <p>. Removing it manually lets the user
+     * actually delete a code block.
+     * @param {KeyboardEvent} event
+     */
+    handleBackspaceDelete(event) {
+        if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const range = this.selection.getRange();
+        if (!range || !range.collapsed) return;
+
+        const pre = this.commands.closestPre(range.startContainer);
+        if (!pre) return;
+        // Only act on placeholders: deleting a block that still holds code is
+        // left to the browser's native merge/delete behavior.
+        if (pre.textContent.trim() !== '') return;
+
+        const atStart = this._isAtBlockStart(pre, range);
+        const atEnd = this._isAtBlockEnd(pre, range);
+        if (!(event.key === 'Backspace' && atStart) && !(event.key === 'Delete' && atEnd)) return;
+
+        event.preventDefault();
+        this._removeEmptyPre(pre, event.key === 'Backspace');
+        this.commit();
+        this.syncSelectionState();
+    }
+
+    /** Whether a collapsed range sits at the very start of an element. */
+    _isAtBlockStart(block, range) {
+        const probe = document.createRange();
+        probe.setStart(block, 0);
+        probe.setEnd(range.startContainer, range.startOffset);
+        return probe.toString() === '';
+    }
+
+    /** Whether a collapsed range sits at the very end of an element. */
+    _isAtBlockEnd(block, range) {
+        const probe = document.createRange();
+        probe.setStart(range.startContainer, range.startOffset);
+        probe.setEnd(block, block.childNodes.length);
+        return probe.toString() === '';
+    }
+
+    /**
+     * Removes an empty code block and moves the caret to the neighboring
+     * block — the end of the previous one after Backspace, the start of the
+     * next one after Delete (mirroring native empty-paragraph removal).
+     * @param {HTMLElement} pre
+     * @param {boolean} isBackspace
+     */
+    _removeEmptyPre(pre, isBackspace) {
+        const prev = pre.previousElementSibling;
+        const next = pre.nextElementSibling;
+        pre.remove();
+
+        const range = document.createRange();
+        const target = isBackspace ? (prev ?? next) : (next ?? prev);
+        if (target && target !== this.root) {
+            if (isBackspace) {
+                range.selectNodeContents(target);
+                range.collapse(false);
+            } else {
+                range.setStart(target, 0);
+                range.collapse(true);
+            }
+        } else {
+            range.selectNodeContents(this.root);
+            range.collapse(false);
+        }
+        this.selection.setRange(range);
     }
 
     handleDragOver() {
@@ -556,11 +963,15 @@ export default class Editor {
 
     undo() {
         this.history.undo();
+        // Undo restored the caret — refresh toolbar active states so they match
+        // the restored position (bold/codeBlock/... button highlighting).
+        this.syncSelectionState();
         this.emitChange();
     }
 
     redo() {
         this.history.redo();
+        this.syncSelectionState();
         this.emitChange();
     }
 
@@ -589,10 +1000,13 @@ export default class Editor {
         this.destroyed = true;
         this.plugins.forEach((instance) => instance?.destroy?.());
         this.events.emit('destroy', this);
+        this.stopObservingClippingHost();
         clearInterval(this.autosaveTimer);
+        clearTimeout(this._debounceTimer);
         document.removeEventListener('keydown', this.handleShortcut);
         document.removeEventListener('keydown', this.handleTableTab);
         document.removeEventListener('keydown', this.handleEnter);
+        document.removeEventListener('keydown', this.handleBackspaceDelete);
         this.root.removeEventListener('dragover', this.handleDragOver);
         this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();

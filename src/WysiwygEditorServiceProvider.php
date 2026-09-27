@@ -42,8 +42,15 @@ final class WysiwygEditorServiceProvider extends ServiceProvider
             __DIR__.'/../resources/views' => resource_path('views/vendor/wysiwyg-editor'),
         ], 'wysiwyg-editor-views');
 
+        // The build's `dist` is published as the asset root, so the path the
+        // <x-editor> component and the README reference
+        // (`vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js`) is the path that
+        // exists, with the module's own imports — the hashed per-module chunks —
+        // sitting next to it where those relative imports resolve. Publishing
+        // the whole `resources/js` tree instead put the bundle one directory too
+        // deep, and copied `node_modules` into `public/`.
         $this->publishes([
-            __DIR__.'/../resources/js' => public_path('vendor/wysiwyg-editor/js'),
+            __DIR__.'/../resources/js/dist' => public_path('vendor/wysiwyg-editor/js'),
             __DIR__.'/../resources/css' => public_path('vendor/wysiwyg-editor/css'),
         ], 'wysiwyg-editor-assets');
 
