@@ -1483,7 +1483,7 @@ class x {
   }
   /** Builds the contenteditable root and hides the original textarea. */
   buildDom() {
-    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper), this.applyHeight();
+    this.textarea.style.display = "none", this.wrapper = document.createElement("div"), this.wrapper.className = "ife-wrapper", this.wrapper.dataset.theme = this.options.theme, this.root = document.createElement("div"), this.root.className = "ife-content", this.root.contentEditable = "true", this.root.spellcheck = !0, this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || "") || "<div><br></div>", this.root.setAttribute("role", "textbox"), this.root.setAttribute("aria-multiline", "true"), this.root.style.overflow = "auto", this.wrapper.appendChild(this.root), this.textarea.insertAdjacentElement("afterend", this.wrapper), this.applyHeight();
   }
   /**
    * Applies the `height` option to the editor's own box — the only thing
@@ -2948,20 +2948,20 @@ class oe {
   }
 }
 const se = {
-  link: () => import("./LinkModule-kUXdCAgl.js"),
-  image: () => import("./ImageModule-RsXnSC-I.js"),
-  table: () => import("./TableModule-DF6CVQCm.js"),
+  link: () => import("./LinkModule-BMsrv348.js"),
+  image: () => import("./ImageModule-BlUiZGu-.js"),
+  table: () => import("./TableModule-BwjnU2cS.js"),
   codeView: () => import("./CodeViewModule-CuLP4-db.js"),
   fullscreen: () => import("./FullscreenModule-zxSn-YlY.js"),
-  find: () => import("./FindModule-BtG2PAWr.js"),
-  note: () => import("./NoteModule-Bn89kVVN.js"),
-  media: () => import("./MediaModule-WsdSEw-o.js"),
+  find: () => import("./FindModule-CeflL3pQ.js"),
+  note: () => import("./NoteModule-C6cOxzXt.js"),
+  media: () => import("./MediaModule-XBxBcCly.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-DjmwD-kZ.js"),
+  statusBar: () => import("./StatusBar-D2sKFXC3.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-BGP-9N6_.js"),
-  resize: () => import("./ResizeModule-e710Je4M.js")
+  templates: () => import("./TemplateModule-Dw-92_cU.js"),
+  resize: () => import("./ResizeModule-q4dS_U22.js")
 };
 Object.entries(se).forEach(([l, e]) => {
   x.registerPlugin(l, async (t) => {
@@ -3008,4 +3008,4 @@ export {
   y as L,
   ae as W
 };
-//# sourceMappingURL=index-CBJUhElR.js.map
+//# sourceMappingURL=index-WRSrPv2t.js.map

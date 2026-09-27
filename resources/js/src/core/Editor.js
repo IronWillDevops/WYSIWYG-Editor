@@ -116,6 +116,16 @@ export default class Editor {
         this.root.innerHTML = this.sanitizer.sanitize(this.textarea.value || '') || '<div><br></div>';
         this.root.setAttribute('role', 'textbox');
         this.root.setAttribute('aria-multiline', 'true');
+        // The scroll contract, pinned where a host stylesheet cannot reset
+        // it: this element is the only thing allowed to scroll — the box is
+        // sized by `applyHeight()` and the bars are pinned flex items. A
+        // broad `overflow` reset on the host page (a wrapper rule, a
+        // wildcard) turns the content area into a growing page instead: its
+        // text grows the document instead of scrolling inside the box, the
+        // caret drags the window down on every line and both bars leave the
+        // top of the screen. The stylesheet declares the same value as the
+        // layout contract; this inline declaration is what wins the cascade.
+        this.root.style.overflow = 'auto';
 
         this.wrapper.appendChild(this.root);
         this.textarea.insertAdjacentElement('afterend', this.wrapper);

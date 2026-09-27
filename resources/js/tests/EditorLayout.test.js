@@ -289,6 +289,19 @@ describe('editor layout with a mounted editor', () => {
         expect(editor.root.style.minHeight).toBe('');
     });
 
+    it('pins the scroll contract where a host stylesheet cannot reset it', () => {
+        // Host pages ship broad resets (`overflow: visible` on a wrapper rule
+        // or a wildcard). Without this pin the content area stops being a
+        // scroll container: its text grows the document instead of scrolling
+        // inside the box, the caret drags the window down on every line and
+        // both bars leave the top of the screen. The stylesheet declares the
+        // same value as the layout contract; the inline declaration is what
+        // survives the cascade.
+        const editor = mount();
+
+        expect(editor.root.style.overflow).toBe('auto');
+    });
+
     it('lets a host box that is shorter than the configured height win', () => {
         // The regression: a bound on the content area is a floor nothing above
         // it can lower, so a host box shorter than the configured height (a
