@@ -137,6 +137,7 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 ### 2. Plain `<textarea>` + JS
 
 ```html
+<link rel="stylesheet" href="/vendor/wysiwyg-editor/css/wysiwyg-editor.css">
 <textarea id="editor"></textarea>
 <script type="module">
     import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
@@ -144,14 +145,39 @@ Add `theme`, `locale`, `toolbar`, `height`, or `autosave` props as needed:
 </script>
 ```
 
+> **The stylesheet is part of the editor, not a theme.** The bundle carries no CSS:
+> `wysiwyg-editor.css` is what makes the editor's box a bounded flex column with
+> the toolbar and status bar pinned to it and the editing area scrolling inside
+> it. Without it the editor still works, and the failure only shows up once the
+> content is big enough — a multiline paste then grows the editing area to the
+> full height of the document, the page becomes the only scroll area, and the
+> toolbar and status bar scroll out of view with it. Always load the stylesheet
+> from the same build as the script.
+
 ### 3. Bundler import (Vite/Webpack)
 
+This is a Composer package, so there is nothing to install from a registry:
+publish the assets (see [Installation](#installation)) and import them by path.
+They live in `public/`, which Vite already serves, so the import is the same in
+development and in the build.
+
 ```js
-import Editor from '@wysiwyg/editor';
-import '@wysiwyg/editor/style.css';
+// resources/js/app.js
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
 Editor.init('#editor', { theme: 'auto', locale: 'en' });
 ```
+
+The stylesheet may equally be imported from a shim module, or linked from the
+layout — the only rule is that it is loaded, and from the same build as the
+script.
+
+> `resources/js/package.json` also declares the npm specifiers `@wysiwyg/editor`
+> and `@wysiwyg/editor/style.css`, for a build that vendors `resources/js`
+> itself. Nothing is published to a registry under that name, so
+> `npm install @wysiwyg/editor` does not resolve — import the published assets as
+> above unless you are installing the build yourself.
 
 ### 4. CDN (jsDelivr) — no build step
 
@@ -161,12 +187,12 @@ straight from a CDN without installing or building anything:
 ```blade
 @push('styles')
     <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.30/resources/js/dist/wysiwyg-editor.css">
+        href="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.31/resources/js/dist/wysiwyg-editor.css">
 @endpush
 
 @push('scripts')
     <script defer
-        src="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.30/resources/js/dist/wysiwyg-editor.umd.js">
+        src="https://cdn.jsdelivr.net/gh/wysiwyg/laravel-editor@v1.0.0-dev.31/resources/js/dist/wysiwyg-editor.umd.js">
     </script>
 @endpush
 ```
@@ -206,8 +232,14 @@ WysiwygEditor.init('#post-editor', { theme: 'auto' });
     <textarea id="editor">{{ $content }}</textarea>
 </div>
 
+{{-- Loaded once per page, like <x-editor> does. Required: without it the
+     editor's box stops bounding its content and the bars scroll away. --}}
+@once
+    <link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+@endonce
+
 <script type="module">
-    import Editor from '@wysiwyg/editor';
+    import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
     document.addEventListener('livewire:navigated', () => {
         const editor = Editor.init('#editor', {
@@ -228,11 +260,15 @@ component's state.
 ### Alpine.js
 
 ```blade
+@once
+    <link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+@endonce
+
 <div x-data="{
     content: @entangle('content'),
     editor: null,
     init() {
-        import('@wysiwyg/editor').then(({ default: Editor }) => {
+        import('/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js').then(({ default: Editor }) => {
             this.editor = Editor.init(this.$refs.textarea, { theme: 'light' });
             this.editor.on('change', (html) => { this.content = html; });
         });
@@ -245,9 +281,10 @@ component's state.
 ### Vanilla JavaScript (no Laravel view layer)
 
 ```html
+<link rel="stylesheet" href="/vendor/wysiwyg-editor/css/wysiwyg-editor.css">
 <textarea id="editor"></textarea>
 <script type="module">
-    import Editor from '@wysiwyg/editor';
+    import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
     const editor = Editor.init('#editor', {
         toolbar: [
@@ -272,7 +309,8 @@ component's state.
 
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
 
 const textarea = ref(null);
 let editor;
@@ -289,7 +327,8 @@ onBeforeUnmount(() => editor?.destroy());
 
 ```jsx
 import { useEffect, useRef } from 'react';
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
+import '/vendor/wysiwyg-editor/css/wysiwyg-editor.css';
 
 export default function WysiwygEditor({ options = {} }) {
     const textareaRef = useRef(null);
@@ -403,7 +442,7 @@ editor.on('destroy', (editor) => {});
 ### Plugin API
 
 ```js
-import Editor from '@wysiwyg/editor';
+import Editor from '/vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js';
 
 Editor.registerPlugin('word-count', (editor) => {
     const counter = document.createElement('div');
