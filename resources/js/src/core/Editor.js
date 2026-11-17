@@ -57,7 +57,9 @@ export default class Editor {
 
         this.handleShortcut = this.handleShortcut.bind(this);
         this.handleTableTab = this.handleTableTab.bind(this);
+        this.handleTab = this.handleTab.bind(this);
         this.handleEnter = this.handleEnter.bind(this);
+        this.handleBackspace = this.handleBackspace.bind(this);
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
@@ -115,7 +117,9 @@ export default class Editor {
 
         document.addEventListener('keydown', this.handleShortcut);
         document.addEventListener('keydown', this.handleTableTab);
+        document.addEventListener('keydown', this.handleTab);
         document.addEventListener('keydown', this.handleEnter);
+        document.addEventListener('keydown', this.handleBackspace);
 
         if (this.textarea.form) {
             this.textarea.form.addEventListener('submit', () => this.syncTextarea());
@@ -208,7 +212,10 @@ export default class Editor {
         if (html) {
             clean = this.sanitizer.sanitize(html);
         } else {
-            clean = this.escapeHtml(this.autoLink(text));
+            // Escape first, then linkify: running autoLink before escaping
+            // wrapped the URLs in real <a> tags that the escaping step then
+            // turned into visible literal text instead of links.
+            clean = this.autoLink(this.escapeHtml(text));
         }
         this.commands.insertHTML(clean);
         this.events.emit('paste', { html, text });
@@ -266,6 +273,42 @@ export default class Editor {
         tableModule.navigateToCell(backward ? 'prev' : 'next');
     }
 
+    /**
+     * Tab / Shift+Tab inside a list item changes its nesting level.
+     * Outside a list (and outside a table, which handleTableTab owns) Tab is
+     * left to the browser so focus navigation keeps working normally.
+     * @param {KeyboardEvent} event
+     */
+    handleTab(event) {
+        if (event.key !== 'Tab') return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const tableModule = this.module('table');
+        if (tableModule?.getCurrentTable()) return;
+
+        const li = this.getCaretListItem();
+        if (!li) return;
+
+        event.preventDefault();
+        this.history.push();
+        if (event.shiftKey) this.commands.outdentListItem(li);
+        else this.commands.indentListItem(li);
+        this.emitChange();
+    }
+
+    /**
+     * The <li> containing the caret (if any), bounded by the editor root.
+     * @param {Range} [range] an already-resolved range to reuse
+     * @returns {HTMLElement|null}
+     */
+    getCaretListItem(range = null) {
+        const caret = range ?? this.selection.getRange();
+        if (!caret) return null;
+        let node = caret.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        return node instanceof HTMLElement ? node.closest('li') : null;
+    }
+
     /** @param {KeyboardEvent} event */
     handleEnter(event) {
         if (event.key !== 'Enter' || event.shiftKey) return;
@@ -280,6 +323,22 @@ export default class Editor {
 
         const range = this.selection.getRange();
         if (!range) return;
+
+        // List items are handled before blockquote/pre/note: the browser's
+        // own Enter splits a non-empty <li> correctly, while an empty one
+        // must leave the list entirely. Without this branch the blockquote
+        // path below injected a <p> inside the <ul> and an empty item could
+        // never get out of the list (headings kept behaving like list input).
+        const li = this.getCaretListItem(range);
+        if (li) {
+            if (this.commands.isListItemEmpty(li)) {
+                event.preventDefault();
+                this.history.push();
+                this.commands.exitList(li);
+                this.emitChange();
+            }
+            return;
+        }
 
         if (!blockquote && !isPre && !isNote) {
             let node = range.startContainer;
@@ -441,6 +500,28 @@ export default class Editor {
         }
     }
 
+    /**
+     * Backspace at the start of an empty list item removes the item (and
+     * collapses an emptied list into a paragraph). Non-empty items are left
+     * to the browser's own merging behaviour.
+     * @param {KeyboardEvent} event
+     */
+    handleBackspace(event) {
+        if (event.key !== 'Backspace' || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (this.destroyed || !this.root.contains(document.activeElement)) return;
+
+        const range = this.selection.getRange();
+        if (!range || !range.collapsed) return;
+
+        const li = this.getCaretListItem(range);
+        if (!li || !this.commands.isListItemEmpty(li)) return;
+
+        event.preventDefault();
+        this.history.push();
+        this.commands.removeListItem(li);
+        this.emitChange();
+    }
+
     _insertBreakInPre(range) {
         const { startContainer, startOffset } = range;
         const br = document.createElement('br');
@@ -592,7 +673,9 @@ export default class Editor {
         clearInterval(this.autosaveTimer);
         document.removeEventListener('keydown', this.handleShortcut);
         document.removeEventListener('keydown', this.handleTableTab);
+        document.removeEventListener('keydown', this.handleTab);
         document.removeEventListener('keydown', this.handleEnter);
+        document.removeEventListener('keydown', this.handleBackspace);
         this.root.removeEventListener('dragover', this.handleDragOver);
         this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();

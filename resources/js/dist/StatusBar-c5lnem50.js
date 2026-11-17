@@ -1,4 +1,4 @@
-import { I as n, L as h } from "./index-B3jrLqjz.js";
+import { I as n, L as h } from "./index-B_Owy-XN.js";
 const o = {
   p: "paragraph",
   h1: "heading1",
@@ -54,4 +54,4 @@ class u {
 export {
   u as default
 };
-//# sourceMappingURL=StatusBar-CrjeC5gE.js.map
+//# sourceMappingURL=StatusBar-c5lnem50.js.map

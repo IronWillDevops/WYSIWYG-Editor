@@ -708,5 +708,375 @@ describe('Commands', () => {
             expect(root.querySelectorAll('h1').length).toBe(2);
             expect(root.querySelectorAll('p').length).toBe(0);
         });
+
+        it('splits the list instead of putting a heading inside it', () => {
+            // Regression: formatBlock replaced the <li> in place, producing
+            // <ul><h1>…</h1></ul> — invalid markup the browser kept treating
+            // as part of the list, so typing never left the list.
+            root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+            const li = root.querySelectorAll('li')[1];
+            const range = document.createRange();
+            range.selectNodeContents(li.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('ul > h1')).toBeNull();
+            expect(root.querySelector('h1').textContent).toBe('two');
+            expect(root.querySelector('h1').previousElementSibling.tagName).toBe('UL');
+            expect(root.querySelectorAll('li').length).toBe(1);
+            expect(root.querySelector('li').textContent).toBe('one');
+        });
+
+        it('puts the heading before the list when the first item is converted', () => {
+            root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+            const li = root.querySelector('li');
+            const range = document.createRange();
+            range.selectNodeContents(li.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.querySelector('h1').textContent).toBe('one');
+            expect(root.querySelector('h1').nextElementSibling.tagName).toBe('UL');
+            expect(root.querySelector('li').textContent).toBe('two');
+        });
+
+        it('drops the list shell when its only item becomes a block', () => {
+            root.innerHTML = '<ul><li>only</li></ul>';
+            const li = root.querySelector('li');
+            const range = document.createRange();
+            range.selectNodeContents(li.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h1');
+
+            expect(root.innerHTML).toBe('<h1>only</h1>');
+        });
+
+        it('converts a list item back into a paragraph', () => {
+            root.innerHTML = '<ul><li>item</li></ul>';
+            const li = root.querySelector('li');
+            const range = document.createRange();
+            range.selectNodeContents(li.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('p');
+
+            expect(root.innerHTML).toBe('<p>item</p>');
+        });
+
+        it('keeps the list type of the remaining items when converting a middle item', () => {
+            root.innerHTML = '<ol><li>a</li><li>b</li><li>c</li></ol>';
+            const li = root.querySelectorAll('li')[1];
+            const range = document.createRange();
+            range.selectNodeContents(li.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            const heading = root.querySelector('h2');
+            expect(heading.textContent).toBe('b');
+            const lists = root.querySelectorAll('ol');
+            expect(lists.length).toBe(2);
+            expect(lists[0].textContent).toBe('a');
+            expect(lists[1].textContent).toBe('c');
+        });
+
+        it('keeps a nested list valid when its item becomes a heading', () => {
+            root.innerHTML = '<ul><li>outer<ul><li>inner</li></ul></li></ul>';
+            const inner = root.querySelectorAll('li')[1];
+            const range = document.createRange();
+            range.selectNodeContents(inner.firstChild);
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            expect(root.querySelector('h2').textContent).toBe('inner');
+            expect(root.querySelector('ul > h2')).toBeNull();
+            expect(root.querySelector('li').textContent).toContain('outer');
+        });
+
+        it('converts every item of a fully selected list into headings', () => {
+            // Regression: selecting the whole <ul> made formatBlock copy the
+            // <li> children into the heading (<h1><li>…</li></h1>).
+            root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+            const range = document.createRange();
+            range.selectNodeContents(root.querySelector('ul'));
+            editor.selection.setRange(range);
+
+            commands.formatBlock('h2');
+
+            expect(root.querySelector('ul')).toBeNull();
+            expect(root.querySelectorAll('h2').length).toBe(2);
+            expect([...root.querySelectorAll('h2')].map((h) => h.textContent)).toEqual(['one', 'two']);
+        });
+    });
+
+    describe('list editing', () => {
+        const selectContents = (el) => {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            editor.selection.setRange(range);
+        };
+
+        const caretIn = (node, offset = 0) => {
+            const range = document.createRange();
+            range.setStart(node, offset);
+            range.collapse(true);
+            editor.selection.setRange(range);
+        };
+
+        describe('toggleList over existing list items', () => {
+            it('exits the list when toggling the current item with the same type', () => {
+                root.innerHTML = '<ul><li>item</li></ul>';
+                caretIn(root.querySelector('li').firstChild, 4);
+
+                commands.toggleList('ul');
+
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelector('p').textContent).toBe('item');
+            });
+
+            it('converts the list when toggling the current item with another type', () => {
+                root.innerHTML = '<ul><li>item</li></ul>';
+                caretIn(root.querySelector('li').firstChild, 4);
+
+                commands.toggleList('ol');
+
+                expect(root.querySelector('ol')).not.toBeNull();
+                expect(root.querySelector('ul')).toBeNull();
+            });
+
+            it('converts every list a multi-item selection touches', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                const lis = root.querySelectorAll('li');
+                const range = document.createRange();
+                range.setStart(lis[0].firstChild, 0);
+                range.setEnd(lis[1].firstChild, 3);
+                editor.selection.setRange(range);
+
+                commands.toggleList('ol');
+
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelector('ol')).not.toBeNull();
+                expect(root.querySelectorAll('li').length).toBe(2);
+            });
+
+            it('unwraps every list a multi-item selection touches when they all match', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                const lis = root.querySelectorAll('li');
+                const range = document.createRange();
+                range.setStart(lis[0].firstChild, 0);
+                range.setEnd(lis[1].firstChild, 3);
+                editor.selection.setRange(range);
+
+                commands.toggleList('ul');
+
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelectorAll('p').length).toBe(2);
+            });
+
+            it('toggles a whole selected list instead of nesting it', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                selectContents(root.querySelector('ul'));
+
+                commands.toggleList('ol');
+
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelectorAll('ol li').length).toBe(2);
+            });
+
+            it('never nests lists or items when the selection spans several lists', () => {
+                root.innerHTML = '<ul><li>a</li></ul><p>text</p><ol><li>b</li></ol>';
+                const range = document.createRange();
+                range.setStart(root.querySelector('li').firstChild, 0);
+                range.setEnd(root.querySelector('ol li').firstChild, 1);
+                editor.selection.setRange(range);
+
+                commands.toggleList('ol');
+
+                // Both lists end up as <ol>; no <ul><ol> or <li><li> structures.
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelectorAll('li li').length).toBe(0);
+                expect(root.querySelectorAll('ol').length).toBe(2);
+            });
+        });
+
+        describe('unwrapList', () => {
+            it('flattens nested lists into sibling paragraphs', () => {
+                // Regression: the nested <ul> used to end up inside the
+                // generated <p>, producing <p><ul>…</ul></p>.
+                root.innerHTML = '<ul><li>outer<ul><li>inner</li></ul></li><li>second</li></ul>';
+
+                commands.unwrapList(root.querySelector('ul'));
+
+                expect(root.querySelector('ul')).toBeNull();
+                expect(root.querySelector('p ul')).toBeNull();
+                expect([...root.querySelectorAll('p')].map((p) => p.textContent))
+                    .toEqual(['outer', 'inner', 'second']);
+            });
+
+            it('keeps an empty item as an empty paragraph', () => {
+                root.innerHTML = '<ul><li>one</li><li><br></li></ul>';
+
+                commands.unwrapList(root.querySelector('ul'));
+
+                expect(root.querySelectorAll('p').length).toBe(2);
+                expect(root.querySelectorAll('p')[1].innerHTML).toBe('<br>');
+            });
+        });
+
+        describe('indent / outdent', () => {
+            it('nests the item into the previous one', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                const li = root.querySelectorAll('li')[1];
+
+                commands.indentListItem(li);
+
+                expect(root.innerHTML).toBe('<ul><li>one<ul><li>two</li></ul></li></ul>');
+            });
+
+            it('does nothing for the first item', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                const li = root.querySelector('li');
+
+                commands.indentListItem(li);
+
+                expect(root.innerHTML).toBe('<ul><li>one</li><li>two</li></ul>');
+            });
+
+            it('moves the item out of its nested list', () => {
+                root.innerHTML = '<ul><li>one<ul><li>two</li></ul></li></ul>';
+                const li = root.querySelectorAll('li')[1];
+
+                commands.outdentListItem(li);
+
+                expect(root.innerHTML).toBe('<ul><li>one</li><li>two</li></ul>');
+            });
+
+            it('does nothing at the top level', () => {
+                root.innerHTML = '<ul><li>one</li></ul>';
+                const li = root.querySelector('li');
+
+                commands.outdentListItem(li);
+
+                expect(root.innerHTML).toBe('<ul><li>one</li></ul>');
+            });
+
+            it('exec indent routes through the DOM nesting inside a list', () => {
+                document.execCommand = vi.fn();
+                root.innerHTML = '<ul><li>one</li><li>two</li></ul>';
+                const li = root.querySelectorAll('li')[1];
+                const range = document.createRange();
+                range.selectNodeContents(li.firstChild);
+                editor.selection.setRange(range);
+
+                commands.exec('indent');
+
+                expect(root.innerHTML).toBe('<ul><li>one<ul><li>two</li></ul></li></ul>');
+                expect(document.execCommand).not.toHaveBeenCalledWith('indent', false, undefined);
+            });
+
+            it('exec indent still uses execCommand outside a list', () => {
+                document.execCommand = vi.fn();
+                root.innerHTML = '<p>hello</p>';
+                const range = document.createRange();
+                range.selectNodeContents(root.querySelector('p').firstChild);
+                editor.selection.setRange(range);
+
+                commands.exec('indent');
+
+                expect(document.execCommand).toHaveBeenCalledWith('indent', false, undefined);
+            });
+        });
+
+        describe('isListItemEmpty', () => {
+            it('reports a plain empty item as empty', () => {
+                root.innerHTML = '<ul><li><br></li></ul>';
+                expect(commands.isListItemEmpty(root.querySelector('li'))).toBe(true);
+            });
+
+            it('reports an item with text as non-empty', () => {
+                root.innerHTML = '<ul><li>text</li></ul>';
+                expect(commands.isListItemEmpty(root.querySelector('li'))).toBe(false);
+            });
+
+            it('reports an item with embedded content as non-empty', () => {
+                root.innerHTML = '<ul><li><input type="checkbox"> Task</li></ul>';
+                expect(commands.isListItemEmpty(root.querySelector('li'))).toBe(false);
+            });
+
+            it('reports an item with a nested list as non-empty', () => {
+                root.innerHTML = '<ul><li><ul><li>x</li></ul></li></ul>';
+                expect(commands.isListItemEmpty(root.querySelector('li'))).toBe(false);
+            });
+        });
+
+        describe('exitList', () => {
+            it('replaces an exhausted list with a paragraph', () => {
+                root.innerHTML = '<ul><li>only</li></ul>';
+
+                commands.exitList(root.querySelector('li'));
+
+                expect(root.innerHTML).toBe('<p><br></p>');
+            });
+
+            it('inserts a paragraph after the list when other items remain', () => {
+                root.innerHTML = '<ul><li>one</li><li><br></li></ul>';
+
+                commands.exitList(root.querySelectorAll('li')[1]);
+
+                expect(root.innerHTML).toBe('<ul><li>one</li></ul><p><br></p>');
+            });
+
+            it('puts the caret into the new paragraph', () => {
+                root.innerHTML = '<ul><li><br></li></ul>';
+
+                commands.exitList(root.querySelector('li'));
+
+                const range = editor.selection.getRange();
+                expect(range.startContainer.tagName).toBe('P');
+                expect(range.collapsed).toBe(true);
+            });
+        });
+
+        describe('removeListItem', () => {
+            it('drops the empty item and keeps the list', () => {
+                root.innerHTML = '<ul><li>one</li><li><br></li></ul>';
+
+                commands.removeListItem(root.querySelectorAll('li')[1]);
+
+                expect(root.innerHTML).toBe('<ul><li>one</li></ul>');
+            });
+
+            it('collapses an emptied list into a paragraph', () => {
+                root.innerHTML = '<ul><li><br></li></ul>';
+
+                commands.removeListItem(root.querySelector('li'));
+
+                expect(root.innerHTML).toBe('<p><br></p>');
+            });
+        });
+
+        it('keeps the checklist class when converting the list type', () => {
+            root.innerHTML = '<ul class="ife-checklist"><li><input type="checkbox"> a</li></ul>';
+            caretIn(root.querySelector('li'), 0);
+
+            commands.toggleList('ol');
+
+            expect(root.querySelector('ol').className).toBe('ife-checklist');
+        });
+
+        it('supports leaving a list and applying a heading afterwards', () => {
+            // The full user flow: finish a list, press Enter on the empty
+            // item, then pick a heading from the block-format dropdown.
+            root.innerHTML = '<ul><li>item</li><li><br></li></ul>';
+
+            commands.exitList(root.querySelectorAll('li')[1]);
+            commands.formatBlock('h1');
+
+            expect(root.innerHTML).toBe('<ul><li>item</li></ul><h1><br></h1>');
+        });
     });
 });

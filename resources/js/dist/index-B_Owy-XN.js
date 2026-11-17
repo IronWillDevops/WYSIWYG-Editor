@@ -1,7 +1,7 @@
-var O = Object.defineProperty;
-var B = (r, e, t) => e in r ? O(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
-var N = (r, e, t) => B(r, typeof e != "symbol" ? e + "" : e, t);
-class A {
+var A = Object.defineProperty;
+var I = (r, e, t) => e in r ? A(r, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : r[e] = t;
+var z = (r, e, t) => I(r, typeof e != "symbol" ? e + "" : e, t);
+class D {
   constructor() {
     this.listeners = /* @__PURE__ */ new Map();
   }
@@ -26,8 +26,8 @@ class A {
    * @param {(...args: any[]) => void} handler
    */
   once(e, t) {
-    const n = (...o) => {
-      this.off(e, n), t(...o);
+    const n = (...i) => {
+      this.off(e, n), t(...i);
     };
     this.on(e, n);
   }
@@ -37,13 +37,13 @@ class A {
    */
   emit(e, ...t) {
     const n = this.listeners.get(e);
-    n && [...n].forEach((o) => o(...t));
+    n && [...n].forEach((i) => i(...t));
   }
   destroy() {
     this.listeners.clear();
   }
 }
-class D {
+class P {
   /**
    * @param {HTMLElement} root contenteditable element
    */
@@ -117,29 +117,29 @@ class D {
   textOffsetBefore(e) {
     let t = 0;
     const n = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT);
-    let o;
-    for (; (o = n.nextNode()) && !(o === e || e.contains(o)); )
-      t += o.textContent.length;
+    let i;
+    for (; (i = n.nextNode()) && !(i === e || e.contains(i)); )
+      t += i.textContent.length;
     return t;
   }
   /** Total text character count inside `node`'s subtree. */
   subtreeTextLength(e) {
     let t = 0;
     const n = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
-    let o;
-    for (; o = n.nextNode(); ) t += o.textContent.length;
+    let i;
+    for (; i = n.nextNode(); ) t += i.textContent.length;
     return t;
   }
   /** @returns {{node: Text, offset: number}|null} the point at a char offset */
   offsetToPoint(e) {
     let t = 0;
     const n = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT);
-    let o;
-    for (; o = n.nextNode(); ) {
-      const i = o.textContent.length;
-      if (e <= t + i)
-        return { node: o, offset: e - t };
-      t += i;
+    let i;
+    for (; i = n.nextNode(); ) {
+      const o = i.textContent.length;
+      if (e <= t + o)
+        return { node: i, offset: e - t };
+      t += o;
     }
     return null;
   }
@@ -151,10 +151,10 @@ class D {
    * @param {number} end
    */
   setRangeByOffsets(e, t) {
-    const n = this.offsetToPoint(e), o = this.offsetToPoint(t);
-    if (!n || !o) return;
-    const i = document.createRange();
-    i.setStart(n.node, n.offset), i.setEnd(o.node, o.offset), this.setRange(i);
+    const n = this.offsetToPoint(e), i = this.offsetToPoint(t);
+    if (!n || !i) return;
+    const o = document.createRange();
+    o.setStart(n.node, n.offset), o.setEnd(i.node, i.offset), this.setRange(o);
   }
   collapseToEnd() {
     const e = document.createRange();
@@ -212,17 +212,17 @@ class D {
     try {
       t.surroundContents(n);
     } catch {
-      const i = t.extractContents();
-      n.appendChild(i), t.insertNode(n);
+      const o = t.extractContents();
+      n.appendChild(o), t.insertNode(n);
     }
-    const o = document.createRange();
-    return o.selectNodeContents(n), this.setRange(o), n;
+    const i = document.createRange();
+    return i.selectNodeContents(n), this.setRange(i), n;
   }
   focus() {
     this.root.focus(), this.restore();
   }
 }
-class I {
+class V {
   /**
    * @param {object} options
    * @param {() => string} options.getContent
@@ -233,8 +233,8 @@ class I {
    * @param {(bookmark: object) => void} [options.restoreBookmark]
    * @param {(event: string) => void} [options.onChange]
    */
-  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: o = 300, saveBookmark: i, restoreBookmark: s, onChange: c }) {
-    this.getContent = e, this.setContent = t, this.maxSteps = n, this.debounceMs = o, this.saveBookmark = i ?? (() => null), this.restoreBookmark = s ?? (() => {
+  constructor({ getContent: e, setContent: t, maxSteps: n = 1e3, debounceMs: i = 300, saveBookmark: o, restoreBookmark: s, onChange: c }) {
+    this.getContent = e, this.setContent = t, this.maxSteps = n, this.debounceMs = i, this.saveBookmark = o ?? (() => null), this.restoreBookmark = s ?? (() => {
     }), this.onChange = c ?? (() => {
     }), this.undoStack = [], this.redoStack = [], this.timer = null, this.isRestoring = !1, this.undoStack.push({ html: this.getContent(), bookmark: null });
   }
@@ -273,7 +273,7 @@ class I {
     clearTimeout(this.timer), this.undoStack = [], this.redoStack = [];
   }
 }
-const z = /* @__PURE__ */ new Set([
+const O = /* @__PURE__ */ new Set([
   "black",
   "#000",
   "#000000",
@@ -282,7 +282,7 @@ const z = /* @__PURE__ */ new Set([
   "rgb(0,0,0,0)",
   "rgba(0,0,0,1)",
   "rgba(0, 0, 0, 1)"
-]), M = /* @__PURE__ */ new Set([
+]), N = /* @__PURE__ */ new Set([
   "white",
   "#fff",
   "#ffffff",
@@ -291,18 +291,21 @@ const z = /* @__PURE__ */ new Set([
   "rgba(255,255,255,1)",
   "rgba(255, 255, 255, 1)"
 ]);
-function x(r) {
+function _(r) {
   const e = String(r).trim().toLowerCase().replace(/\s+/g, " ");
   return /^#[0-9a-f]{3}$/.test(e) ? `#${e.slice(1).split("").map((t) => `${t}${t}`).join("")}` : e;
 }
-function P(r) {
-  return z.has(x(r));
+function q(r) {
+  return O.has(_(r));
 }
-function V(r) {
-  return M.has(x(r));
+function F(r) {
+  return N.has(_(r));
 }
-const L = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]);
-class F {
+const S = /* @__PURE__ */ new Set(["P", "H1", "H2", "H3", "H4", "H5", "H6", "BLOCKQUOTE", "PRE", "LI", "DIV", "UL", "OL", "TABLE", "FIGURE"]), W = /* @__PURE__ */ new Set(["UL", "OL"]), y = (r) => r.nodeType === Node.ELEMENT_NODE && W.has(
+  /** @type {HTMLElement} */
+  r.tagName
+);
+class U {
   /**
    * @param {import('./Editor').default} editor
    */
@@ -329,13 +332,18 @@ class F {
       case "italic":
       case "underline":
       case "strikeThrough":
-      case "indent":
-      case "outdent":
       case "justifyLeft":
       case "justifyCenter":
       case "justifyRight":
       case "justifyFull":
         document.execCommand(e, !1, t ?? void 0);
+        break;
+      case "indent":
+      case "outdent":
+        {
+          const n = this.selection.closest("li");
+          n ? e === "indent" ? this.indentListItem(n) : this.outdentListItem(n) : document.execCommand(e, !1, t ?? void 0);
+        }
         break;
       case "superscript":
       case "subscript":
@@ -356,10 +364,10 @@ class F {
         this.toggleList("ol");
         break;
       case "foreColor":
-        t && !P(t) ? this.applyColor("color", t) : this.clearColor("color");
+        t && !q(t) ? this.applyColor("color", t) : this.clearColor("color");
         break;
       case "backColor":
-        t && !V(t) ? this.applyColor("backgroundColor", t) : this.clearColor("backgroundColor");
+        t && !F(t) ? this.applyColor("backgroundColor", t) : this.clearColor("backgroundColor");
         break;
       case "lineHeight":
         this.setInlineStyle("lineHeight", t, !0);
@@ -410,13 +418,13 @@ class F {
         return;
       }
     }
-    const o = this.selection.closest("span");
-    if (o) {
-      o.style[e] = t;
+    const i = this.selection.closest("span");
+    if (i) {
+      i.style[e] = t;
       return;
     }
-    const i = this.selection.wrap("span");
-    i && (i.style[e] = t);
+    const o = this.selection.wrap("span");
+    o && (o.style[e] = t);
   }
   /**
    * Toggles the current selection in/out of a <ul>/<ol> list, or converts
@@ -432,21 +440,27 @@ class F {
   toggleList(e) {
     const t = this.selection.getRange();
     if (!t) return;
-    const n = this.selection.closest("li");
-    if (n) {
-      const c = n.closest("ul, ol");
-      c && c.tagName.toLowerCase() === e ? this.unwrapList(c) : c && this.convertList(c, e);
+    const n = this.getBlocksInRange(t);
+    if (!n.length) return;
+    const i = /* @__PURE__ */ new Set();
+    if (n.forEach((c) => {
+      y(c) ? i.add(c) : c.tagName === "LI" && y(c.parentElement) && i.add(c.parentElement);
+    }), i.size) {
+      const c = [...i].every(
+        (a) => a.tagName.toLowerCase() === e
+      );
+      i.forEach((a) => {
+        c ? this.unwrapList(a) : this.convertList(a, e);
+      });
       return;
     }
-    const o = this.getBlocksInRange(t);
-    if (!o.length) return;
-    const i = document.createElement(e);
-    o.forEach((c) => {
+    const o = document.createElement(e);
+    n.forEach((c) => {
       const a = document.createElement("li");
-      a.innerHTML = c.innerHTML || "<br>", i.appendChild(a);
-    }), o[0].replaceWith(i), o.slice(1).forEach((c) => c.remove());
+      a.innerHTML = c.innerHTML || "<br>", o.appendChild(a);
+    }), n[0].replaceWith(o), n.slice(1).forEach((c) => c.remove());
     const s = document.createRange();
-    s.selectNodeContents(i.lastElementChild), s.collapse(!1), this.selection.setRange(s);
+    s.selectNodeContents(o.lastElementChild), s.collapse(!1), this.selection.setRange(s);
   }
   /**
    * Finds the top-level block elements (paragraphs, headings, etc.)
@@ -458,33 +472,33 @@ class F {
     if (!this.root.contains(e.commonAncestorContainer)) return [];
     if (e.commonAncestorContainer === this.root)
       return [...this.root.children].filter(
-        (l) => l instanceof HTMLElement && L.has(l.tagName)
+        (l) => l instanceof HTMLElement && S.has(l.tagName)
       );
     const t = (a) => {
       let l = a.nodeType === Node.TEXT_NODE ? a.parentElement : a;
       if (l === this.root) return null;
       for (; l && l !== this.root; ) {
-        if (l instanceof HTMLElement && L.has(l.tagName))
+        if (l instanceof HTMLElement && S.has(l.tagName))
           return l;
         l = l.parentElement;
       }
       return null;
     }, n = t(e.startContainer);
     if (!n) return [];
-    const o = t(e.endContainer) ?? n;
-    if (n === o) return [n];
-    if (n.parentNode === o.parentNode) {
+    const i = t(e.endContainer) ?? n;
+    if (n === i) return [n];
+    if (n.parentNode === i.parentNode) {
       const a = [];
       let l = n;
-      for (; l && (a.push(l), l !== o); )
+      for (; l && (a.push(l), l !== i); )
         l = l.nextElementSibling;
       return a.length ? a : [n];
     }
-    const i = (a) => {
+    const o = (a) => {
       let l = a;
       for (; l && l.parentNode !== this.root; ) l = l.parentNode;
       return l;
-    }, s = i(n), c = i(o);
+    }, s = o(n), c = o(i);
     if (s && c) {
       const a = [];
       let l = s;
@@ -498,22 +512,143 @@ class F {
   convertList(e, t) {
     const n = document.createElement(t);
     n.className = e.className, n.innerHTML = e.innerHTML, e.replaceWith(n);
-    const o = document.createRange();
-    o.selectNodeContents(n), o.collapse(!1), this.selection.setRange(o);
+    const i = document.createRange();
+    i.selectNodeContents(n), i.collapse(!1), this.selection.setRange(i);
   }
-  /** Removes a list, turning each <li> back into a plain paragraph. @param {HTMLElement} list */
+  /**
+   * Removes a list, turning every <li> back into a plain paragraph. Nested
+   * lists are unwrapped first and their paragraphs lifted out of the parent
+   * item, so no markup such as <p><ul>…</ul></p> is ever produced and the
+   * whole tree flattens into ordinary blocks.
+   * @param {HTMLElement} list
+   */
   unwrapList(e) {
-    const t = document.createDocumentFragment();
-    [...e.children].forEach((o) => {
-      if (o.tagName !== "LI") return;
-      const i = document.createElement("p");
-      i.innerHTML = o.innerHTML || "<br>", t.appendChild(i);
+    const t = [...e.children].filter((o) => o.tagName === "LI");
+    t.forEach((o) => {
+      [...o.children].filter(y).forEach((s) => this.unwrapList(s));
     });
-    const n = t.lastElementChild;
-    if (e.replaceWith(t), n) {
+    const n = document.createDocumentFragment();
+    let i = null;
+    if (t.forEach((o) => {
+      const s = !o.firstChild;
+      let c = null;
+      if ([...o.childNodes].forEach((a) => {
+        if (a.nodeType === Node.ELEMENT_NODE && S.has(
+          /** @type {HTMLElement} */
+          a.tagName
+        )) {
+          n.appendChild(a), i = a, c = null;
+          return;
+        }
+        c || (c = document.createElement("p"), n.appendChild(c), i = c), c.appendChild(a);
+      }), s) {
+        const a = document.createElement("p");
+        a.innerHTML = "<br>", n.appendChild(a), i = a;
+      }
+    }), e.replaceWith(n), i) {
       const o = document.createRange();
-      o.selectNodeContents(n), o.collapse(!1), this.selection.setRange(o);
+      o.selectNodeContents(i), o.collapse(!1), this.selection.setRange(o);
     }
+  }
+  /**
+   * Converts a single <li> into a block element (heading, paragraph, ...)
+   * by splitting its list around the item: the new block takes the item's
+   * place beside the list instead of living inside it, because block tags
+   * nested in <ul>/<ol> (e.g. <ul><h1>…</h1></ul>) are invalid markup that
+   * browsers render and edit unpredictably — the caret kept behaving as if
+   * the text were still part of the list. Nested lists carried by the item
+   * are kept as siblings right after the new block.
+   * @param {HTMLElement} li
+   * @param {string} targetTag lowercase block tag name (e.g. 'h1')
+   * @returns {HTMLElement} the created block
+   */
+  convertListItem(e, t) {
+    const n = e.parentElement, i = document.createElement(t), o = [];
+    [...e.childNodes].forEach((p) => {
+      y(p) ? o.push(p) : i.appendChild(p);
+    }), i.firstChild || (i.innerHTML = "<br>");
+    const s = document.createElement(n.tagName);
+    s.className = n.className;
+    let c = e.nextSibling;
+    for (; c; ) {
+      const p = c.nextSibling;
+      s.appendChild(c), c = p;
+    }
+    const a = e.previousElementSibling !== null;
+    e.remove();
+    const l = a ? n.nextSibling : n, h = n.parentNode, u = [i, ...o];
+    return s.firstChild && u.push(s), u.forEach((p) => h.insertBefore(p, l)), n.querySelector("li") || n.remove(), i;
+  }
+  /**
+   * Whether an <li> holds nothing worth keeping: no text and no embedded
+   * content (nested lists, images, checkboxes, ...). Enter and Backspace use
+   * it to decide when the caret should leave the list.
+   * @param {HTMLElement} li
+   * @returns {boolean}
+   */
+  isListItemEmpty(e) {
+    return e.textContent.trim() ? !1 : !e.querySelector("ul, ol, img, input, iframe, table, figure, video, audio");
+  }
+  /**
+   * Leaves the list from an empty <li> (Enter): removes the item and puts
+   * the caret into a fresh paragraph after the list — or in the list's place
+   * when the item was the last one — so further typing continues as plain
+   * content (headings, paragraphs, ...) instead of staying in the list.
+   * @param {HTMLElement} li
+   */
+  exitList(e) {
+    const t = e.parentElement;
+    if (!y(t)) return;
+    e.remove();
+    const n = document.createElement("p");
+    n.innerHTML = "<br>", t.querySelector("li") ? t.parentNode.insertBefore(n, t.nextSibling) : t.replaceWith(n);
+    const i = document.createRange();
+    i.setStart(n, 0), i.collapse(!0), this.selection.setRange(i);
+  }
+  /**
+   * Deletes an empty <li> (Backspace). The caret moves to the end of a
+   * neighbouring item; when the list would be left empty it collapses into
+   * a paragraph so no empty list shell survives.
+   * @param {HTMLElement} li
+   */
+  removeListItem(e) {
+    const t = e.parentElement;
+    if (!y(t)) return;
+    const n = e.previousElementSibling ?? e.nextElementSibling;
+    if (e.remove(), !t.querySelector("li")) {
+      const i = document.createElement("p");
+      i.innerHTML = "<br>", t.replaceWith(i), this.placeCaretAtEnd(i);
+      return;
+    }
+    n && this.placeCaretAtEnd(n);
+  }
+  /**
+   * Indents the current <li> one level by nesting it into a list inside the
+   * previous item (Tab). Done directly on the DOM because
+   * execCommand('indent') is inconsistent across browsers inside lists.
+   * @param {HTMLElement} li
+   */
+  indentListItem(e) {
+    const t = e.previousElementSibling;
+    if (!t || t.tagName !== "LI") return;
+    const n = e.parentElement;
+    let i = [...t.children].find(y);
+    i || (i = document.createElement(n.tagName), t.appendChild(i)), i.appendChild(e), this.placeCaretAtEnd(e);
+  }
+  /**
+   * Outdents the current <li> one level (Shift+Tab): the item moves out of
+   * its nested list and becomes a sibling of that list inside the parent
+   * item. Top-level items are left untouched.
+   * @param {HTMLElement} li
+   */
+  outdentListItem(e) {
+    const t = e.parentElement, n = t.parentElement;
+    !n || n.tagName !== "LI" || (n.parentNode.insertBefore(e, n.nextSibling), t.querySelector("li") || t.remove(), this.placeCaretAtEnd(e));
+  }
+  /** Places the caret at the end of an element. @param {HTMLElement} el */
+  placeCaretAtEnd(e) {
+    const t = document.createRange();
+    t.selectNodeContents(e), t.collapse(!1), this.selection.setRange(t);
   }
   /**
    * Removes a specific CSS property from every element touched by
@@ -524,10 +659,10 @@ class F {
     var c;
     const t = this.selection.getRange();
     if (!t) return;
-    const n = this.selection.offsetOf(t.startContainer, t.startOffset), o = this.selection.offsetOf(t.endContainer, t.endOffset);
-    let i = t.commonAncestorContainer;
-    if (i.nodeType === Node.TEXT_NODE && (i = i.parentElement), !(i instanceof HTMLElement)) return;
-    ((c = i.style) != null && c.length ? [i, ...i.querySelectorAll("*")] : [...i.querySelectorAll("*")]).forEach((a) => {
+    const n = this.selection.offsetOf(t.startContainer, t.startOffset), i = this.selection.offsetOf(t.endContainer, t.endOffset);
+    let o = t.commonAncestorContainer;
+    if (o.nodeType === Node.TEXT_NODE && (o = o.parentElement), !(o instanceof HTMLElement)) return;
+    ((c = o.style) != null && c.length ? [o, ...o.querySelectorAll("*")] : [...o.querySelectorAll("*")]).forEach((a) => {
       var l;
       try {
         if (!t.intersectsNode(a)) return;
@@ -540,7 +675,7 @@ class F {
         for (; a.firstChild; ) h.insertBefore(a.firstChild, a);
         h.removeChild(a);
       }
-    }), this.selection.setRangeByOffsets(n, o);
+    }), this.selection.setRangeByOffsets(n, i);
   }
   /**
    * Applies an inline color (text `color` or `backgroundColor`) to the
@@ -565,8 +700,8 @@ class F {
   applyColor(e, t) {
     const n = this.selection.getRange();
     if (!n || n.collapsed) return;
-    const o = this.selection.offsetOf(n.startContainer, n.startOffset), i = this.selection.offsetOf(n.endContainer, n.endOffset), s = n.startContainer, c = n.startOffset, a = n.endContainer, l = n.endOffset;
-    this.colorTextNodes(e, t, s, c, a, l), this.selection.setRangeByOffsets(o, i);
+    const i = this.selection.offsetOf(n.startContainer, n.startOffset), o = this.selection.offsetOf(n.endContainer, n.endOffset), s = n.startContainer, c = n.startOffset, a = n.endContainer, l = n.endOffset;
+    this.colorTextNodes(e, t, s, c, a, l), this.selection.setRangeByOffsets(i, o);
   }
   /**
    * Styles every text node intersecting the given range, splitting the
@@ -578,14 +713,14 @@ class F {
    * @param {Node} endNode
    * @param {number} endOffset
    */
-  colorTextNodes(e, t, n, o, i, s) {
+  colorTextNodes(e, t, n, i, o, s) {
     const c = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT);
     let a;
     for (; a = c.nextNode(); )
-      if (this.rangeIntersectsText(a, n, o, i, s)) {
+      if (this.rangeIntersectsText(a, n, i, o, s)) {
         const l = a.textContent.length;
-        let h = 0, m = l;
-        a === n && (h = o), a === i && (m = s), this.wrapTextSegment(a, h, m, e, t);
+        let h = 0, u = l;
+        a === n && (h = i), a === o && (u = s), this.wrapTextSegment(a, h, u, e, t);
       }
   }
   /**
@@ -598,9 +733,9 @@ class F {
    * @param {number} endOffset
    * @returns {boolean}
    */
-  rangeIntersectsText(e, t, n, o, i) {
+  rangeIntersectsText(e, t, n, i, o) {
     const s = e.textContent.length;
-    return this.pointOrderedAtOrBefore(e, 0, o, i) && this.pointOrderedAtOrBefore(t, n, e, s);
+    return this.pointOrderedAtOrBefore(e, 0, i, o) && this.pointOrderedAtOrBefore(t, n, e, s);
   }
   /**
    * Compares two `(node, offset)` points using document order without
@@ -611,10 +746,10 @@ class F {
    * @param {number} bOffset
    * @returns {boolean} true when (aNode,aOffset) is before-or-equal (bNode,bOffset)
    */
-  pointOrderedAtOrBefore(e, t, n, o) {
-    if (e === n) return t <= o;
-    const i = e.compareDocumentPosition(n);
-    return i & Node.DOCUMENT_POSITION_FOLLOWING ? !0 : i & Node.DOCUMENT_POSITION_PRECEDING ? !1 : t <= o;
+  pointOrderedAtOrBefore(e, t, n, i) {
+    if (e === n) return t <= i;
+    const o = e.compareDocumentPosition(n);
+    return o & Node.DOCUMENT_POSITION_FOLLOWING ? !0 : o & Node.DOCUMENT_POSITION_PRECEDING ? !1 : t <= i;
   }
   /**
    * Wraps a contiguous segment of a text node — from `from` to `to` — in a
@@ -626,10 +761,10 @@ class F {
    * @param {'color'|'backgroundColor'} cssProp
    * @param {string} value
    */
-  wrapTextSegment(e, t, n, o, i) {
+  wrapTextSegment(e, t, n, i, o) {
     if (t >= n) return;
     let s = e, c = t, a = n;
-    c > 0 && (s = e.splitText(c), a -= c), a < s.textContent.length && s.splitText(a), this.colorTextNode(s, o, i);
+    c > 0 && (s = e.splitText(c), a -= c), a < s.textContent.length && s.splitText(a), this.colorTextNode(s, i, o);
   }
   /**
    * Ensures a text node is wrapped in a span with the given color, reusing
@@ -641,20 +776,20 @@ class F {
    */
   colorTextNode(e, t, n) {
     if (!e.textContent) return;
-    const o = e.parentElement;
-    if (o && o.tagName === "SPAN" && this.sameColor(t, o.style[t], n)) {
-      this.mergeColorSpan(o, t, n);
+    const i = e.parentElement;
+    if (i && i.tagName === "SPAN" && this.sameColor(t, i.style[t], n)) {
+      this.mergeColorSpan(i, t, n);
       return;
     }
-    let i = null;
-    if (o && o.tagName === "SPAN" && o.style[t])
-      i = o.style.cssText, this.splitSpanAroundNode(o, e);
-    else if (o && o.tagName === "SPAN" && !o.style[t] && o.childNodes.length === 1 && o.firstChild === e) {
-      o.style[t] = n, this.mergeColorSpan(o, t, n);
+    let o = null;
+    if (i && i.tagName === "SPAN" && i.style[t])
+      o = i.style.cssText, this.splitSpanAroundNode(i, e);
+    else if (i && i.tagName === "SPAN" && !i.style[t] && i.childNodes.length === 1 && i.firstChild === e) {
+      i.style[t] = n, this.mergeColorSpan(i, t, n);
       return;
     }
     const s = document.createElement("span");
-    i && (s.style.cssText = i), s.style[t] = n, e.parentNode.insertBefore(s, e), s.appendChild(e), this.mergeColorSpan(s, t, n);
+    o && (s.style.cssText = o), s.style[t] = n, e.parentNode.insertBefore(s, e), s.appendChild(e), this.mergeColorSpan(s, t, n);
   }
   /**
    * Pulls a single child out of a span, preserving the span's colour (and any
@@ -664,19 +799,19 @@ class F {
    * @param {Text} node direct child of `span`
    */
   splitSpanAroundNode(e, t) {
-    const n = e.style.cssText, o = e.parentNode, i = document.createDocumentFragment();
+    const n = e.style.cssText, i = e.parentNode, o = document.createDocumentFragment();
     for (; e.firstChild && e.firstChild !== t; )
-      i.appendChild(e.firstChild);
+      o.appendChild(e.firstChild);
     e.removeChild(t);
     const s = document.createDocumentFragment();
     for (; e.firstChild; )
       s.appendChild(e.firstChild);
     const c = (h) => {
       if (!h.firstChild) return null;
-      const m = document.createElement("span");
-      return m.style.cssText = n, m.appendChild(h), m;
-    }, a = c(i), l = c(s);
-    a && o.insertBefore(a, e), o.insertBefore(t, e), l && o.insertBefore(l, e), o.removeChild(e);
+      const u = document.createElement("span");
+      return u.style.cssText = n, u.appendChild(h), u;
+    }, a = c(o), l = c(s);
+    a && i.insertBefore(a, e), i.insertBefore(t, e), l && i.insertBefore(l, e), i.removeChild(e);
   }
   /**
    * Merges a freshly coloured span with any equal-coloured element siblings so
@@ -686,11 +821,11 @@ class F {
    * @param {string} value
    */
   mergeColorSpan(e, t, n) {
-    const o = e.previousElementSibling;
-    let i = e;
-    o && o.tagName === "SPAN" && this.sameColor(t, o.style[t], n) && (o.appendChild(e.childNodes), e.remove(), i = o);
-    const s = i.nextElementSibling;
-    s && s.tagName === "SPAN" && this.sameColor(t, s.style[t], n) && (i.appendChild(s.childNodes), s.remove());
+    const i = e.previousElementSibling;
+    let o = e;
+    i && i.tagName === "SPAN" && this.sameColor(t, i.style[t], n) && (i.appendChild(e.childNodes), e.remove(), o = i);
+    const s = o.nextElementSibling;
+    s && s.tagName === "SPAN" && this.sameColor(t, s.style[t], n) && (o.appendChild(s.childNodes), s.remove());
   }
   /**
    * Compares two CSS color strings after normalising shorthand/white-space
@@ -702,12 +837,12 @@ class F {
    */
   sameColor(e, t, n) {
     if (!t || !n) return !1;
-    const o = document.createElement("span");
-    o.style[e] = t;
-    const i = o.style[e];
-    o.style[e] = n;
-    const s = o.style[e];
-    return i === s;
+    const i = document.createElement("span");
+    i.style[e] = t;
+    const o = i.style[e];
+    i.style[e] = n;
+    const s = i.style[e];
+    return o === s;
   }
   /**
    * Strips leftover inline style attributes (text color, background,
@@ -715,17 +850,17 @@ class F {
    * Backs the "clear formatting" / "reset text color" toolbar action.
    */
   clearInlineStyles() {
-    var o;
+    var i;
     const e = this.selection.getRange();
     if (!e) return;
     let t = e.commonAncestorContainer;
     if (t.nodeType === Node.TEXT_NODE && (t = t.parentElement), !(t instanceof HTMLElement)) return;
-    ((o = t.style) != null && o.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((i) => {
-      if (!(!this.root.contains(i) || !e.intersectsNode(i)) && (i.removeAttribute("style"), ["SPAN", "FONT"].includes(i.tagName) && i.attributes.length === 0)) {
-        const s = i.parentNode;
+    ((i = t.style) != null && i.length ? [t, ...t.querySelectorAll("*")] : [...t.querySelectorAll("*")]).forEach((o) => {
+      if (!(!this.root.contains(o) || !e.intersectsNode(o)) && (o.removeAttribute("style"), ["SPAN", "FONT"].includes(o.tagName) && o.attributes.length === 0)) {
+        const s = o.parentNode;
         if (!s) return;
-        for (; i.firstChild; ) s.insertBefore(i.firstChild, i);
-        s.removeChild(i);
+        for (; o.firstChild; ) s.insertBefore(o.firstChild, o);
+        s.removeChild(o);
       }
     });
   }
@@ -735,10 +870,10 @@ class F {
     const t = this.selection.getRange();
     if (!t) return;
     t.deleteContents();
-    const n = t.createContextualFragment(e), o = n.lastChild;
-    if (t.insertNode(n), o) {
-      const i = document.createRange();
-      i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
+    const n = t.createContextualFragment(e), i = n.lastChild;
+    if (t.insertNode(n), i) {
+      const o = document.createRange();
+      o.setStartAfter(i), o.collapse(!0), this.selection.setRange(o);
     }
     this.editor.emitChange();
   }
@@ -752,8 +887,10 @@ class F {
   formatBlock(e) {
     const t = this.selection.getRange();
     if (!t) return;
-    const n = e.toLowerCase(), o = this.getBlocksInRange(t);
-    if (!o.length) {
+    const n = e.toLowerCase(), i = this.getBlocksInRange(t).flatMap(
+      (c) => y(c) ? [...c.children].filter((a) => a.tagName === "LI") : [c]
+    );
+    if (!i.length) {
       const c = this.wrapInlineIntoBlock(t, n);
       if (!c) return;
       this.editor.history.push();
@@ -761,15 +898,15 @@ class F {
       a.selectNodeContents(c), a.collapse(!1), this.selection.setRange(a);
       return;
     }
-    const i = o.filter(
+    const o = i.filter(
       (c) => c.tagName.toLowerCase() !== n
     );
-    if (!i.length) return;
+    if (!o.length) return;
     this.editor.history.push();
     let s = null;
-    if (i.forEach((c) => {
-      const a = document.createElement(n);
-      a.innerHTML = c.innerHTML || "<br>", c.replaceWith(a), s = a;
+    if (o.forEach((c) => {
+      let a;
+      c.tagName === "LI" && y(c.parentElement) ? a = this.convertListItem(c, n) : (a = document.createElement(n), a.innerHTML = c.innerHTML || "<br>", c.replaceWith(a)), s = a;
     }), s) {
       const c = document.createRange();
       c.selectNodeContents(s), c.collapse(!1), this.selection.setRange(c);
@@ -786,18 +923,18 @@ class F {
    */
   wrapInlineIntoBlock(e, t) {
     const n = document.createElement(t);
-    let o;
+    let i;
     if (e.collapsed) {
       if (e.startContainer === this.root) {
         n.innerHTML = "<br>";
         const s = this.root.childNodes[e.startOffset] || null;
         return this.root.insertBefore(n, s), n;
       }
-      if (o = this.getInlineLineRange(e), !o) return null;
+      if (i = this.getInlineLineRange(e), !i) return null;
     } else
-      o = e;
-    const i = o.extractContents();
-    return n.appendChild(i), o.insertNode(n), n;
+      i = e;
+    const o = i.extractContents();
+    return n.appendChild(o), i.insertNode(n), n;
   }
   /**
    * Builds a range covering the whole "line" that contains a collapsed caret
@@ -814,15 +951,15 @@ class F {
         t = t.parentNode;
       if (t.nodeType !== Node.ELEMENT_NODE || t === this.root) return null;
     }
-    const n = (l) => l === this.root || l.nodeType === Node.ELEMENT_NODE && (l.tagName === "BR" || L.has(l.tagName));
-    let o = t, i = o.previousSibling;
-    for (; i && !n(i); )
-      o = i, i = i.previousSibling;
+    const n = (l) => l === this.root || l.nodeType === Node.ELEMENT_NODE && (l.tagName === "BR" || S.has(l.tagName));
+    let i = t, o = i.previousSibling;
+    for (; o && !n(o); )
+      i = o, o = o.previousSibling;
     let s = t, c = s.nextSibling;
     for (; c && !n(c); )
       s = c, c = c.nextSibling;
     const a = document.createRange();
-    if (a.setStart(o, 0), s.nodeType === Node.TEXT_NODE)
+    if (a.setStart(i, 0), s.nodeType === Node.TEXT_NODE)
       a.setEnd(s, s.length);
     else {
       const l = s.lastChild;
@@ -831,7 +968,7 @@ class F {
     return a;
   }
 }
-const q = /* @__PURE__ */ new Set([
+const $ = /* @__PURE__ */ new Set([
   "p",
   "br",
   "div",
@@ -874,6 +1011,7 @@ const q = /* @__PURE__ */ new Set([
   "source",
   "iframe",
   "hr",
+  "input",
   "svg",
   "path",
   "circle",
@@ -899,7 +1037,7 @@ const q = /* @__PURE__ */ new Set([
   "tspan",
   "symbol",
   "mask"
-]), W = {
+]), j = {
   "*": /* @__PURE__ */ new Set(["class", "style", "id", "dir"]),
   a: /* @__PURE__ */ new Set(["href", "target", "rel", "title", "name"]),
   img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height", "loading"]),
@@ -936,9 +1074,10 @@ const q = /* @__PURE__ */ new Set([
   mask: /* @__PURE__ */ new Set(["id"]),
   font: /* @__PURE__ */ new Set(["color", "size", "face"]),
   ol: /* @__PURE__ */ new Set(["start", "type", "reversed", "class", "style"]),
-  ul: /* @__PURE__ */ new Set(["class", "style"])
-}, $ = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
-class U {
+  ul: /* @__PURE__ */ new Set(["class", "style"]),
+  input: /* @__PURE__ */ new Set(["type", "checked"])
+}, X = /* @__PURE__ */ new Set(["http:", "https:", "mailto:", "tel:", ""]);
+class K {
   /**
    * @param {object} [options]
    * @param {string[]} [options.allowedTags]
@@ -946,7 +1085,7 @@ class U {
    * @param {string[]} [options.allowedUrlSchemes]
    */
   constructor(e = {}) {
-    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : q, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : W, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : $;
+    this.allowedTags = e.allowedTags ? new Set(e.allowedTags) : $, this.allowedAttrs = e.allowedAttributes ? Object.fromEntries(Object.entries(e.allowedAttributes).map(([t, n]) => [t, new Set(n)])) : j, this.allowedSchemes = e.allowedUrlSchemes ? new Set(e.allowedUrlSchemes.map((t) => `${t}:`)) : X;
   }
   /**
    * @param {string} dirtyHtml
@@ -976,21 +1115,21 @@ class U {
   cleanNode(e) {
     const t = [...e.childNodes];
     for (let n = 0; n < t.length; n++) {
-      const o = t[n];
-      if (o.nodeType !== Node.ELEMENT_NODE) continue;
-      const i = (
+      const i = t[n];
+      if (i.nodeType !== Node.ELEMENT_NODE) continue;
+      const o = (
         /** @type {HTMLElement} */
-        o
-      ), s = i.tagName.toLowerCase();
+        i
+      ), s = o.tagName.toLowerCase();
       if (s === "script" || s === "style" || s === "noscript") {
-        i.remove();
+        o.remove();
         continue;
       }
-      if (this.cleanNode(i), !this.allowedTags.has(s)) {
-        this.unwrap(i);
+      if (this.cleanNode(o), !this.allowedTags.has(s)) {
+        this.unwrap(o);
         continue;
       }
-      this.cleanAttributes(i, s);
+      this.cleanAttributes(o, s);
     }
   }
   /**
@@ -998,19 +1137,19 @@ class U {
    * @param {string} tag
    */
   cleanAttributes(e, t) {
-    const n = this.allowedAttrs["*"] ?? /* @__PURE__ */ new Set(), o = this.allowedAttrs[t] ?? /* @__PURE__ */ new Set();
-    [...e.attributes].forEach((i) => {
-      const s = i.name.toLowerCase();
+    const n = this.allowedAttrs["*"] ?? /* @__PURE__ */ new Set(), i = this.allowedAttrs[t] ?? /* @__PURE__ */ new Set();
+    [...e.attributes].forEach((o) => {
+      const s = o.name.toLowerCase();
       if (s.startsWith("on")) {
-        e.removeAttribute(i.name);
+        e.removeAttribute(o.name);
         return;
       }
-      if (!n.has(s) && !o.has(s)) {
-        e.removeAttribute(i.name);
+      if (!n.has(s) && !i.has(s)) {
+        e.removeAttribute(o.name);
         return;
       }
-      if ((s === "href" || s === "src") && !this.isSafeUrl(i.value) && e.removeAttribute(i.name), s === "style") {
-        const c = this.cleanStyle(i.value);
+      if ((s === "href" || s === "src") && !this.isSafeUrl(o.value) && e.removeAttribute(o.name), s === "style") {
+        const c = this.cleanStyle(o.value);
         c ? e.setAttribute("style", c) : e.removeAttribute("style");
       }
     });
@@ -1052,8 +1191,8 @@ class U {
   isThemeNeutralColor(e) {
     const t = /^([a-z-]+)\s*:\s*(.+)$/i.exec(e);
     if (!t) return !1;
-    const n = t[1].toLowerCase(), o = x(t[2]);
-    return n === "color" ? z.has(o) : n === "background-color" ? M.has(o) : n === "background" ? this.isSolidBalancedColor(o) && M.has(o) : !1;
+    const n = t[1].toLowerCase(), i = _(t[2]);
+    return n === "color" ? O.has(i) : n === "background-color" ? N.has(i) : n === "background" ? this.isSolidBalancedColor(i) && N.has(i) : !1;
   }
   /**
    * Reports whether a value is a single balanced `color(...)` expression —
@@ -1078,32 +1217,32 @@ class U {
     }
   }
 }
-const j = {
+const G = {
   theme: "auto",
   locale: "en",
   height: 420,
   history: { max_steps: 1e3, debounce_ms: 300 },
   autosave: { enabled: !1, interval_ms: 15e3, storage_key: "wysiwyg-editor-autosave" }
-}, _ = /* @__PURE__ */ new Map();
-class H {
+}, R = /* @__PURE__ */ new Map();
+class x {
   /**
    * @param {HTMLTextAreaElement} textarea
    * @param {EditorOptions} options
    */
   constructor(e, t = {}) {
-    var n, o;
-    this.textarea = e, this.options = { ...j, ...t }, this.events = new A(), this.sanitizer = new U(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new D(this.root), this.commands = new F(this), this.history = new I({
+    var n, i;
+    this.textarea = e, this.options = { ...G, ...t }, this.events = new D(), this.sanitizer = new K(this.options.sanitizer), this.plugins = /* @__PURE__ */ new Map(), this.buildDom(), this.selection = new P(this.root), this.commands = new U(this), this.history = new V({
       getContent: () => this.root.innerHTML,
-      setContent: (i) => {
-        this.root.innerHTML = i;
+      setContent: (o) => {
+        this.root.innerHTML = o;
       },
       saveBookmark: () => this.saveSelectionBookmark(),
-      restoreBookmark: (i) => this.restoreSelectionBookmark(i),
+      restoreBookmark: (o) => this.restoreSelectionBookmark(o),
       maxSteps: ((n = this.options.history) == null ? void 0 : n.max_steps) ?? 1e3,
-      debounceMs: ((o = this.options.history) == null ? void 0 : o.debounce_ms) ?? 300,
-      onChange: (i) => this.events.emit(i)
-    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((i) => {
-      console.error("WYSIWYG Editor: plugin loading failed", i);
+      debounceMs: ((i = this.options.history) == null ? void 0 : i.debounce_ms) ?? 300,
+      onChange: (o) => this.events.emit(o)
+    }), this.handleShortcut = this.handleShortcut.bind(this), this.handleTableTab = this.handleTableTab.bind(this), this.handleTab = this.handleTab.bind(this), this.handleEnter = this.handleEnter.bind(this), this.handleBackspace = this.handleBackspace.bind(this), this.handleDragOver = this.handleDragOver.bind(this), this.handleDragLeave = this.handleDragLeave.bind(this), this.bindEvents(), this.applyTheme(this.options.theme), this._debouncedSyncTextarea = this._debounce(() => this.syncTextarea(), 300), this.loadPlugins().catch((o) => {
+      console.error("WYSIWYG Editor: plugin loading failed", o);
     }), this.setupAutosave(), this.events.emit("init", this);
   }
   /** Builds the contenteditable root and hides the original textarea. */
@@ -1115,7 +1254,7 @@ class H {
       this.history.record(), this.emitChange();
     }), this.root.addEventListener("keyup", () => this.syncSelectionState()), this.root.addEventListener("mouseup", () => this.syncSelectionState()), this.root.addEventListener("focus", () => this.events.emit("focus", this)), this.root.addEventListener("blur", () => {
       this.syncTextarea(), this.events.emit("blur", this);
-    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), this.root.addEventListener("dragover", (e) => this.handleDragOver(e)), this.root.addEventListener("dragleave", (e) => this.handleDragLeave(e)), document.addEventListener("keydown", this.handleShortcut), document.addEventListener("keydown", this.handleTableTab), document.addEventListener("keydown", this.handleEnter), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
+    }), this.root.addEventListener("paste", (e) => this.handlePaste(e)), this.root.addEventListener("drop", (e) => this.events.emit("drop", e)), this.root.addEventListener("dragover", (e) => this.handleDragOver(e)), this.root.addEventListener("dragleave", (e) => this.handleDragLeave(e)), document.addEventListener("keydown", this.handleShortcut), document.addEventListener("keydown", this.handleTableTab), document.addEventListener("keydown", this.handleTab), document.addEventListener("keydown", this.handleEnter), document.addEventListener("keydown", this.handleBackspace), this.textarea.form && this.textarea.form.addEventListener("submit", () => this.syncTextarea());
   }
   syncSelectionState() {
     this.selection.save(), this.events.emit("selectionchange", this);
@@ -1136,38 +1275,38 @@ class H {
   /** Calculate character offset from root start to a given node+offset. */
   textOffset(e, t) {
     const n = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
-    let o = 0, i;
-    for (; i = n.nextNode(); ) {
-      if (i === e) return o + t;
-      o += (i.textContent || "").length;
+    let i = 0, o;
+    for (; o = n.nextNode(); ) {
+      if (o === e) return i + t;
+      i += (o.textContent || "").length;
     }
-    return o;
+    return i;
   }
   /** Restore caret from a previously saved bookmark. */
   restoreSelectionBookmark(e) {
     if (!e) return;
-    const { start: t, end: n } = e, o = this.nodeAtOffset(t), i = this.nodeAtOffset(n);
-    if (!o || !i) return;
+    const { start: t, end: n } = e, i = this.nodeAtOffset(t), o = this.nodeAtOffset(n);
+    if (!i || !o) return;
     const s = document.createRange();
-    s.setStart(o.node, Math.min(o.offset, (o.node.textContent || "").length)), s.setEnd(i.node, Math.min(i.offset, (i.node.textContent || "").length));
+    s.setStart(i.node, Math.min(i.offset, (i.node.textContent || "").length)), s.setEnd(o.node, Math.min(o.offset, (o.node.textContent || "").length));
     const c = window.getSelection();
     c && (c.removeAllRanges(), c.addRange(s));
   }
   /** Find text node and offset at a given character position from root start. */
   nodeAtOffset(e) {
     const t = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
-    let n = 0, o;
-    for (; o = t.nextNode(); ) {
-      const i = (o.textContent || "").length;
-      if (n + i >= e) return { node: o, offset: e - n };
-      n += i;
+    let n = 0, i;
+    for (; i = t.nextNode(); ) {
+      const o = (i.textContent || "").length;
+      if (n + o >= e) return { node: i, offset: e - n };
+      n += o;
     }
     return null;
   }
   _debounce(e, t) {
     let n;
-    return (...o) => {
-      clearTimeout(n), n = setTimeout(() => e(...o), t);
+    return (...i) => {
+      clearTimeout(n), n = setTimeout(() => e(...i), t);
     };
   }
   emitChange() {
@@ -1175,11 +1314,11 @@ class H {
   }
   /** @param {ClipboardEvent} event */
   handlePaste(e) {
-    var i, s;
+    var o, s;
     if (e.preventDefault(), this.destroyed) return;
-    const t = (i = e.clipboardData) == null ? void 0 : i.getData("text/html"), n = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "";
-    let o;
-    t ? o = this.sanitizer.sanitize(t) : o = this.escapeHtml(this.autoLink(n)), this.commands.insertHTML(o), this.events.emit("paste", { html: t, text: n });
+    const t = (o = e.clipboardData) == null ? void 0 : o.getData("text/html"), n = ((s = e.clipboardData) == null ? void 0 : s.getData("text/plain")) ?? "";
+    let i;
+    t ? i = this.sanitizer.sanitize(t) : i = this.autoLink(this.escapeHtml(n)), this.commands.insertHTML(i), this.events.emit("paste", { html: t, text: n });
   }
   /** Converts URLs in plain text to clickable <a> links. */
   autoLink(e) {
@@ -1196,23 +1335,23 @@ class H {
   /** @param {KeyboardEvent} event */
   handleShortcut(e) {
     if (this.destroyed || !this.root.contains(document.activeElement) || !(e.ctrlKey || e.metaKey)) return;
-    const o = {
+    const i = {
       b: () => this.commands.exec("bold"),
       i: () => this.commands.exec("italic"),
       u: () => this.commands.exec("underline"),
       k: () => {
-        var i;
-        return (i = this.module("link")) == null ? void 0 : i.open();
+        var o;
+        return (o = this.module("link")) == null ? void 0 : o.open();
       },
       f: () => {
-        var i;
-        return (i = this.module("find")) == null ? void 0 : i.open();
+        var o;
+        return (o = this.module("find")) == null ? void 0 : o.open();
       },
       z: () => e.shiftKey ? this.history.redo() : this.history.undo(),
       y: () => this.history.redo(),
       s: () => this.events.emit("save", this.getHTML())
     }[e.key.toLowerCase()];
-    o && (e.preventDefault(), o());
+    i && (e.preventDefault(), i());
   }
   /** @param {KeyboardEvent} event */
   handleTableTab(e) {
@@ -1223,23 +1362,52 @@ class H {
     const n = e.shiftKey;
     t.navigateToCell(n ? "prev" : "next");
   }
+  /**
+   * Tab / Shift+Tab inside a list item changes its nesting level.
+   * Outside a list (and outside a table, which handleTableTab owns) Tab is
+   * left to the browser so focus navigation keeps working normally.
+   * @param {KeyboardEvent} event
+   */
+  handleTab(e) {
+    if (e.key !== "Tab" || this.destroyed || !this.root.contains(document.activeElement)) return;
+    const t = this.module("table");
+    if (t != null && t.getCurrentTable()) return;
+    const n = this.getCaretListItem();
+    n && (e.preventDefault(), this.history.push(), e.shiftKey ? this.commands.outdentListItem(n) : this.commands.indentListItem(n), this.emitChange());
+  }
+  /**
+   * The <li> containing the caret (if any), bounded by the editor root.
+   * @param {Range} [range] an already-resolved range to reuse
+   * @returns {HTMLElement|null}
+   */
+  getCaretListItem(e = null) {
+    const t = e ?? this.selection.getRange();
+    if (!t) return null;
+    let n = t.startContainer;
+    return n.nodeType === Node.TEXT_NODE && (n = n.parentElement), n instanceof HTMLElement ? n.closest("li") : null;
+  }
   /** @param {KeyboardEvent} event */
   handleEnter(e) {
     if (e.key !== "Enter" || e.shiftKey || this.destroyed || !this.root.contains(document.activeElement)) return;
     const t = this.selection.getBlockElement();
     if (!t) return;
-    const n = t.closest("blockquote"), o = t.tagName === "PRE" || !!t.closest("pre"), i = t.tagName === "DIV" && t.classList.contains("note"), s = this.selection.getRange();
+    const n = t.closest("blockquote"), i = t.tagName === "PRE" || !!t.closest("pre"), o = t.tagName === "DIV" && t.classList.contains("note"), s = this.selection.getRange();
     if (!s) return;
-    if (!n && !o && !i) {
-      let a = s.startContainer;
-      if (a.nodeType === Node.TEXT_NODE && (a = a.parentElement), !(a instanceof HTMLElement) || !a.closest("code")) return;
+    const c = this.getCaretListItem(s);
+    if (c) {
+      this.commands.isListItemEmpty(c) && (e.preventDefault(), this.history.push(), this.commands.exitList(c), this.emitChange());
+      return;
     }
-    if (e.preventDefault(), this.history.push(), o) {
+    if (!n && !i && !o) {
+      let l = s.startContainer;
+      if (l.nodeType === Node.TEXT_NODE && (l = l.parentElement), !(l instanceof HTMLElement) || !l.closest("code")) return;
+    }
+    if (e.preventDefault(), this.history.push(), i) {
       if (!t.textContent.trim()) {
-        const l = document.createElement("p");
-        l.innerHTML = "<br>", t.parentNode.insertBefore(l, t.nextSibling), t.parentNode.removeChild(t);
-        const h = document.createRange();
-        h.setStart(l, 0), h.collapse(!0), this.selection.setRange(h);
+        const h = document.createElement("p");
+        h.innerHTML = "<br>", t.parentNode.insertBefore(h, t.nextSibling), t.parentNode.removeChild(t);
+        const u = document.createRange();
+        u.setStart(h, 0), u.collapse(!0), this.selection.setRange(u);
       } else
         this._insertBreakInPre(s);
       this.emitChange();
@@ -1247,79 +1415,92 @@ class H {
     }
     if (n) {
       if (!t.textContent.trim()) {
-        const p = document.createElement("p");
-        p.innerHTML = "<br>", n.parentNode.insertBefore(p, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
+        const f = document.createElement("p");
+        f.innerHTML = "<br>", n.parentNode.insertBefore(f, n.nextSibling), t.parentNode.removeChild(t), !n.textContent.trim() && !n.children.length && n.parentNode.removeChild(n);
         const v = document.createRange();
-        v.setStart(p, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
+        v.setStart(f, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
         return;
       }
-      const l = document.createElement("p"), { startContainer: h, startOffset: m } = s;
-      if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
-        const p = h.textContent, v = p.slice(0, m), b = p.slice(m);
-        h.textContent = v, b && (l.textContent = b);
+      const h = document.createElement("p"), { startContainer: u, startOffset: p } = s;
+      if (u.nodeType === Node.TEXT_NODE && t.contains(u)) {
+        const f = u.textContent, v = f.slice(0, p), E = f.slice(p);
+        u.textContent = v, E && (h.textContent = E);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), g = l.firstChild || l;
-      f.setStart(g, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      h.textContent || (h.innerHTML = "<br>"), t.parentNode.insertBefore(h, t.nextSibling);
+      const g = document.createRange(), b = h.firstChild || h;
+      g.setStart(b, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
       return;
     }
-    if (i) {
+    if (o) {
       if (!t.textContent.trim()) {
-        const p = document.createElement("p");
-        p.innerHTML = "<br>", t.parentNode.insertBefore(p, t.nextSibling), t.parentNode.removeChild(t);
+        const f = document.createElement("p");
+        f.innerHTML = "<br>", t.parentNode.insertBefore(f, t.nextSibling), t.parentNode.removeChild(t);
         const v = document.createRange();
-        v.setStart(p, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
+        v.setStart(f, 0), v.collapse(!0), this.selection.setRange(v), this.emitChange();
         return;
       }
-      const l = document.createElement("p"), { startContainer: h, startOffset: m } = s;
-      if (h.nodeType === Node.TEXT_NODE && t.contains(h)) {
-        const p = h.textContent, v = p.slice(0, m), b = p.slice(m);
-        h.textContent = v, b && (l.textContent = b);
+      const h = document.createElement("p"), { startContainer: u, startOffset: p } = s;
+      if (u.nodeType === Node.TEXT_NODE && t.contains(u)) {
+        const f = u.textContent, v = f.slice(0, p), E = f.slice(p);
+        u.textContent = v, E && (h.textContent = E);
       }
-      l.textContent || (l.innerHTML = "<br>"), t.parentNode.insertBefore(l, t.nextSibling);
-      const f = document.createRange(), g = l.firstChild || l;
-      f.setStart(g, 0), f.collapse(!0), this.selection.setRange(f), this.emitChange();
+      h.textContent || (h.innerHTML = "<br>"), t.parentNode.insertBefore(h, t.nextSibling);
+      const g = document.createRange(), b = h.firstChild || h;
+      g.setStart(b, 0), g.collapse(!0), this.selection.setRange(g), this.emitChange();
       return;
     }
-    const c = (() => {
-      let a = s.startContainer;
-      return a.nodeType === Node.TEXT_NODE && (a = a.parentElement), a instanceof HTMLElement ? a.closest("code") : null;
+    const a = (() => {
+      let l = s.startContainer;
+      return l.nodeType === Node.TEXT_NODE && (l = l.parentElement), l instanceof HTMLElement ? l.closest("code") : null;
     })();
-    if (c) {
-      const { startContainer: a, startOffset: l } = s;
-      if (a.nodeType === Node.TEXT_NODE && t.contains(a)) {
-        const h = a.textContent, m = h.slice(0, l), f = h.slice(l);
-        a.textContent = m;
-        const g = document.createElement("p");
-        if (f ? g.textContent = f : g.innerHTML = "<br>", t.parentNode.insertBefore(g, t.nextSibling), !c.textContent.trim()) {
-          const b = c.parentNode, R = document.createTextNode("");
-          b.replaceChild(R, c);
+    if (a) {
+      const { startContainer: l, startOffset: h } = s;
+      if (l.nodeType === Node.TEXT_NODE && t.contains(l)) {
+        const u = l.textContent, p = u.slice(0, h), g = u.slice(h);
+        l.textContent = p;
+        const b = document.createElement("p");
+        if (g ? b.textContent = g : b.innerHTML = "<br>", t.parentNode.insertBefore(b, t.nextSibling), !a.textContent.trim()) {
+          const E = a.parentNode, B = document.createTextNode("");
+          E.replaceChild(B, a);
         }
-        const p = document.createRange(), v = g.firstChild || g;
-        p.setStart(v, 0), p.collapse(!0), this.selection.setRange(p);
+        const f = document.createRange(), v = b.firstChild || b;
+        f.setStart(v, 0), f.collapse(!0), this.selection.setRange(f);
       } else {
-        const h = document.createElement("p");
-        h.innerHTML = "<br>", t.parentNode.insertBefore(h, t.nextSibling);
-        const m = document.createRange();
-        m.setStart(h, 0), m.collapse(!0), this.selection.setRange(m);
+        const u = document.createElement("p");
+        u.innerHTML = "<br>", t.parentNode.insertBefore(u, t.nextSibling);
+        const p = document.createRange();
+        p.setStart(u, 0), p.collapse(!0), this.selection.setRange(p);
       }
       this.emitChange();
     }
   }
+  /**
+   * Backspace at the start of an empty list item removes the item (and
+   * collapses an emptied list into a paragraph). Non-empty items are left
+   * to the browser's own merging behaviour.
+   * @param {KeyboardEvent} event
+   */
+  handleBackspace(e) {
+    if (e.key !== "Backspace" || e.ctrlKey || e.metaKey || e.altKey || this.destroyed || !this.root.contains(document.activeElement)) return;
+    const t = this.selection.getRange();
+    if (!t || !t.collapsed) return;
+    const n = this.getCaretListItem(t);
+    !n || !this.commands.isListItemEmpty(n) || (e.preventDefault(), this.history.push(), this.commands.removeListItem(n), this.emitChange());
+  }
   _insertBreakInPre(e) {
-    const { startContainer: t, startOffset: n } = e, o = document.createElement("br");
+    const { startContainer: t, startOffset: n } = e, i = document.createElement("br");
     if (t.nodeType === Node.TEXT_NODE) {
       const s = t.textContent, c = s.slice(0, n), a = s.slice(n);
-      if (t.textContent = c, t.parentNode.insertBefore(o, t.nextSibling), a) {
+      if (t.textContent = c, t.parentNode.insertBefore(i, t.nextSibling), a) {
         const l = document.createTextNode(a);
-        t.parentNode.insertBefore(l, o.nextSibling);
+        t.parentNode.insertBefore(l, i.nextSibling);
       }
     } else {
       const s = t.childNodes[n] || null;
-      t.insertBefore(o, s);
+      t.insertBefore(i, s);
     }
-    const i = document.createRange();
-    i.setStartAfter(o), i.collapse(!0), this.selection.setRange(i);
+    const o = document.createRange();
+    o.setStartAfter(i), o.collapse(!0), this.selection.setRange(o);
   }
   handleDragOver() {
     if (this.destroyed) return;
@@ -1351,10 +1532,10 @@ class H {
    */
   async loadPlugins() {
     const e = new Set(this.options.disabledPlugins ?? []), t = [];
-    _.forEach((n, o) => {
-      e.has(o) || t.push(
-        Promise.resolve(n(this)).then((i) => {
-          this.plugins.set(o, i);
+    R.forEach((n, i) => {
+      e.has(i) || t.push(
+        Promise.resolve(n(this)).then((o) => {
+          this.plugins.set(i, o);
         })
       );
     }), await Promise.all(t);
@@ -1411,7 +1592,7 @@ class H {
     this.destroyed || (this.destroyed = !0, this.plugins.forEach((e) => {
       var t;
       return (t = e == null ? void 0 : e.destroy) == null ? void 0 : t.call(e);
-    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleEnter), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
+    }), this.events.emit("destroy", this), clearInterval(this.autosaveTimer), document.removeEventListener("keydown", this.handleShortcut), document.removeEventListener("keydown", this.handleTableTab), document.removeEventListener("keydown", this.handleTab), document.removeEventListener("keydown", this.handleEnter), document.removeEventListener("keydown", this.handleBackspace), this.root.removeEventListener("dragover", this.handleDragOver), this.root.removeEventListener("dragleave", this.handleDragLeave), this.history.destroy(), this.wrapper.remove(), this.textarea.style.display = "", this.events.destroy());
   }
   /**
    * @param {string} event
@@ -1425,10 +1606,10 @@ class H {
    * @param {(editor: Editor) => { destroy?: () => void }} factory
    */
   static registerPlugin(e, t) {
-    _.set(e, t);
+    R.set(e, t);
   }
 }
-const d = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, u = {
+const d = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">${r}</svg>`, m = {
   undo: d('<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>'),
   redo: d('<path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.06-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/>'),
   bold: d('<path d="M15.6 10.79c.97-.67 1.65-1.77 1.65-2.79 0-2.26-1.75-4-4-4H7v14h6.04c2.09 0 3.71-1.7 3.71-3.79 0-1.52-.86-2.82-2.15-3.42zM10 6.5h3c.83 0 1.5.67 1.5 1.5S13.83 9.5 13 9.5h-3v-3zm3.5 8H10v-3h3.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5z"/>'),
@@ -1476,7 +1657,7 @@ const d = (r) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentC
   listProps: d('<path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/>'),
   paragraph: d('<path d="M13 4v16h-2V4H7v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V4h-4z"/>')
 };
-class X {
+class J {
   /**
    * @param {HTMLElement} container element the dialog is appended to (editor wrapper)
    * @param {object} config
@@ -1487,8 +1668,8 @@ class X {
    * @param {(form: HTMLFormElement) => void} config.onConfirm
    * @param {() => void} [config.onClose]
    */
-  constructor(e, { title: t, bodyHtml: n, confirmLabel: o = "OK", cancelLabel: i = "Cancel", onConfirm: s, onClose: c }) {
-    N(this, "handleEscape", (e) => {
+  constructor(e, { title: t, bodyHtml: n, confirmLabel: i = "OK", cancelLabel: o = "Cancel", onConfirm: s, onClose: c }) {
+    z(this, "handleEscape", (e) => {
       e.key === "Escape" && this.close();
     });
     this.container = e, this.onConfirm = s, this.onClose = c, this.overlay = document.createElement("div"), this.overlay.className = "ife-dialog-overlay", this.overlay.innerHTML = `
@@ -1499,8 +1680,8 @@ class X {
                 </header>
                 <div class="ife-dialog__body">${n}</div>
                 <footer class="ife-dialog__footer">
-                    <button type="button" class="ife-btn ife-btn--ghost" data-action="cancel">${i}</button>
-                    <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${o}</button>
+                    <button type="button" class="ife-btn ife-btn--ghost" data-action="cancel">${o}</button>
+                    <button type="submit" class="ife-btn ife-btn--primary" data-action="confirm">${i}</button>
                 </footer>
             </form>
         `, this.form = this.overlay.querySelector("form"), this.overlay.querySelectorAll("button, input, select, textarea").forEach((a) => {
@@ -1529,8 +1710,8 @@ class X {
       "--ife-danger",
       "--ife-radius",
       "--ife-font"
-    ].forEach((o) => {
-      this.overlay.style.setProperty(o, e.getPropertyValue(o));
+    ].forEach((i) => {
+      this.overlay.style.setProperty(i, e.getPropertyValue(i));
     });
     const n = this.form.querySelector("input, textarea, select");
     n == null || n.focus({ preventScroll: !0 });
@@ -1539,9 +1720,9 @@ class X {
     document.body.style.overflow = "", document.body.style.paddingRight = "", this.scrollPos && window.scrollTo(this.scrollPos.x, this.scrollPos.y), this.container.scrollTop = this.containerScrollTop ?? 0, document.removeEventListener("keydown", this.handleEscape), this.overlay.remove(), this.onClose && this.onClose();
   }
 }
-const K = {
+const Y = {
   blockFormat: {
-    icon: u.paragraph,
+    icon: m.paragraph,
     label: "Block format",
     type: "select",
     options: [
@@ -1557,39 +1738,39 @@ const K = {
       r.commands.exec("formatBlock", e);
     }
   },
-  undo: { icon: u.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
-  redo: { icon: u.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
-  bold: { icon: u.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
-  italic: { icon: u.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
-  underline: { icon: u.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
-  strike: { icon: u.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
-  superscript: { icon: u.superscript, label: "Superscript", type: "command", command: "superscript" },
-  subscript: { icon: u.subscript, label: "Subscript", type: "command", command: "subscript" },
-  forecolor: { icon: u.formatColorText, label: "Text color", type: "color", command: "foreColor" },
-  backcolor: { icon: u.formatColorFill, label: "Background color", type: "color", command: "backColor" },
+  undo: { icon: m.undo, label: "Undo", shortcut: "Ctrl+Z", type: "action", action: (r) => r.undo() },
+  redo: { icon: m.redo, label: "Redo", shortcut: "Ctrl+Y", type: "action", action: (r) => r.redo() },
+  bold: { icon: m.bold, label: "Bold", shortcut: "Ctrl+B", type: "command", command: "bold" },
+  italic: { icon: m.italic, label: "Italic", shortcut: "Ctrl+I", type: "command", command: "italic" },
+  underline: { icon: m.underline, label: "Underline", shortcut: "Ctrl+U", type: "command", command: "underline" },
+  strike: { icon: m.strikeThrough, label: "Strikethrough", type: "command", command: "strikeThrough" },
+  superscript: { icon: m.superscript, label: "Superscript", type: "command", command: "superscript" },
+  subscript: { icon: m.subscript, label: "Subscript", type: "command", command: "subscript" },
+  forecolor: { icon: m.formatColorText, label: "Text color", type: "color", command: "foreColor" },
+  backcolor: { icon: m.formatColorFill, label: "Background color", type: "color", command: "backColor" },
   removeFormat: {
-    icon: u.clearFormat,
+    icon: m.clearFormat,
     label: "Clear formatting",
     type: "command",
     command: "removeFormat"
   },
-  alignLeft: { icon: u.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
-  alignCenter: { icon: u.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
-  alignRight: { icon: u.alignRight, label: "Align right", type: "command", command: "justifyRight" },
-  alignJustify: { icon: u.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
-  bulletList: { icon: u.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
-  orderedList: { icon: u.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
+  alignLeft: { icon: m.alignLeft, label: "Align left", type: "command", command: "justifyLeft" },
+  alignCenter: { icon: m.alignCenter, label: "Align center", type: "command", command: "justifyCenter" },
+  alignRight: { icon: m.alignRight, label: "Align right", type: "command", command: "justifyRight" },
+  alignJustify: { icon: m.alignJustify, label: "Justify", type: "command", command: "justifyFull" },
+  bulletList: { icon: m.listBulleted, label: "Bulleted list", type: "command", command: "insertUnorderedList" },
+  orderedList: { icon: m.listNumbered, label: "Numbered list", type: "command", command: "insertOrderedList" },
   checklist: {
-    icon: u.checklist,
+    icon: m.checklist,
     label: "Checklist",
     type: "action",
     action: (r) => r.commands.insertHTML('<ul class="ife-checklist"><li><input type="checkbox"> Item</li></ul>')
   },
-  indent: { icon: u.indent, label: "Increase indent", type: "command", command: "indent" },
-  outdent: { icon: u.outdent, label: "Decrease indent", type: "command", command: "outdent" },
-  link: { icon: u.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (r) => r.module("link").open() },
+  indent: { icon: m.indent, label: "Increase indent", type: "command", command: "indent" },
+  outdent: { icon: m.outdent, label: "Decrease indent", type: "command", command: "outdent" },
+  link: { icon: m.link, label: "Insert/edit link", shortcut: "Ctrl+K", type: "action", action: (r) => r.module("link").open() },
   unlink: {
-    icon: u.unlink,
+    icon: m.unlink,
     label: "Remove link",
     type: "action",
     action: (r) => {
@@ -1597,19 +1778,19 @@ const K = {
       e && r.module("link").remove(e);
     }
   },
-  image: { icon: u.image, label: "Insert image", type: "action", action: (r) => r.module("image").open() },
-  video: { icon: u.videocam, label: "Insert video", type: "action", action: (r) => r.module("media").openVideo() },
-  audio: { icon: u.audiotrack, label: "Insert audio", type: "action", action: (r) => r.module("media").openAudio() },
-  table: { icon: u.table, label: "Insert table", type: "action", action: (r) => r.module("table").openInsertDialog() },
-  hr: { icon: u.hr, label: "Horizontal rule", type: "action", action: (r) => r.module("media").insertHorizontalRule() },
-  blockquote: { icon: u.blockquote, label: "Blockquote", type: "action", action: (r) => {
+  image: { icon: m.image, label: "Insert image", type: "action", action: (r) => r.module("image").open() },
+  video: { icon: m.videocam, label: "Insert video", type: "action", action: (r) => r.module("media").openVideo() },
+  audio: { icon: m.audiotrack, label: "Insert audio", type: "action", action: (r) => r.module("media").openAudio() },
+  table: { icon: m.table, label: "Insert table", type: "action", action: (r) => r.module("table").openInsertDialog() },
+  hr: { icon: m.hr, label: "Horizontal rule", type: "action", action: (r) => r.module("media").insertHorizontalRule() },
+  blockquote: { icon: m.blockquote, label: "Blockquote", type: "action", action: (r) => {
     const e = r.selection.getBlockElement();
     if (!e || e === r.root) return;
     if (e.tagName === "BLOCKQUOTE" || e.closest("blockquote")) {
       const n = e.tagName === "BLOCKQUOTE" ? e : e.closest("blockquote");
       r.history.push();
-      const o = document.createElement("p");
-      o.innerHTML = n.innerHTML, n.replaceWith(o);
+      const i = document.createElement("p");
+      i.innerHTML = n.innerHTML, n.replaceWith(i);
     } else {
       r.history.push();
       const n = document.createElement("blockquote");
@@ -1618,68 +1799,68 @@ const K = {
     r.emitChange();
   } },
   codeInline: {
-    icon: u.code,
+    icon: m.code,
     label: "Inline code",
     type: "action",
     action: (r) => r.selection.wrap("code") && r.emitChange()
   },
-  codeBlock: { icon: u.codeBlock, label: "Code block", type: "action", action: (r) => {
+  codeBlock: { icon: m.codeBlock, label: "Code block", type: "action", action: (r) => {
     const e = r.selection.getBlockElement();
     if (!e || e === r.root) return;
     const t = e.tagName === "PRE" || e.closest("pre");
     if (r.history.push(), t) {
-      const n = e.tagName === "PRE" ? e : e.closest("pre"), o = document.createElement("p");
-      o.innerHTML = n.innerHTML, n.replaceWith(o);
+      const n = e.tagName === "PRE" ? e : e.closest("pre"), i = document.createElement("p");
+      i.innerHTML = n.innerHTML, n.replaceWith(i);
     } else {
       const n = document.createElement("pre");
       n.innerHTML = e.innerHTML, e.replaceWith(n);
     }
     r.emitChange();
   } },
-  note: { icon: u.note, label: "Insert note", type: "action", action: (r) => r.module("note").open() },
+  note: { icon: m.note, label: "Insert note", type: "action", action: (r) => r.module("note").open() },
   emoji: {
-    icon: u.emoji,
+    icon: m.emoji,
     label: "Emoji",
     type: "action",
     action: (r, e) => r.module("emoji").open(e)
   },
   specialChars: {
-    icon: u.specialChars,
+    icon: m.specialChars,
     label: "Special characters",
     type: "action",
     action: (r) => r.commands.insertHTML("&amp;copy;")
   },
-  find: { icon: u.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (r) => r.module("find").open() },
+  find: { icon: m.find, label: "Find & Replace", shortcut: "Ctrl+F", type: "action", action: (r) => r.module("find").open() },
   sourceCode: {
-    icon: u.sourceCode,
+    icon: m.sourceCode,
     label: "Source code",
     type: "action",
     toggle: !0,
     action: (r) => r.module("codeView").toggle()
   },
   fullscreen: {
-    icon: u.fullscreen,
+    icon: m.fullscreen,
     label: "Fullscreen",
     type: "action",
     toggle: !0,
     action: (r) => r.module("fullscreen").toggle()
   },
   ltr: {
-    icon: u.ltr,
+    icon: m.ltr,
     label: "Left-to-right",
     type: "action",
     toggle: !0,
     action: (r) => r.commands.exec("direction", "ltr")
   },
   rtl: {
-    icon: u.rtl,
+    icon: m.rtl,
     label: "Right-to-left",
     type: "action",
     toggle: !0,
     action: (r) => r.commands.exec("direction", "rtl")
   },
   markdown: {
-    icon: u.markdown,
+    icon: m.markdown,
     label: "Markdown",
     type: "action",
     toggle: !0,
@@ -1695,7 +1876,7 @@ const K = {
     }
   },
   date: {
-    icon: u.date,
+    icon: m.date,
     label: "Insert date",
     type: "action",
     action: (r) => {
@@ -1704,7 +1885,7 @@ const K = {
     }
   },
   time: {
-    icon: u.time,
+    icon: m.time,
     label: "Insert time",
     type: "action",
     action: (r) => {
@@ -1713,7 +1894,7 @@ const K = {
     }
   },
   anchor: {
-    icon: u.anchor,
+    icon: m.anchor,
     label: "Insert anchor",
     type: "action",
     action: (r) => {
@@ -1727,7 +1908,7 @@ const K = {
     }
   },
   templates: {
-    icon: u.template,
+    icon: m.template,
     label: "Content templates",
     type: "action",
     action: (r) => {
@@ -1736,13 +1917,13 @@ const K = {
     }
   },
   listProps: {
-    icon: u.listProps,
+    icon: m.listProps,
     label: "List properties",
     type: "action",
     action: (r) => {
       const e = r.selection.closest("li"), t = e == null ? void 0 : e.closest("ol, ul");
       if (!t || t.tagName !== "OL") return;
-      const n = t.getAttribute("start") || "", o = t.style.listStyleType || "", i = `
+      const n = t.getAttribute("start") || "", i = t.style.listStyleType || "", o = `
                 <label class="ife-field">
                     <span>Start number</span>
                     <input type="number" name="start" min="1" value="${n || "1"}">
@@ -1750,17 +1931,17 @@ const K = {
                 <label class="ife-field">
                     <span>List style type</span>
                     <select name="type">
-                        <option value="" ${o ? "" : "selected"}>Default (decimal)</option>
-                        <option value="decimal" ${o === "decimal" ? "selected" : ""}>Decimal</option>
-                        <option value="lower-alpha" ${o === "lower-alpha" ? "selected" : ""}>Lower alpha</option>
-                        <option value="upper-alpha" ${o === "upper-alpha" ? "selected" : ""}>Upper alpha</option>
-                        <option value="lower-roman" ${o === "lower-roman" ? "selected" : ""}>Lower roman</option>
-                        <option value="upper-roman" ${o === "upper-roman" ? "selected" : ""}>Upper roman</option>
+                        <option value="" ${i ? "" : "selected"}>Default (decimal)</option>
+                        <option value="decimal" ${i === "decimal" ? "selected" : ""}>Decimal</option>
+                        <option value="lower-alpha" ${i === "lower-alpha" ? "selected" : ""}>Lower alpha</option>
+                        <option value="upper-alpha" ${i === "upper-alpha" ? "selected" : ""}>Upper alpha</option>
+                        <option value="lower-roman" ${i === "lower-roman" ? "selected" : ""}>Lower roman</option>
+                        <option value="upper-roman" ${i === "upper-roman" ? "selected" : ""}>Upper roman</option>
                     </select>
                 </label>
-            `, s = new X(r.wrapper, {
+            `, s = new J(r.wrapper, {
         title: "List properties",
-        bodyHtml: i,
+        bodyHtml: o,
         confirmLabel: "Apply",
         onConfirm: (c) => {
           const a = new FormData(c), l = a.get("start"), h = a.get("type");
@@ -1770,7 +1951,7 @@ const K = {
       r.selection.save(), s.open();
     }
   }
-}, G = {
+}, Q = {
   undo: "Undo",
   redo: "Redo",
   bold: "Bold",
@@ -1835,7 +2016,7 @@ const K = {
   listProps: "List properties",
   blockFormat: "Block format",
   madeBy: "Made by ITkha"
-}, J = {
+}, Z = {
   undo: "Скасувати",
   redo: "Повторити",
   bold: "Жирний",
@@ -1900,7 +2081,7 @@ const K = {
   listProps: "Властивості списку",
   blockFormat: "Формат блоку",
   madeBy: "Зроблено в ITkha"
-}, Y = {
+}, ee = {
   undo: "Отменить",
   redo: "Повторить",
   bold: "Жирный",
@@ -1965,17 +2146,17 @@ const K = {
   listProps: "Свойства списка",
   blockFormat: "Формат блока",
   madeBy: "Сделано в ITkha"
-}, k = /* @__PURE__ */ new Map([
-  ["en", G],
-  ["uk", J],
-  ["ru", Y]
-]), y = {
+}, C = /* @__PURE__ */ new Map([
+  ["en", Q],
+  ["uk", Z],
+  ["ru", ee]
+]), k = {
   /**
    * @param {string} code
    * @param {Record<string, string>} strings
    */
   register(r, e) {
-    k.set(r, e);
+    C.set(r, e);
   },
   /**
    * @param {string} locale
@@ -1983,12 +2164,12 @@ const K = {
    * @returns {string}
    */
   t(r, e) {
-    return (k.get(r) ?? k.get("en"))[e] ?? k.get("en")[e] ?? e;
+    return (C.get(r) ?? C.get("en"))[e] ?? C.get("en")[e] ?? e;
   },
   available() {
-    return [...k.keys()];
+    return [...C.keys()];
   }
-}, Q = [
+}, te = [
   "#000000",
   "#444444",
   "#777777",
@@ -2021,25 +2202,25 @@ const K = {
   "#795548",
   "#a1887f"
 ];
-function E(r, e, t) {
+function L(r, e, t) {
   return Math.max(e, Math.min(t, r));
 }
-function S(r) {
+function M(r) {
   const e = /^#([0-9a-f]{6})$/i.exec((r || "").trim());
   if (!e) return [0, 0, 0];
-  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, o = parseInt(e[1].slice(4, 6), 16) / 255, i = Math.max(t, n, o), s = Math.min(t, n, o), c = i - s, a = i;
+  const t = parseInt(e[1].slice(0, 2), 16) / 255, n = parseInt(e[1].slice(2, 4), 16) / 255, i = parseInt(e[1].slice(4, 6), 16) / 255, o = Math.max(t, n, i), s = Math.min(t, n, i), c = o - s, a = o;
   let l = 0, h = 0;
-  return c !== 0 && (h = c / i, i === t ? l = (n - o) / c + (n < o ? 6 : 0) : i === n ? l = (o - t) / c + 2 : l = (t - n) / c + 4), [Math.round(l * 60), Math.round(h * 100), Math.round(a * 100)];
+  return c !== 0 && (h = c / o, o === t ? l = (n - i) / c + (n < i ? 6 : 0) : o === n ? l = (i - t) / c + 2 : l = (t - n) / c + 4), [Math.round(l * 60), Math.round(h * 100), Math.round(a * 100)];
 }
-function T(r, e, t) {
-  r = (r % 360 + 360) % 360, e = E(e, 0, 100) / 100, t = E(t, 0, 100) / 100;
-  const n = t * e, o = n * (1 - Math.abs(r / 60 % 2 - 1)), i = t - n;
+function H(r, e, t) {
+  r = (r % 360 + 360) % 360, e = L(e, 0, 100) / 100, t = L(t, 0, 100) / 100;
+  const n = t * e, i = n * (1 - Math.abs(r / 60 % 2 - 1)), o = t - n;
   let s = 0, c = 0, a = 0;
-  r < 60 ? (s = n, c = o) : r < 120 ? (s = o, c = n) : r < 180 ? (c = n, a = o) : r < 240 ? (c = o, a = n) : r < 300 ? (s = o, a = n) : (s = n, a = o);
-  const l = (h) => Math.round((h + i) * 255).toString(16).padStart(2, "0");
+  r < 60 ? (s = n, c = i) : r < 120 ? (s = i, c = n) : r < 180 ? (c = n, a = i) : r < 240 ? (c = i, a = n) : r < 300 ? (s = i, a = n) : (s = n, a = i);
+  const l = (h) => Math.round((h + o) * 255).toString(16).padStart(2, "0");
   return `#${l(s)}${l(c)}${l(a)}`;
 }
-class Z {
+class ne {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {HTMLElement} triggerEl toolbar button that opens this picker
@@ -2054,11 +2235,11 @@ class Z {
   open() {
     if (this.picker) return;
     this.editor.selection.save(), this.editor.wrapper.classList.add("ife-color-picking");
-    const e = this.getCurrentColor(), [t, n, o] = e ? S(e) : [0, 0, 0];
-    this.hue = t, this.sat = n, this.value = o, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
-    const i = this.editor.wrapper;
+    const e = this.getCurrentColor(), [t, n, i] = e ? M(e) : [0, 0, 0];
+    this.hue = t, this.sat = n, this.value = i, this.picker = document.createElement("div"), this.picker.className = "ife-color-picker", this.picker.setAttribute("role", "dialog"), this.picker.setAttribute("aria-label", this.label), this.buildPickerBody();
+    const o = this.editor.wrapper;
     ["--ife-bg", "--ife-text", "--ife-border", "--ife-btn-hover", "--ife-btn-active"].forEach((s) => {
-      this.picker.style.setProperty(s, getComputedStyle(i).getPropertyValue(s));
+      this.picker.style.setProperty(s, getComputedStyle(o).getPropertyValue(s));
     }), document.body.appendChild(this.picker), this.positionPicker(), this._boundOnResize = () => this.positionPicker(), this._boundOnScroll = () => {
       this.picker && this.positionPicker();
     }, this._boundOnClickOutside = (s) => {
@@ -2074,31 +2255,31 @@ class Z {
     t.className = "ife-color-picker__square", t.setAttribute("aria-label", "Saturation and brightness");
     const n = document.createElement("div");
     n.className = "ife-color-picker__controls";
-    const o = document.createElement("div");
-    o.className = "ife-color-picker__field";
-    const i = document.createElement("span");
-    i.className = "ife-color-picker__field-label", i.textContent = this.label;
+    const i = document.createElement("div");
+    i.className = "ife-color-picker__field";
+    const o = document.createElement("span");
+    o.className = "ife-color-picker__field-label", o.textContent = this.label;
     const s = document.createElement("input");
-    s.type = "text", s.className = "ife-color-picker__hex", s.value = T(this.hue, this.sat, this.value), s.setAttribute("aria-label", `${this.label} hex`), s.addEventListener("input", () => {
+    s.type = "text", s.className = "ife-color-picker__hex", s.value = H(this.hue, this.sat, this.value), s.setAttribute("aria-label", `${this.label} hex`), s.addEventListener("input", () => {
       const h = /^#?([0-9a-f]{6})$/i.exec(s.value.trim());
       if (!h) return;
-      const [m, f, g] = S(`#${h[1]}`);
-      this.hue = m, this.sat = f, this.value = g, this.render(), this.emit();
+      const [u, p, g] = M(`#${h[1]}`);
+      this.hue = u, this.sat = p, this.value = g, this.render(), this.emit();
     }), s.addEventListener("mousedown", (h) => h.stopPropagation());
     const c = document.createElement("span");
     c.className = "ife-color-picker__preview", c.setAttribute("aria-hidden", "true");
     const a = document.createElement("button");
     a.type = "button", a.className = "ife-color-picker__clear", a.textContent = "✕", a.title = "Clear colour", a.setAttribute("aria-label", "Clear colour"), a.addEventListener("mousedown", (h) => h.preventDefault()), a.addEventListener("click", () => {
       this.onClear && this.onClear(), this.close();
-    }), o.appendChild(i), o.appendChild(s), o.appendChild(c), o.appendChild(a);
+    }), i.appendChild(o), i.appendChild(s), i.appendChild(c), i.appendChild(a);
     const l = document.createElement("div");
-    l.className = "ife-color-picker__swatches", l.setAttribute("role", "group"), l.setAttribute("aria-label", "Preset colours"), Q.forEach((h) => {
-      const m = document.createElement("button");
-      m.type = "button", m.className = "ife-color-picker__swatch", m.style.backgroundColor = h, m.title = h, m.setAttribute("aria-label", h), m.setAttribute("data-color", h), m.addEventListener("mousedown", (f) => f.preventDefault()), m.addEventListener("click", () => {
-        const [f, g, p] = S(h);
-        this.hue = f, this.sat = g, this.value = p, this.render(), this.emit(h);
-      }), l.appendChild(m);
-    }), n.appendChild(e), n.appendChild(t), n.appendChild(o), n.appendChild(l), this.picker.appendChild(n), this.square = t, this.hueEl = e, this.hexEl = s, this.previewEl = c, this.square.addEventListener("pointerdown", (h) => this.onSquareDown(h)), this.hueEl.addEventListener("pointerdown", (h) => this.onHueDown(h)), this._boundPointerMove = (h) => this.onPointerMove(h), this._boundPointerUp = () => {
+    l.className = "ife-color-picker__swatches", l.setAttribute("role", "group"), l.setAttribute("aria-label", "Preset colours"), te.forEach((h) => {
+      const u = document.createElement("button");
+      u.type = "button", u.className = "ife-color-picker__swatch", u.style.backgroundColor = h, u.title = h, u.setAttribute("aria-label", h), u.setAttribute("data-color", h), u.addEventListener("mousedown", (p) => p.preventDefault()), u.addEventListener("click", () => {
+        const [p, g, b] = M(h);
+        this.hue = p, this.sat = g, this.value = b, this.render(), this.emit(h);
+      }), l.appendChild(u);
+    }), n.appendChild(e), n.appendChild(t), n.appendChild(i), n.appendChild(l), this.picker.appendChild(n), this.square = t, this.hueEl = e, this.hexEl = s, this.previewEl = c, this.square.addEventListener("pointerdown", (h) => this.onSquareDown(h)), this.hueEl.addEventListener("pointerdown", (h) => this.onHueDown(h)), this._boundPointerMove = (h) => this.onPointerMove(h), this._boundPointerUp = () => {
       this._squareDrag = !1, this._hueDrag = !1;
     }, document.addEventListener("pointermove", this._boundPointerMove), document.addEventListener("pointerup", this._boundPointerUp), this.picker.addEventListener("mousedown", (h) => {
       h.target.closest("input") || h.preventDefault();
@@ -2106,21 +2287,21 @@ class Z {
   }
   render() {
     if (!this.picker) return;
-    const e = T(this.hue, this.sat, this.value);
+    const e = H(this.hue, this.sat, this.value);
     this.square.style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${this.hue}, 100%, 50%))`;
     const t = this.square.querySelector(".ife-color-picker__square-handle") || (() => {
-      const o = document.createElement("span");
-      return o.className = "ife-color-picker__square-handle", this.square.appendChild(o), o;
+      const i = document.createElement("span");
+      return i.className = "ife-color-picker__square-handle", this.square.appendChild(i), i;
     })();
     t.style.left = `${this.sat}%`, t.style.top = `${100 - this.value}%`, this.hueEl.style.background = "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)";
     const n = this.hueEl.querySelector(".ife-color-picker__hue-handle") || (() => {
-      const o = document.createElement("span");
-      return o.className = "ife-color-picker__hue-handle", this.hueEl.appendChild(o), o;
+      const i = document.createElement("span");
+      return i.className = "ife-color-picker__hue-handle", this.hueEl.appendChild(i), i;
     })();
     n.style.left = `${this.hue / 360 * 100}%`, this.hexEl.value = e, this.previewEl.style.backgroundColor = e;
   }
   emit(e) {
-    const t = e || T(this.hue, this.sat, this.value);
+    const t = e || H(this.hue, this.sat, this.value);
     this.hexEl.value = t, this.previewEl.style.backgroundColor = t, this.onChange && this.onChange(t);
   }
   onSquareDown(e) {
@@ -2133,25 +2314,25 @@ class Z {
     this._squareDrag && this._squareFromPointer(e), this._hueDrag && this._hueFromPointer(e);
   }
   _squareFromPointer(e) {
-    const t = this.square.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1) * 100, o = E((e.clientY - t.top) / t.height, 0, 1) * 100;
-    this.sat = Math.round(n), this.value = Math.round(100 - o), this.render(), this.emit();
+    const t = this.square.getBoundingClientRect(), n = L((e.clientX - t.left) / t.width, 0, 1) * 100, i = L((e.clientY - t.top) / t.height, 0, 1) * 100;
+    this.sat = Math.round(n), this.value = Math.round(100 - i), this.render(), this.emit();
   }
   _hueFromPointer(e) {
-    const t = this.hueEl.getBoundingClientRect(), n = E((e.clientX - t.left) / t.width, 0, 1);
+    const t = this.hueEl.getBoundingClientRect(), n = L((e.clientX - t.left) / t.width, 0, 1);
     this.hue = Math.round(n * 360), this.render(), this.emit();
   }
   getCurrentColor() {
-    var o;
+    var i;
     const e = this.editor.selection.getRange();
     if (!e) return "";
     let t = e.commonAncestorContainer;
     t.nodeType === Node.TEXT_NODE && (t = t.parentElement);
     let n = t instanceof HTMLElement ? t : null;
     for (; n && n !== this.editor.root; ) {
-      if ((o = n.style) != null && o[this.cssProp]) {
-        const i = n.style[this.cssProp], s = /^#([0-9a-f]{6})$/i.exec(i);
+      if ((i = n.style) != null && i[this.cssProp]) {
+        const o = n.style[this.cssProp], s = /^#([0-9a-f]{6})$/i.exec(o);
         if (s) return `#${s[1].toLowerCase()}`;
-        const c = i.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+        const c = o.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
         if (c) {
           const a = (l) => parseInt(l, 10).toString(16).padStart(2, "0");
           return `#${a(c[1])}${a(c[2])}${a(c[3])}`;
@@ -2164,10 +2345,10 @@ class Z {
   positionPicker() {
     if (!this.triggerEl || !this.picker) return;
     const e = this.triggerEl.getBoundingClientRect(), t = this.picker.offsetWidth, n = this.picker.offsetHeight;
-    let o = e.bottom + 4, i = e.left;
-    o + n > window.innerHeight && e.top - n - 4 > 0 && (o = e.top - n - 4), i + t > window.innerWidth && (i = Math.max(8, window.innerWidth - t - 8)), i < 0 && (i = 8);
+    let i = e.bottom + 4, o = e.left;
+    i + n > window.innerHeight && e.top - n - 4 > 0 && (i = e.top - n - 4), o + t > window.innerWidth && (o = Math.max(8, window.innerWidth - t - 8)), o < 0 && (o = 8);
     const s = parseFloat(getComputedStyle(this.editor.wrapper).zIndex);
-    isNaN(s) || (this.picker.style.zIndex = s + 1), this.picker.style.top = `${o}px`, this.picker.style.left = `${i}px`;
+    isNaN(s) || (this.picker.style.zIndex = s + 1), this.picker.style.top = `${i}px`, this.picker.style.left = `${o}px`;
   }
   close() {
     this.picker && (this.picker.remove(), this.picker = null), this.editor.wrapper.classList.remove("ife-color-picking"), this._boundOnResize && window.removeEventListener("resize", this._boundOnResize), this._boundOnScroll && window.removeEventListener("scroll", this._boundOnScroll), this._boundOnClickOutside && document.removeEventListener("click", this._boundOnClickOutside), this._boundKeydown && document.removeEventListener("keydown", this._boundKeydown), this._boundPointerMove && document.removeEventListener("pointermove", this._boundPointerMove), this._boundPointerUp && document.removeEventListener("pointerup", this._boundPointerUp), this._boundOnResize = null, this._boundOnScroll = null, this._boundOnClickOutside = null, this._boundKeydown = null, this._boundPointerMove = null, this._boundPointerUp = null;
@@ -2176,7 +2357,7 @@ class Z {
     this.close();
   }
 }
-const ee = [
+const ie = [
   ["undo", "redo"],
   ["blockFormat"],
   ["bold", "italic", "underline", "strike", "superscript", "subscript"],
@@ -2191,21 +2372,21 @@ const ee = [
   ["markdown"],
   ["find", "sourceCode", "fullscreen"]
 ];
-class te {
+class oe {
   /**
    * @param {import('../core/Editor').default} editor
    * @param {Array<string[]>|null} [layout]
    */
   constructor(e, t = null) {
-    this.editor = e, this.layout = t ?? ee, this.buttons = /* @__PURE__ */ new Map(), this._colorPickers = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
+    this.editor = e, this.layout = t ?? ie, this.buttons = /* @__PURE__ */ new Map(), this._colorPickers = /* @__PURE__ */ new Map(), this.el = document.createElement("div"), this.el.className = "ife-toolbar", this.el.setAttribute("role", "toolbar"), this.el.setAttribute("aria-label", "Text formatting"), this.render(), this.editor.wrapper.insertBefore(this.el, this.editor.root), this.editor.on("selectionchange", () => this.syncActiveStates()), this.editor.on("focus", () => this.syncActiveStates()), this._liveColor = null, this._liveTimer = null, this._liveIdleTimer = null, this._liveLastSelection = "", this._handleLiveSelection = () => {
       if (!this._liveColor) return;
       const n = this.editor.selection.getNativeSelection();
       if (!n || n.rangeCount === 0 || n.isCollapsed) return;
-      const o = n.getRangeAt(0);
-      if (!this.editor.root.contains(o.commonAncestorContainer)) return;
-      const i = n.toString();
-      i.trim() && (i !== this._liveLastSelection && (clearTimeout(this._liveTimer), this._liveTimer = setTimeout(() => {
-        this._liveLastSelection = i;
+      const i = n.getRangeAt(0);
+      if (!this.editor.root.contains(i.commonAncestorContainer)) return;
+      const o = n.toString();
+      o.trim() && (o !== this._liveLastSelection && (clearTimeout(this._liveTimer), this._liveTimer = setTimeout(() => {
+        this._liveLastSelection = o;
         const { command: s, value: c } = this._liveColor;
         this.editor.selection.save(), this.editor.commands.exec(s, c);
       }, 40)), clearTimeout(this._liveIdleTimer), this._liveIdleTimer = setTimeout(() => this.disarmLiveColor(), 1500));
@@ -2217,10 +2398,10 @@ class te {
     this.layout.forEach((e) => {
       const t = document.createElement("div");
       t.className = "ife-toolbar__group", e.forEach((n) => {
-        const o = K[n];
-        if (!o) return;
-        const i = this.buildControl(n, o);
-        i && t.appendChild(i);
+        const i = Y[n];
+        if (!i) return;
+        const o = this.buildControl(n, i);
+        o && t.appendChild(o);
       }), t.children.length && this.el.appendChild(t);
     });
   }
@@ -2229,38 +2410,38 @@ class te {
   }
   buildButton(e, t) {
     const n = this.editor.options.locale ?? "en";
-    let o = y.t(n, e) !== e ? y.t(n, e) : t.label;
+    let i = k.t(n, e) !== e ? k.t(n, e) : t.label;
     if (t.shortcut) {
       const s = t.shortcut.replace(/Ctrl/g, "⌘");
-      o += ` (${t.shortcut} / ${s})`;
+      i += ` (${t.shortcut} / ${s})`;
     }
-    const i = document.createElement("button");
-    return i.type = "button", i.className = "ife-toolbar__btn", i.dataset.command = e, i.title = o, i.setAttribute("aria-label", o), i.innerHTML = t.icon ?? "", i.addEventListener("mousedown", (s) => s.preventDefault()), i.addEventListener("click", () => {
+    const o = document.createElement("button");
+    return o.type = "button", o.className = "ife-toolbar__btn", o.dataset.command = e, o.title = i, o.setAttribute("aria-label", i), o.innerHTML = t.icon ?? "", o.addEventListener("mousedown", (s) => s.preventDefault()), o.addEventListener("click", () => {
       var s;
-      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor, i), t.toggle && i.classList.toggle("is-active"), this.syncActiveStates();
-    }), this.buttons.set(e, i), i;
-  }
-  buildSelect(e, t) {
-    const n = this.editor.options.locale ?? "en", o = document.createElement("select");
-    return o.className = "ife-toolbar__select", o.setAttribute("aria-label", y.t(n, e) !== e ? y.t(n, e) : t.label), t.options.forEach(([i, s]) => {
-      const c = document.createElement("option");
-      c.value = i, c.textContent = s, o.appendChild(c);
-    }), o.addEventListener("pointerdown", () => {
-      this.editor.selection.save();
-    }), o.addEventListener("mousedown", () => {
-      this.editor.selection.save();
-    }), o.addEventListener("change", () => {
-      const i = o.value;
-      this.editor.selection.restore(), t.onChange(this.editor, i), this.syncActiveStates();
+      this.editor.selection.restore(), t.type === "command" ? this.editor.commands.exec(t.command) : (s = t.action) == null || s.call(t, this.editor, o), t.toggle && o.classList.toggle("is-active"), this.syncActiveStates();
     }), this.buttons.set(e, o), o;
   }
+  buildSelect(e, t) {
+    const n = this.editor.options.locale ?? "en", i = document.createElement("select");
+    return i.className = "ife-toolbar__select", i.setAttribute("aria-label", k.t(n, e) !== e ? k.t(n, e) : t.label), t.options.forEach(([o, s]) => {
+      const c = document.createElement("option");
+      c.value = o, c.textContent = s, i.appendChild(c);
+    }), i.addEventListener("pointerdown", () => {
+      this.editor.selection.save();
+    }), i.addEventListener("mousedown", () => {
+      this.editor.selection.save();
+    }), i.addEventListener("change", () => {
+      const o = i.value;
+      this.editor.selection.restore(), t.onChange(this.editor, o), this.syncActiveStates();
+    }), this.buttons.set(e, i), i;
+  }
   buildColorPicker(e, t) {
-    const n = this.editor.options.locale ?? "en", o = y.t(n, e) !== e ? y.t(n, e) : t.label, i = document.createElement("button");
-    i.type = "button", i.className = "ife-toolbar__btn ife-toolbar__color", i.dataset.command = e, i.title = o, i.setAttribute("aria-label", o), i.setAttribute("aria-haspopup", "dialog"), i.innerHTML = t.icon;
-    const s = t.command === "backColor" ? "backgroundColor" : "color", c = new Z(this.editor, i, {
+    const n = this.editor.options.locale ?? "en", i = k.t(n, e) !== e ? k.t(n, e) : t.label, o = document.createElement("button");
+    o.type = "button", o.className = "ife-toolbar__btn ife-toolbar__color", o.dataset.command = e, o.title = i, o.setAttribute("aria-label", i), o.setAttribute("aria-haspopup", "dialog"), o.innerHTML = t.icon;
+    const s = t.command === "backColor" ? "backgroundColor" : "color", c = new ne(this.editor, o, {
       id: e,
       cssProp: s,
-      label: o,
+      label: i,
       onChange: (a) => {
         this.editor.selection.restoreSavedOffsets(), this.editor.commands.applyColor(s, a), this.armLiveColor({ command: t.command, value: a });
       },
@@ -2268,9 +2449,9 @@ class te {
         this.editor.selection.restoreSavedOffsets(), this.editor.commands.clearColor(s), this.disarmLiveColor();
       }
     });
-    return this._colorPickers.set(e, c), i.addEventListener("click", () => {
+    return this._colorPickers.set(e, c), o.addEventListener("click", () => {
       this.editor.selection.save(), c.toggle();
-    }), this.buttons.set(e, i), i;
+    }), this.buttons.set(e, o), o;
   }
   /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
   syncActiveStates() {
@@ -2284,8 +2465,8 @@ class te {
       bulletList: "insertUnorderedList",
       orderedList: "insertOrderedList"
     }).forEach(([l, h]) => {
-      const m = this.buttons.get(l);
-      m instanceof HTMLElement && m.classList.toggle("is-active", this.editor.commands.queryState(h));
+      const u = this.buttons.get(l);
+      u instanceof HTMLElement && u.classList.toggle("is-active", this.editor.commands.queryState(h));
     });
     const t = this.editor.selection.getBlockElement();
     let n = "";
@@ -2303,8 +2484,8 @@ class te {
       const h = this.buttons.get(l);
       h instanceof HTMLElement && h.classList.toggle("is-active", n === l.replace("align", "").toLowerCase());
     });
-    const o = this.buttons.get("ltr"), i = this.buttons.get("rtl");
-    if (o instanceof HTMLElement && i instanceof HTMLElement) {
+    const i = this.buttons.get("ltr"), o = this.buttons.get("rtl");
+    if (i instanceof HTMLElement && o instanceof HTMLElement) {
       let l = "";
       if (t) {
         let h = t;
@@ -2316,7 +2497,7 @@ class te {
           h = h.parentElement;
         }
       }
-      o.classList.toggle("is-active", l === "ltr"), i.classList.toggle("is-active", l === "rtl");
+      i.classList.toggle("is-active", l === "ltr"), o.classList.toggle("is-active", l === "rtl");
     }
     const s = this.buttons.get("markdown");
     s instanceof HTMLElement && s.classList.toggle("is-active", this.editor.root.dataset.markdownMode === "true");
@@ -2361,28 +2542,28 @@ class te {
     this.disarmLiveColor(), this._colorPickers.forEach((e) => e.destroy()), this._colorPickers.clear(), document.removeEventListener("selectionchange", this._handleLiveSelection), document.removeEventListener("mouseup", this._handleLiveSelection), this.el.remove();
   }
 }
-const ne = {
-  link: () => import("./LinkModule-45rHF5Cq.js"),
-  image: () => import("./ImageModule-BuXstJwM.js"),
-  table: () => import("./TableModule-V3fOW7hn.js"),
+const se = {
+  link: () => import("./LinkModule-DCeObQro.js"),
+  image: () => import("./ImageModule-DBS5bq8d.js"),
+  table: () => import("./TableModule-BMCbiJ8y.js"),
   codeView: () => import("./CodeViewModule-Wu0FnDsK.js"),
   fullscreen: () => import("./FullscreenModule-CNXzlUim.js"),
-  find: () => import("./FindModule-Bnt5gza4.js"),
-  note: () => import("./NoteModule-rd8L3dl8.js"),
-  media: () => import("./MediaModule-CQ-kQCoj.js"),
+  find: () => import("./FindModule-BMuBYSVG.js"),
+  note: () => import("./NoteModule-DdDoRjgn.js"),
+  media: () => import("./MediaModule-TP9qBXIG.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-CrjeC5gE.js"),
+  statusBar: () => import("./StatusBar-c5lnem50.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-BECN7uLZ.js"),
-  templates: () => import("./TemplateModule-CkJfyuEh.js")
+  templates: () => import("./TemplateModule-O2MEDI2l.js")
 };
-Object.entries(ne).forEach(([r, e]) => {
-  H.registerPlugin(r, async (t) => {
+Object.entries(se).forEach(([r, e]) => {
+  x.registerPlugin(r, async (t) => {
     const { default: n } = await e();
     return new n(t);
   });
 });
-const C = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new Set(), ie = {
+const w = /* @__PURE__ */ new WeakMap(), T = /* @__PURE__ */ new Set(), ae = {
   /**
    * @param {string|HTMLTextAreaElement} target CSS selector or a textarea element
    * @param {import('./core/Editor.js').EditorOptions} [options]
@@ -2394,11 +2575,11 @@ const C = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new Set(), ie = {
       throw new Error(`WYSIWYG Editor: target "${r}" not found`);
     if (t.tagName !== "TEXTAREA")
       throw new Error("WYSIWYG Editor: init() target must be a <textarea> element");
-    if (C.has(t))
-      return C.get(t);
-    const n = new H(t, e), o = new te(n, e.toolbar);
-    return n.on("destroy", () => o.destroy()), C.set(t, n), w.add(n), n.on("destroy", () => {
-      C.delete(t), w.delete(n);
+    if (w.has(t))
+      return w.get(t);
+    const n = new x(t, e), i = new oe(n, e.toolbar);
+    return n.on("destroy", () => i.destroy()), w.set(t, n), T.add(n), n.on("destroy", () => {
+      w.delete(t), T.delete(n);
     }), n;
   },
   /**
@@ -2407,18 +2588,18 @@ const C = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new Set(), ie = {
    */
   get(r) {
     const e = typeof r == "string" ? document.querySelector(r) : r;
-    return e ? C.get(e) : void 0;
+    return e ? w.get(e) : void 0;
   },
   /** Destroys every editor instance currently mounted on the page. */
   destroyAll() {
-    w.forEach((r) => r.destroy()), w.clear();
+    T.forEach((r) => r.destroy()), T.clear();
   },
-  registerPlugin: H.registerPlugin
+  registerPlugin: x.registerPlugin
 };
 export {
-  X as D,
-  u as I,
-  y as L,
-  ie as W
+  J as D,
+  m as I,
+  k as L,
+  ae as W
 };
-//# sourceMappingURL=index-B3jrLqjz.js.map
+//# sourceMappingURL=index-B_Owy-XN.js.map

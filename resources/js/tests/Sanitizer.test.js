@@ -279,4 +279,23 @@ describe('Sanitizer', () => {
             expect(result).toContain('<p>Body</p>');
         });
     });
+
+    describe('checklist inputs', () => {
+        it('preserves checkbox inputs so checklists survive serialization', () => {
+            // Regression: <input> was not on the allow-list, so every save
+            // silently dropped the checkboxes from checklist items.
+            const html = '<ul class="ife-checklist"><li><input type="checkbox" checked> Item</li></ul>';
+            const result = sanitizer.sanitize(html);
+            expect(result).toContain('<input type="checkbox"');
+            expect(result).toContain('checked');
+            expect(result).toContain('Item');
+            expect(result).toContain('ife-checklist');
+        });
+
+        it('strips event handlers from checkbox inputs', () => {
+            const result = sanitizer.sanitize('<ul class="ife-checklist"><li><input type="checkbox" onfocus="alert(1)"> Item</li></ul>');
+            expect(result).not.toContain('onfocus');
+            expect(result).toContain('<input type="checkbox">');
+        });
+    });
 });

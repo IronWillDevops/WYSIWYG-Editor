@@ -3,7 +3,7 @@ const DEFAULT_ALLOWED_TAGS = new Set([
     'b', 'i', 'strike', 'font',
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'mark',
     'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
-    'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr',
+    'img', 'figure', 'figcaption', 'video', 'audio', 'source', 'iframe', 'hr', 'input',
     'svg', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon', 'g', 'text', 'stop', 'defs', 'linearGradient',
     'ellipse', 'clipPath', 'filter', 'feGaussianBlur', 'feOffset', 'feMerge',
     'feMergeNode', 'feColorMatrix', 'feBlend', 'use', 'tspan', 'symbol', 'mask',
@@ -47,6 +47,7 @@ const DEFAULT_ALLOWED_ATTRS = {
     font: new Set(['color', 'size', 'face']),
     ol: new Set(['start', 'type', 'reversed', 'class', 'style']),
     ul: new Set(['class', 'style']),
+    input: new Set(['type', 'checked']),
 };
 
 import { DEFAULT_TEXT_COLORS, DEFAULT_BG_COLORS, normalizeColor } from '../utils/colors.js';

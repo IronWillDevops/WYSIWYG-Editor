@@ -9,6 +9,13 @@ import { isDefaultTextColor, isDefaultBgColor } from '../utils/colors.js';
 /** Block-level elements handled by structural commands (headings, lists, notes, ...). */
 const BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'LI', 'DIV', 'UL', 'OL', 'TABLE', 'FIGURE']);
 
+/** List container tags. */
+const LIST_TAGS = new Set(['UL', 'OL']);
+
+/** @param {Node} node */
+const isListElement = (node) =>
+    node.nodeType === Node.ELEMENT_NODE && LIST_TAGS.has(/** @type {HTMLElement} */ (node).tagName);
+
 export default class Commands {
     /**
      * @param {import('./Editor').default} editor
@@ -52,13 +59,27 @@ export default class Commands {
             case 'italic':
             case 'underline':
             case 'strikeThrough':
-            case 'indent':
-            case 'outdent':
             case 'justifyLeft':
             case 'justifyCenter':
             case 'justifyRight':
             case 'justifyFull':
                 document.execCommand(name, false, value ?? undefined);
+                break;
+
+            case 'indent':
+            case 'outdent':
+                // Inside a list item indent/outdent change the nesting level:
+                // do that directly on the DOM, where the result is predictable
+                // on every browser (execCommand('indent') is not).
+                {
+                    const li = this.selection.closest('li');
+                    if (li) {
+                        if (name === 'indent') this.indentListItem(li);
+                        else this.outdentListItem(li);
+                    } else {
+                        document.execCommand(name, false, value ?? undefined);
+                    }
+                }
                 break;
 
             case 'superscript':
@@ -209,19 +230,36 @@ export default class Commands {
         const range = this.selection.getRange();
         if (!range) return;
 
-        const currentLi = this.selection.closest('li');
-        if (currentLi) {
-            const currentList = currentLi.closest('ul, ol');
-            if (currentList && currentList.tagName.toLowerCase() === listTag) {
-                this.unwrapList(currentList);
-            } else if (currentList) {
-                this.convertList(currentList, listTag);
-            }
-            return;
-        }
-
         const blocks = this.getBlocksInRange(range);
         if (!blocks.length) return;
+
+        // The range already covers list content (a caret inside an <li>, a
+        // selection spanning several <li>s, or whole <ul>/<ol> blocks such as
+        // Select All). Toggle those existing lists instead of nesting new
+        // ones inside them — otherwise the DOM ended up with invalid
+        // <ul><ol>…</ol></ul> or <li><li>…</li></li> structures.
+        const lists = new Set();
+        blocks.forEach((block) => {
+            if (isListElement(block)) {
+                lists.add(block);
+            } else if (block.tagName === 'LI' && isListElement(block.parentElement)) {
+                lists.add(block.parentElement);
+            }
+        });
+
+        if (lists.size) {
+            // Toggle as a unit: only when every touched list already has the
+            // requested type does the command switch them all off (unwrap);
+            // otherwise they are all converted to the requested type.
+            const allMatch = [...lists].every(
+                (list) => list.tagName.toLowerCase() === listTag
+            );
+            lists.forEach((list) => {
+                if (allMatch) this.unwrapList(list);
+                else this.convertList(list, listTag);
+            });
+            return;
+        }
 
         const list = document.createElement(listTag);
         blocks.forEach((block) => {
@@ -328,25 +366,222 @@ export default class Commands {
         this.selection.setRange(newRange);
     }
 
-    /** Removes a list, turning each <li> back into a plain paragraph. @param {HTMLElement} list */
+    /**
+     * Removes a list, turning every <li> back into a plain paragraph. Nested
+     * lists are unwrapped first and their paragraphs lifted out of the parent
+     * item, so no markup such as <p><ul>…</ul></p> is ever produced and the
+     * whole tree flattens into ordinary blocks.
+     * @param {HTMLElement} list
+     */
     unwrapList(list) {
-        const fragment = document.createDocumentFragment();
-        [...list.children].forEach((li) => {
-            if (li.tagName !== 'LI') return;
-            const p = document.createElement('p');
-            p.innerHTML = li.innerHTML || '<br>';
-            fragment.appendChild(p);
+        const items = [...list.children].filter((el) => el.tagName === 'LI');
+
+        // Recurse into nested lists first: they become paragraphs inside their
+        // parent <li>, which are then lifted out as sibling blocks below.
+        items.forEach((li) => {
+            [...li.children].filter(isListElement).forEach((nested) => this.unwrapList(nested));
         });
 
-        const last = fragment.lastElementChild;
+        const fragment = document.createDocumentFragment();
+        let lastBlock = null;
+
+        items.forEach((li) => {
+            // Capture emptiness before the child nodes are moved out below.
+            const wasEmpty = !li.firstChild;
+            let paragraph = null;
+            [...li.childNodes].forEach((child) => {
+                const isBlock = child.nodeType === Node.ELEMENT_NODE
+                    && BLOCK_TAGS.has(/** @type {HTMLElement} */ (child).tagName);
+                if (isBlock) {
+                    fragment.appendChild(child);
+                    lastBlock = child;
+                    paragraph = null;
+                    return;
+                }
+                if (!paragraph) {
+                    paragraph = document.createElement('p');
+                    fragment.appendChild(paragraph);
+                    lastBlock = paragraph;
+                }
+                paragraph.appendChild(child);
+            });
+            if (wasEmpty) {
+                // Keep an empty <li> as an empty paragraph instead of dropping it.
+                const empty = document.createElement('p');
+                empty.innerHTML = '<br>';
+                fragment.appendChild(empty);
+                lastBlock = empty;
+            }
+        });
+
         list.replaceWith(fragment);
 
-        if (last) {
+        if (lastBlock) {
             const newRange = document.createRange();
-            newRange.selectNodeContents(last);
+            newRange.selectNodeContents(lastBlock);
             newRange.collapse(false);
             this.selection.setRange(newRange);
         }
+    }
+
+    /**
+     * Converts a single <li> into a block element (heading, paragraph, ...)
+     * by splitting its list around the item: the new block takes the item's
+     * place beside the list instead of living inside it, because block tags
+     * nested in <ul>/<ol> (e.g. <ul><h1>…</h1></ul>) are invalid markup that
+     * browsers render and edit unpredictably — the caret kept behaving as if
+     * the text were still part of the list. Nested lists carried by the item
+     * are kept as siblings right after the new block.
+     * @param {HTMLElement} li
+     * @param {string} targetTag lowercase block tag name (e.g. 'h1')
+     * @returns {HTMLElement} the created block
+     */
+    convertListItem(li, targetTag) {
+        const list = li.parentElement;
+        const block = document.createElement(targetTag);
+        const nested = [];
+        [...li.childNodes].forEach((child) => {
+            if (isListElement(child)) nested.push(child);
+            else block.appendChild(child);
+        });
+        if (!block.firstChild) block.innerHTML = '<br>';
+
+        // Items after this one move into a copy of the list so they stay a
+        // list once the block takes this item's place.
+        const remainder = document.createElement(list.tagName);
+        remainder.className = list.className;
+        let sibling = li.nextSibling;
+        while (sibling) {
+            const next = sibling.nextSibling;
+            remainder.appendChild(sibling);
+            sibling = next;
+        }
+
+        const hasItemsBefore = li.previousElementSibling !== null;
+        li.remove();
+
+        // The block sits beside the list: after it when earlier items remain
+        // (the list keeps them), before it when this item was first — valid
+        // both at the root level and inside a parent <li>.
+        const anchor = hasItemsBefore ? list.nextSibling : list;
+        const parent = list.parentNode;
+        const nodes = [block, ...nested];
+        if (remainder.firstChild) nodes.push(remainder);
+        nodes.forEach((node) => parent.insertBefore(node, anchor));
+
+        // The list no longer has any item of its own — drop the empty shell.
+        if (!list.querySelector('li')) list.remove();
+
+        return block;
+    }
+
+    /**
+     * Whether an <li> holds nothing worth keeping: no text and no embedded
+     * content (nested lists, images, checkboxes, ...). Enter and Backspace use
+     * it to decide when the caret should leave the list.
+     * @param {HTMLElement} li
+     * @returns {boolean}
+     */
+    isListItemEmpty(li) {
+        if (li.textContent.trim()) return false;
+        return !li.querySelector('ul, ol, img, input, iframe, table, figure, video, audio');
+    }
+
+    /**
+     * Leaves the list from an empty <li> (Enter): removes the item and puts
+     * the caret into a fresh paragraph after the list — or in the list's place
+     * when the item was the last one — so further typing continues as plain
+     * content (headings, paragraphs, ...) instead of staying in the list.
+     * @param {HTMLElement} li
+     */
+    exitList(li) {
+        const list = li.parentElement;
+        if (!isListElement(list)) return;
+        li.remove();
+
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        if (list.querySelector('li')) {
+            list.parentNode.insertBefore(p, list.nextSibling);
+        } else {
+            list.replaceWith(p);
+        }
+
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Deletes an empty <li> (Backspace). The caret moves to the end of a
+     * neighbouring item; when the list would be left empty it collapses into
+     * a paragraph so no empty list shell survives.
+     * @param {HTMLElement} li
+     */
+    removeListItem(li) {
+        const list = li.parentElement;
+        if (!isListElement(list)) return;
+
+        const neighbour = li.previousElementSibling ?? li.nextElementSibling;
+        li.remove();
+
+        if (!list.querySelector('li')) {
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+            list.replaceWith(p);
+            this.placeCaretAtEnd(p);
+            return;
+        }
+
+        if (neighbour) this.placeCaretAtEnd(neighbour);
+    }
+
+    /**
+     * Indents the current <li> one level by nesting it into a list inside the
+     * previous item (Tab). Done directly on the DOM because
+     * execCommand('indent') is inconsistent across browsers inside lists.
+     * @param {HTMLElement} li
+     */
+    indentListItem(li) {
+        const previous = li.previousElementSibling;
+        // The first item has nothing to nest into.
+        if (!previous || previous.tagName !== 'LI') return;
+
+        const list = li.parentElement;
+        let nested = [...previous.children].find(isListElement);
+        if (!nested) {
+            nested = document.createElement(list.tagName);
+            previous.appendChild(nested);
+        }
+        nested.appendChild(li);
+        this.placeCaretAtEnd(li);
+    }
+
+    /**
+     * Outdents the current <li> one level (Shift+Tab): the item moves out of
+     * its nested list and becomes a sibling of that list inside the parent
+     * item. Top-level items are left untouched.
+     * @param {HTMLElement} li
+     */
+    outdentListItem(li) {
+        const list = li.parentElement;
+        const parentLi = list.parentElement;
+        if (!parentLi || parentLi.tagName !== 'LI') return;
+
+        // The item joins its parent item's own level: right after the <li>
+        // that contains the nested list it is leaving.
+        parentLi.parentNode.insertBefore(li, parentLi.nextSibling);
+        if (!list.querySelector('li')) list.remove();
+        this.placeCaretAtEnd(li);
+    }
+
+    /** Places the caret at the end of an element. @param {HTMLElement} el */
+    placeCaretAtEnd(el) {
+        const newRange = document.createRange();
+        newRange.selectNodeContents(el);
+        newRange.collapse(false);
+        this.selection.setRange(newRange);
     }
 
     /**
@@ -708,7 +943,15 @@ export default class Commands {
         if (!range) return;
 
         const targetTag = tag.toLowerCase();
-        const blocks = this.getBlocksInRange(range);
+        // A fully selected <ul>/<ol> resolves to the list itself: expand it
+        // into its items so each one converts through the same list-item
+        // path (converting the list element directly would copy its <li>
+        // children into the target block, e.g. <h1><li>…</li></h1>).
+        const blocks = this.getBlocksInRange(range).flatMap((block) =>
+            isListElement(block)
+                ? [...block.children].filter((el) => el.tagName === 'LI')
+                : [block]
+        );
 
         // No enclosing block means the content is inline directly under the
         // root (plain text and/or inline elements, possibly separated by <br>).
@@ -739,9 +982,18 @@ export default class Commands {
 
         let lastReplacement = null;
         blocksToConvert.forEach((block) => {
-            const replacement = document.createElement(targetTag);
-            replacement.innerHTML = block.innerHTML || '<br>';
-            block.replaceWith(replacement);
+            let replacement;
+            if (block.tagName === 'LI' && isListElement(block.parentElement)) {
+                // A list item can't just change its tag in place: that would
+                // put a heading/paragraph inside <ul>/<ol> (invalid markup the
+                // browser then keeps treating as part of the list). Split the
+                // list instead so the new block sits beside it.
+                replacement = this.convertListItem(block, targetTag);
+            } else {
+                replacement = document.createElement(targetTag);
+                replacement.innerHTML = block.innerHTML || '<br>';
+                block.replaceWith(replacement);
+            }
             lastReplacement = replacement;
         });
 
