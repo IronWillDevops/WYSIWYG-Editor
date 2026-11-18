@@ -15,7 +15,8 @@ laravel/laravel .` conventions: `app/`, `bootstrap/`, `config/`, `public/`,
 ```bash
 composer create-project laravel/laravel:^13.0 wysiwyg-demo-tmp
 # then copy app/Http/Controllers/DemoPostController.php,
-# routes/web.php, and resources/views/demo/edit.blade.php from here into it,
+# routes/web.php, resources/views/demo/edit.blade.php, and
+# resources/views/demo/post.blade.php from here into it,
 # and merge this composer.json's "require" + "repositories" into its composer.json
 ```
 

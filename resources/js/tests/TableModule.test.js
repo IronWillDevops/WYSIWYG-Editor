@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TableModule from '../src/modules/TableModule.js';
+import Sanitizer from '../src/core/Sanitizer.js';
 
 describe('TableModule', () => {
     let editor;
@@ -204,6 +205,67 @@ describe('TableModule', () => {
             expect(root.style.maxHeight).toBe('');
         });
 
+        it('unsubscribes every editor event handler', () => {
+            const unsubs = [];
+            editor.on = vi.fn((event, handler) => {
+                const unsub = vi.fn();
+                unsubs.push({ event, handler, unsub });
+                return unsub;
+            });
+
+            const module = new TableModule(editor);
+            module.destroy();
+
+            const events = unsubs.map((u) => u.event);
+            expect(events).toContain('selectionchange');
+            expect(events).toContain('init');
+            expect(events).toContain('change');
+            expect(events).toContain('paste');
+            unsubs.forEach((u) => expect(u.unsub).toHaveBeenCalled());
+        });
+
+        it('removes root click/keyup/mousedown listeners', () => {
+            const module = new TableModule(editor);
+            const removeSpy = vi.spyOn(editor.root, 'removeEventListener');
+
+            module.destroy();
+
+            expect(removeSpy).toHaveBeenCalledWith('click', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('keyup', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('mousedown', expect.any(Function));
+        });
+
+        it('clears the pending init timer so it cannot run after destroy', () => {
+            vi.useFakeTimers();
+            try {
+                const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
+                const module = new TableModule(editor);
+                const timerId = module._initTimer;
+                expect(timerId).toBeDefined();
+
+                module.destroy();
+
+                expect(clearSpy).toHaveBeenCalledWith(timerId);
+                vi.advanceTimersByTime(0);
+                expect(root.style.maxHeight).toBe('');
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it('stops adjustTableHeight after destroy', () => {
+            const module = new TableModule(editor);
+            module.destroy();
+            root.style.maxHeight = '';
+            module.adjustTableHeight();
+            expect(root.style.maxHeight).toBe('');
+        });
+
+        it('is safe to call repeatedly', () => {
+            const module = new TableModule(editor);
+            module.destroy();
+            expect(() => module.destroy()).not.toThrow();
+        });
     });
 
     describe('DOM mutations', () => {
@@ -305,6 +367,56 @@ describe('TableModule', () => {
                 expect(rows[0].querySelectorAll('th').length).toBe(4);
             });
 
+            it('creates only the header row when rows=1 with header', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+                selectInRoot();
+
+                module.insertTable(1, 3, true);
+
+                const table = root.querySelector('table.ife-table');
+                const rows = table.querySelectorAll('tr');
+                expect(rows.length).toBe(1);
+                expect(rows[0].querySelectorAll('th').length).toBe(3);
+                expect(table.querySelectorAll('tbody tr').length).toBe(0);
+            });
+
+            it('clamps invalid row/column counts to 1', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+                selectInRoot();
+
+                module.insertTable(NaN, -5, false);
+
+                const table = root.querySelector('table.ife-table');
+                expect(table.querySelectorAll('tr').length).toBe(1);
+                expect(table.querySelectorAll('tr')[0].cells.length).toBe(1);
+            });
+
+            it('caps huge row/column counts at 50x20', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+                selectInRoot();
+
+                module.insertTable(500, 500, false);
+
+                const table = root.querySelector('table.ife-table');
+                expect(table.querySelectorAll('tr').length).toBe(50);
+                expect(table.querySelectorAll('tr')[0].cells.length).toBe(20);
+            });
+
+            it('appends at the end when there is no selection range', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+                editor.selection.getRange = () => null;
+
+                module.insertTable(2, 2, false);
+
+                const table = root.querySelector('table.ife-table');
+                expect(table).not.toBeNull();
+                expect(root.contains(table)).toBe(true);
+            });
+
             it('creates table without header row', () => {
                 setupEditorWithTable('<p>hello</p>');
                 const module = new TableModule(editor);
@@ -366,6 +478,31 @@ describe('TableModule', () => {
                 const rows = root.querySelectorAll('tr');
                 expect(rows.length).toBe(2);
             });
+
+            it('removes the whole table when the last row is deleted', () => {
+                setupEditorWithTable('<p>before</p><table class="ife-table"><tr><td>only</td></tr></table><p>after</p>');
+                const module = new TableModule(editor);
+                selectCell('table.ife-table', 0, 0);
+
+                module.deleteRow();
+
+                expect(root.querySelector('table')).toBeNull();
+                expect(root.textContent).toContain('before');
+                expect(root.textContent).toContain('after');
+                expect(editor.emitChange).toHaveBeenCalled();
+            });
+
+            it('keeps the table when deleting the last body row but a header remains', () => {
+                setupEditorWithTable('<table class="ife-table"><thead><tr><th>h</th></tr></thead><tbody><tr><td>only body</td></tr></tbody></table>');
+                const module = new TableModule(editor);
+                selectCell('table.ife-table', 1, 0);
+
+                module.deleteRow();
+
+                expect(root.querySelector('table')).not.toBeNull();
+                expect(root.querySelector('tbody')).not.toBeNull();
+                expect(root.querySelectorAll('tr').length).toBe(1);
+            });
         });
 
         describe('addColumn', () => {
@@ -405,6 +542,19 @@ describe('TableModule', () => {
                 expect(firstRow.cells.length).toBe(2);
                 expect(firstRow.cells[0].textContent).toBe('a');
                 expect(firstRow.cells[1].textContent).toBe('c');
+            });
+
+            it('removes the whole table when the last column is deleted', () => {
+                setupEditorWithTable('<p>before</p><table class="ife-table"><tr><td>only</td></tr></table><p>after</p>');
+                const module = new TableModule(editor);
+                selectCell('table.ife-table', 0, 0);
+
+                module.deleteColumn();
+
+                expect(root.querySelector('table')).toBeNull();
+                expect(root.textContent).toContain('before');
+                expect(root.textContent).toContain('after');
+                expect(editor.emitChange).toHaveBeenCalled();
             });
         });
 
@@ -456,6 +606,34 @@ describe('TableModule', () => {
                 module.deleteTable();
 
                 expect(root.querySelector('table')).toBeNull();
+            });
+        });
+
+        describe('addColumnResizeHandles', () => {
+            it('uses a custom tag that the sanitizer strips from saved HTML', () => {
+                setupEditorWithTable('<table class="ife-table"><tr><td>a</td><td>b</td></tr></table>');
+                const module = new TableModule(editor);
+
+                module.addColumnResizeHandles();
+
+                // Handles exist while editing…
+                expect(root.querySelector('ife-col-resize-handle')).not.toBeNull();
+                expect(root.querySelectorAll('.ife-col-resize-handle').length).toBe(2);
+
+                // …but never survive a sanitize() round-trip into saved content.
+                const sanitized = new Sanitizer().sanitize(root.innerHTML);
+                expect(sanitized).not.toContain('ife-col-resize-handle');
+                expect(sanitized).toContain('<td>');
+            });
+
+            it('rebuilds handles without duplicating them', () => {
+                setupEditorWithTable('<table class="ife-table"><tr><td>a</td><td>b</td></tr></table>');
+                const module = new TableModule(editor);
+
+                module.addColumnResizeHandles();
+                module.addColumnResizeHandles();
+
+                expect(root.querySelectorAll('.ife-col-resize-handle').length).toBe(2);
             });
         });
 

@@ -18,27 +18,50 @@
     $elementId = $id ?? $name . '-' . uniqid();
 
     $supportedLocales = ['en', 'uk', 'ru'];
-    if (!in_array($locale, $supportedLocales)) {
-        $locale = config('wysiwyg-editor.locale', 'en');
+    if (! in_array($locale, $supportedLocales, true)) {
+        $configLocale = config('wysiwyg-editor.locale', 'en');
+        $locale = in_array($configLocale, $supportedLocales, true) ? $configLocale : 'en';
     }
 
     $uploadUrl = $uploadUrl ?? (app('router')->has('wysiwyg-editor.upload.image')
         ? route('wysiwyg-editor.upload.image')
         : null);
 
+    $autosaveOptions = null;
+    if (is_array($autosave)) {
+        $autosaveOptions = array_merge(config('wysiwyg-editor.autosave', []), ['enabled' => true], $autosave);
+    } elseif ($autosave) {
+        $autosaveOptions = array_merge(config('wysiwyg-editor.autosave', []), ['enabled' => true]);
+    }
+
     $mergedOptions = \Wysiwyg\Editor\Facades\WysiwygEditor::buildOptions(array_filter([
         'theme' => $theme,
         'locale' => $locale,
         'toolbar' => $toolbar,
         'height' => $height,
-        'autosave' => $autosave ? array_merge(config('wysiwyg-editor.autosave', []), ['enabled' => true]) : null,
+        'autosave' => $autosaveOptions,
         'disabledPlugins' => $disabledPlugins,
         'sanitizer' => $sanitizer,
         'history' => $history,
         'uploadUrl' => $uploadUrl,
     ], static fn ($v) => $v !== null));
 
-    $mergedOptions = array_replace_recursive($mergedOptions, $options);
+    $mergedOptions = \Wysiwyg\Editor\Facades\WysiwygEditor::mergeOptions($mergedOptions, $options);
+
+    // The JavaScript Sanitizer consumes camelCase keys while the published
+    // config uses snake_case; translate so a custom whitelist really applies.
+    if (isset($mergedOptions['sanitizer']) && is_array($mergedOptions['sanitizer'])) {
+        $sanitizerAliases = [
+            'allowed_tags' => 'allowedTags',
+            'allowed_attributes' => 'allowedAttributes',
+            'allowed_url_schemes' => 'allowedUrlSchemes',
+        ];
+        $sanitizerOptions = [];
+        foreach ($mergedOptions['sanitizer'] as $sanitizerKey => $sanitizerValue) {
+            $sanitizerOptions[$sanitizerAliases[$sanitizerKey] ?? $sanitizerKey] = $sanitizerValue;
+        }
+        $mergedOptions['sanitizer'] = $sanitizerOptions;
+    }
 @endphp
 
 <div {{ $attributes->only('class') }} data-wysiwyg-editor-wrapper>
@@ -46,7 +69,7 @@
         name="{{ $name }}"
         id="{{ $elementId }}"
         style="display:none"
-    >{!! preg_replace('/<\/textarea>/i', '&lt;/textarea&gt;', $value) !!}</textarea>
+    >{{ $value }}</textarea>
 </div>
 
 @once
@@ -67,8 +90,15 @@
 @endonce
 
 <script>
-    window.__wysiwygQueue.push([
+    (function (args) {
+        if (window.WysiwygEditor) {
+            window.WysiwygEditor.init(args[0], args[1]);
+            return;
+        }
+        window.__wysiwygQueue = window.__wysiwygQueue || [];
+        window.__wysiwygQueue.push(args);
+    })([
         @json('#' . $elementId),
-        {!! json_encode($mergedOptions) !!}
+        @json($mergedOptions)
     ]);
 </script>

@@ -18,7 +18,10 @@ export default class ImageModule {
         // covers images that were already present in content loaded via
         // setHTML()/initial textarea value or pasted in, not just ones
         // inserted through this module.
-        editor.root.addEventListener('dragover', (e) => e.preventDefault());
+        // Stored on the instance so destroy() can actually detach it (an
+        // anonymous arrow would leak for the lifetime of the root node).
+        this.handleDragOverPrevent = (e) => e.preventDefault();
+        editor.root.addEventListener('dragover', this.handleDragOverPrevent);
         editor.root.addEventListener('drop', this.handleDrop);
         editor.root.addEventListener('click', this.handleClick);
         editor.root.addEventListener('dblclick', this.handleDblClick);
@@ -29,7 +32,7 @@ export default class ImageModule {
         const existing = this.getSelectedFigure();
         const img = existing?.querySelector('img');
         const figcaption = existing?.querySelector('figcaption');
-        const align = ['left', 'center', 'right'].find((value) => existing?.classList.contains(`ife-image--${value}`)) ?? 'center';
+        const align = ['none', 'left', 'center', 'right'].find((value) => existing?.classList.contains(`ife-image--${value}`)) ?? 'center';
 
         const body = `
             <div class="ife-tabs">
@@ -69,7 +72,16 @@ export default class ImageModule {
             title: existing ? 'Edit image' : 'Insert image',
             bodyHtml: body,
             confirmLabel: existing ? 'Update' : 'Insert',
-            onConfirm: (form) => this.handleSubmit(form, existing),
+            onConfirm: (form) => {
+                const data = new FormData(form);
+                const file = data.get('file');
+                const hasFile = file instanceof File && file.size > 0;
+                // Synchronous guard: nothing to insert (no file and blank URL).
+                // handleSubmit() is async (upload), so this check has to run
+                // before it — otherwise the dialog closes having done nothing.
+                if (!hasFile && !String(data.get('src') ?? '').trim()) return false;
+                this.handleSubmit(form, existing);
+            },
         });
 
         this.editor.selection.save();
@@ -103,7 +115,7 @@ export default class ImageModule {
     async handleSubmit(form, existing) {
         const data = new FormData(form);
         const file = data.get('file');
-        let src = String(data.get('src') ?? '');
+        let src = String(data.get('src') ?? '').trim();
 
         if (file instanceof File && file.size > 0) {
             src = await this.upload(file);
@@ -183,8 +195,14 @@ export default class ImageModule {
         }
 
         const range = this.editor.selection.getRange();
-        range?.deleteContents();
-        range?.insertNode(figure);
+        if (range) {
+            range.deleteContents();
+            range.insertNode(figure);
+        } else {
+            // No selection (empty document): append at the end instead of
+            // dropping the figure and then throwing in setStartAfter().
+            this.editor.root.appendChild(figure);
+        }
 
         const newRange = document.createRange();
         newRange.setStartAfter(figure);
@@ -241,11 +259,14 @@ export default class ImageModule {
     /** Adds visible resize handles around a selected image. */
     showResizeHandles(img) {
         this.hideResizeHandles();
-        const container = document.createElement('div');
+        // Custom tags: the sanitizer unwraps unknown elements, so these
+        // transient UI affordances never leak into saved/serialized HTML
+        // (plain <div>s would survive sanitization as DOM garbage).
+        const container = document.createElement('ife-image-resize-handles');
         container.className = 'ife-image-resize-handles';
         const positions = ['nw', 'ne', 'sw', 'se'];
         positions.forEach((pos) => {
-            const handle = document.createElement('div');
+            const handle = document.createElement('ife-image-resize-handle');
             handle.className = `ife-image-resize-handle ife-image-resize-handle--${pos}`;
             handle.addEventListener('mousedown', (e) => this.handleResizeStart(e, img));
             container.appendChild(handle);
@@ -345,6 +366,7 @@ export default class ImageModule {
 
     destroy() {
         this.dialog?.close();
+        this.editor.root.removeEventListener('dragover', this.handleDragOverPrevent);
         this.editor.root.removeEventListener('drop', this.handleDrop);
         this.editor.root.removeEventListener('click', this.handleClick);
         this.editor.root.removeEventListener('dblclick', this.handleDblClick);

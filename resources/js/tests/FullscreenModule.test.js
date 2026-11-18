@@ -62,6 +62,26 @@ describe('FullscreenModule', () => {
         expect(editor.wrapper.classList.contains('ife-fullscreen')).toBe(false);
     });
 
+    it('emits fullscreenchange when leaving fullscreen so the toolbar can re-sync', () => {
+        editor.events = { emit: vi.fn() };
+        module.active = true;
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+
+        module.handleChange();
+
+        expect(editor.events.emit).toHaveBeenCalledWith('fullscreenchange', editor);
+    });
+
+    it('does not emit fullscreenchange when already inactive', () => {
+        editor.events = { emit: vi.fn() };
+        module.active = false;
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true });
+
+        module.handleChange();
+
+        expect(editor.events.emit).not.toHaveBeenCalled();
+    });
+
     it('destroy removes fullscreenchange listener', () => {
         const spy = vi.spyOn(document, 'removeEventListener');
         module.destroy();

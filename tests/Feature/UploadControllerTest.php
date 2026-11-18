@@ -55,3 +55,37 @@ it('returns an error when storage fails', function () {
 
     $response->assertStatus(422)->assertJson(['success' => false]);
 });
+
+it('returns JSON validation errors when the client sends no Accept header', function () {
+    $response = $this->post(route('wysiwyg-editor.upload.image'), []);
+
+    $response->assertStatus(422)->assertJson(['success' => false]);
+
+    expect($response->json('message'))->toBeString()->not->toBe('');
+});
+
+it('reports the validation message for oversized uploads without an Accept header', function () {
+    config(['wysiwyg-editor.upload.max_size_kb' => 100]);
+    $file = UploadedFile::fake()->image('too-big.jpg')->size(500);
+
+    $response = $this->post(route('wysiwyg-editor.upload.image'), ['file' => $file]);
+
+    $response->assertStatus(422)->assertJson(['success' => false]);
+
+    expect($response->json('message'))->toContain('file');
+});
+
+it('accepts a comma-separated string of allowed mimes', function () {
+    config(['wysiwyg-editor.upload.allowed_mimes' => 'jpg, jpeg, png']);
+
+    $ok = $this->post(route('wysiwyg-editor.upload.image'), [
+        'file' => UploadedFile::fake()->image('photo.jpg', 100, 100)->size(100),
+    ]);
+    $ok->assertOk()->assertJson(['success' => true]);
+
+    $rejected = $this->withHeaders(['Accept' => 'application/json'])
+        ->post(route('wysiwyg-editor.upload.image'), [
+            'file' => UploadedFile::fake()->create('document.pdf', 100, 'application/pdf'),
+        ]);
+    $rejected->assertStatus(422);
+});

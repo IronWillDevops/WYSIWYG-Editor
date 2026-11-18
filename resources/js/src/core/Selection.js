@@ -120,7 +120,12 @@ export default class Selection {
         const walker = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT);
         let t;
         while ((t = walker.nextNode())) {
-            if (t === node || node.contains(t)) break;
+            if (node.contains(t)) break;
+            // An empty element contains no text to stop on: without this
+            // check its offset fell through to the end of the document, so a
+            // caret sitting in an empty block was bookmarked as "document
+            // end" and undo restored it in the wrong place.
+            if (node.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) break;
             acc += t.textContent.length;
         }
         return acc;

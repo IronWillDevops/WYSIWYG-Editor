@@ -4,10 +4,16 @@ export default class ContextMenu {
         this.menu = null;
         this.handleContextMenu = this.handleContextMenu.bind(this);
         this.close = this.close.bind(this);
+        this.handleEscape = this.handleEscape.bind(this);
 
         editor.root.addEventListener('contextmenu', this.handleContextMenu);
         document.addEventListener('click', this.close);
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.close(); });
+        document.addEventListener('keydown', this.handleEscape);
+    }
+
+    /** @param {KeyboardEvent} event */
+    handleEscape(event) {
+        if (event.key === 'Escape') this.close();
     }
 
     handleContextMenu(event) {
@@ -50,9 +56,16 @@ export default class ContextMenu {
         items.push({ type: 'separator' });
         items.push({ label: 'Cut', action: () => document.execCommand('cut') });
         items.push({ label: 'Copy', action: () => document.execCommand('copy') });
-        items.push({ label: 'Paste', action: () => navigator.clipboard?.readText().then((text) => {
-            this.editor.commands.insertHTML(this.editor.escapeHtml(text));
-        }) });
+        items.push({ label: 'Paste', action: () => {
+            // readText() may be unsupported (returns undefined) or reject
+            // (permission denied) — swallow the rejection so it never becomes
+            // an unhandled promise rejection.
+            const read = navigator.clipboard?.readText();
+            if (!read) return;
+            read.then((text) => {
+                this.editor.commands.insertHTML(this.editor.escapeHtml(text));
+            }, () => {});
+        } });
         items.push({ type: 'separator' });
         items.push({ label: 'Select all', action: () => {
             const range = document.createRange();
@@ -95,5 +108,6 @@ export default class ContextMenu {
         this.close();
         this.editor.root.removeEventListener('contextmenu', this.handleContextMenu);
         document.removeEventListener('click', this.close);
+        document.removeEventListener('keydown', this.handleEscape);
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Wysiwyg\Editor\Tests;
 
-use Wysiwyg\Editor\WysiwygEditorServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Wysiwyg\Editor\WysiwygEditorServiceProvider;
 
 abstract class TestCase extends Orchestra
 {

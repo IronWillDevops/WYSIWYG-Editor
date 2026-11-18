@@ -81,6 +81,32 @@ describe('MediaModule', () => {
         it('handles empty source gracefully', () => {
             expect(() => module.insertVideo('', 640, 360)).not.toThrow();
         });
+
+        it('returns false and inserts nothing for an empty source', () => {
+            expect(module.insertVideo('', 640, 360)).toBe(false);
+            expect(module.insertVideo('   ', 640, 360)).toBe(false);
+            expect(editor.commands.insertHTML).not.toHaveBeenCalled();
+        });
+
+        it('falls back to default dimensions for invalid width/height', () => {
+            module.insertVideo('https://example.com/video.mp4', NaN, -5);
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(
+                expect.stringContaining('width="640"')
+            );
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(
+                expect.stringContaining('height="360"')
+            );
+        });
+
+        it('matches raw iframe embeds case-insensitively', () => {
+            const iframeHtml = '<IFRAME src="https://example.com/embed"></IFRAME>';
+            module.insertVideo(iframeHtml, 640, 360);
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(iframeHtml);
+        });
+
+        it('returns true when a video is inserted', () => {
+            expect(module.insertVideo('https://example.com/video.mp4', 640, 360)).toBe(true);
+        });
     });
 
     describe('insertHorizontalRule', () => {
@@ -114,6 +140,26 @@ describe('MediaModule', () => {
             expect(editor.commands.insertHTML).toHaveBeenCalledWith(
                 expect.stringContaining('youtube.com/embed/dQw4w9WgXcQ')
             );
+        });
+
+        it('keeps the dialog open when submitted with an empty source', () => {
+            module.openVideo();
+            const form = document.body.querySelector('form');
+            form.querySelector('input[name="source"]').value = '   ';
+
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+            expect(editor.commands.insertHTML).not.toHaveBeenCalled();
+        });
+
+        it('destroy closes an open video dialog', () => {
+            module.openVideo();
+            expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+
+            module.destroy();
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
         });
     });
 
@@ -154,6 +200,38 @@ describe('MediaModule', () => {
             expect(editor.commands.insertHTML).toHaveBeenCalledWith(
                 '<audio controls><source src="https://example.com/audio.mp3"></audio>'
             );
+        });
+
+        it('keeps the dialog open when submitted with an empty source', () => {
+            module.openAudio();
+            const form = document.body.querySelector('form');
+            form.querySelector('input[name="source"]').value = '';
+
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+            expect(editor.commands.insertHTML).not.toHaveBeenCalled();
+        });
+
+        it('trims the audio source before inserting', () => {
+            module.openAudio();
+            const form = document.body.querySelector('form');
+            form.querySelector('input[name="source"]').value = '  https://example.com/a.mp3  ';
+            vi.spyOn(editor.sanitizer, 'sanitize').mockImplementation((html) => html);
+
+            form.querySelector('[data-action="confirm"]').click();
+
+            expect(editor.commands.insertHTML).toHaveBeenCalledWith(
+                '<audio controls><source src="https://example.com/a.mp3"></audio>'
+            );
+        });
+    });
+
+    describe('destroy', () => {
+        it('is safe to call repeatedly', () => {
+            module.openVideo();
+            module.destroy();
+            expect(() => module.destroy()).not.toThrow();
         });
     });
 });

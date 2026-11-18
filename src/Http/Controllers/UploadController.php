@@ -7,19 +7,41 @@ namespace Wysiwyg\Editor\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class UploadController extends Controller
 {
     public function image(Request $request): JsonResponse
     {
         $maxSizeKb = (int) config('wysiwyg-editor.upload.max_size_kb', 5120);
-        $allowedMimes = implode(',', config('wysiwyg-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp']));
 
-        $validated = $request->validate([
-            'file' => ['required', 'file', 'image', "mimes:{$allowedMimes}", "max:{$maxSizeKb}"],
-        ]);
+        $allowedMimes = config('wysiwyg-editor.upload.allowed_mimes', ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+        if (is_string($allowedMimes)) {
+            $allowedMimes = explode(',', $allowedMimes);
+        }
+
+        $allowedMimes = array_values(array_filter(
+            is_array($allowedMimes) ? $allowedMimes : [],
+            static fn (mixed $mime): bool => is_string($mime) && trim($mime) !== ''
+        ));
+        $allowedMimes = array_map('trim', $allowedMimes);
+
+        try {
+            $validated = $request->validate([
+                'file' => ['required', 'file', 'image', 'mimes:'.implode(',', $allowedMimes), "max:{$maxSizeKb}"],
+            ]);
+        } catch (ValidationException $exception) {
+            // The editor's JavaScript client posts without an Accept header, so
+            // answer with JSON unconditionally instead of a redirect to HTML.
+            return response()->json([
+                'success' => false,
+                'message' => Arr::first(Arr::flatten($exception->errors())),
+                'errors' => $exception->errors(),
+            ], 422);
+        }
 
         $disk = (string) config('wysiwyg-editor.upload.disk', 'public');
         $directory = trim((string) config('wysiwyg-editor.upload.path', 'wysiwyg-editor/uploads'), '/');

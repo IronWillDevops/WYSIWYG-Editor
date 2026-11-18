@@ -60,6 +60,8 @@ export default class Editor {
         this.handleTab = this.handleTab.bind(this);
         this.handleEnter = this.handleEnter.bind(this);
         this.handleBackspace = this.handleBackspace.bind(this);
+        this.handleClick = this.handleClick.bind(this);
+        this.handleDrop = this.handleDrop.bind(this);
         this.handleDragOver = this.handleDragOver.bind(this);
         this.handleDragLeave = this.handleDragLeave.bind(this);
         this.bindEvents();
@@ -96,10 +98,11 @@ export default class Editor {
     }
 
     bindEvents() {
-        this.root.addEventListener('input', () => {
-            this.history.record();
-            this.emitChange();
-        });
+        // emitChange() records the debounced history snapshot as well, so a
+        // single "content changed" signal drives history, textarea sync and
+        // the public change event (previously only native input events were
+        // recorded, leaving manual DOM mutations un-undoable as one step).
+        this.root.addEventListener('input', () => this.emitChange());
 
         this.root.addEventListener('keyup', () => this.syncSelectionState());
         this.root.addEventListener('mouseup', () => this.syncSelectionState());
@@ -111,9 +114,11 @@ export default class Editor {
         });
 
         this.root.addEventListener('paste', (event) => this.handlePaste(event));
-        this.root.addEventListener('drop', (event) => this.events.emit('drop', event));
-        this.root.addEventListener('dragover', (event) => this.handleDragOver(event));
-        this.root.addEventListener('dragleave', (event) => this.handleDragLeave(event));
+        // Bound handlers (not arrow wrappers) so destroy() actually detaches them.
+        this.root.addEventListener('click', this.handleClick);
+        this.root.addEventListener('drop', this.handleDrop);
+        this.root.addEventListener('dragover', this.handleDragOver);
+        this.root.addEventListener('dragleave', this.handleDragLeave);
 
         document.addEventListener('keydown', this.handleShortcut);
         document.addEventListener('keydown', this.handleTableTab);
@@ -142,51 +147,53 @@ export default class Editor {
         const range = sel.getRangeAt(0);
         if (!this.root.contains(range.commonAncestorContainer)) return null;
         return {
-            start: this.textOffset(range.startContainer, range.startOffset),
-            end: this.textOffset(range.endContainer, range.endOffset),
+            start: this.selection.offsetOf(range.startContainer, range.startOffset),
+            end: this.selection.offsetOf(range.endContainer, range.endOffset),
         };
     }
 
-    /** Calculate character offset from root start to a given node+offset. */
+    /**
+     * Character offset of a (node, offset) boundary from the root's start.
+     * Delegates to Selection.offsetOf, which — unlike a plain text-node walk —
+     * also understands element boundaries: a caret sitting in an empty block
+     * (container = the block element) used to be measured as "end of the
+     * whole document", so undo restored the caret in the wrong place.
+     * @param {Node} node
+     * @param {number} offset
+     * @returns {number}
+     */
     textOffset(node, offset) {
-        const walker = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
-        let pos = 0;
-        let current;
-        while ((current = walker.nextNode())) {
-            if (current === node) return pos + offset;
-            pos += (current.textContent || '').length;
-        }
-        return pos;
+        return this.selection.offsetOf(node, offset);
     }
 
-    /** Restore caret from a previously saved bookmark. */
+    /**
+     * Restore caret from a previously saved bookmark.
+     * A missing bookmark (e.g. undoing back to the seed snapshot) puts the
+     * caret at the start of the content instead of dropping the selection
+     * when the innerHTML swap detached the old range.
+     * @param {{start: number, end: number}|null} bookmark
+     */
     restoreSelectionBookmark(bookmark) {
-        if (!bookmark) return;
-        const { start, end } = bookmark;
-        const startNode = this.nodeAtOffset(start);
-        const endNode = this.nodeAtOffset(end);
-        if (!startNode || !endNode) return;
-        const range = document.createRange();
-        range.setStart(startNode.node, Math.min(startNode.offset, (startNode.node.textContent || '').length));
-        range.setEnd(endNode.node, Math.min(endNode.offset, (endNode.node.textContent || '').length));
-        const sel = window.getSelection();
-        if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
+        if (bookmark && bookmark.start !== null && bookmark.end !== null) {
+            this.selection.setRangeByOffsets(bookmark.start, bookmark.end);
+            return;
         }
+        const first = this.selection.offsetToPoint(0);
+        if (!first) return;
+        const range = document.createRange();
+        range.setStart(first.node, first.offset);
+        range.collapse(true);
+        this.selection.setRange(range);
     }
 
-    /** Find text node and offset at a given character position from root start. */
+    /**
+     * Find the text position at a given character offset from the root start.
+     * Delegates to Selection.offsetToPoint (same logic, single implementation).
+     * @param {number} target
+     * @returns {{node: Node, offset: number}|null}
+     */
     nodeAtOffset(target) {
-        const walker = document.createTreeWalker(this.root, NodeFilter.SHOW_TEXT, null);
-        let pos = 0;
-        let current;
-        while ((current = walker.nextNode())) {
-            const len = (current.textContent || '').length;
-            if (pos + len >= target) return { node: current, offset: target - pos };
-            pos += len;
-        }
-        return null;
+        return this.selection.offsetToPoint(target);
     }
 
     _debounce(fn, delay) {
@@ -198,6 +205,8 @@ export default class Editor {
     }
 
     emitChange() {
+        if (this.destroyed) return;
+        this.history.record();
         this._debouncedSyncTextarea();
         this.events.emit('change', this.getHTML());
     }
@@ -208,6 +217,9 @@ export default class Editor {
         if (this.destroyed) return;
         const html = event.clipboardData?.getData('text/html');
         const text = event.clipboardData?.getData('text/plain') ?? '';
+        // An empty clipboard must not run through insertHTML: with nothing to
+        // insert it would still deleteContents() and wipe the user's selection.
+        if (!html && !text) return;
         let clean;
         if (html) {
             clean = this.sanitizer.sanitize(html);
@@ -248,8 +260,11 @@ export default class Editor {
             u: () => this.commands.exec('underline'),
             k: () => this.module('link')?.open(),
             f: () => this.module('find')?.open(),
-            z: () => (event.shiftKey ? this.history.redo() : this.history.undo()),
-            y: () => this.history.redo(),
+            // Route through the public undo()/redo() so the change event fires
+            // and the textarea/`change` consumers stay in sync — calling
+            // history.undo() directly left the UI stale after Ctrl+Z.
+            z: () => (event.shiftKey ? this.redo() : this.undo()),
+            y: () => this.redo(),
             s: () => this.events.emit('save', this.getHTML()),
         };
 
@@ -320,6 +335,7 @@ export default class Editor {
         const blockquote = block.closest('blockquote');
         const isPre = block.tagName === 'PRE' || !!block.closest('pre');
         const isNote = block.tagName === 'DIV' && block.classList.contains('note');
+        const isHeading = /^H[1-6]$/.test(block.tagName);
 
         const range = this.selection.getRange();
         if (!range) return;
@@ -340,11 +356,10 @@ export default class Editor {
             return;
         }
 
-        if (!blockquote && !isPre && !isNote) {
-            let node = range.startContainer;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            if (!(node instanceof HTMLElement) || !node.closest('code')) return;
-        }
+        // Block types the editor manages itself are intercepted; plain
+        // paragraphs/lines stay with the browser's own (correct) split —
+        // unless the caret sits in an inline <code> run, which Enter exits.
+        if (!isPre && !isNote && !isHeading && !blockquote && !this.isInlineCodeCaret(range)) return;
 
         event.preventDefault();
 
@@ -368,146 +383,163 @@ export default class Editor {
             return;
         }
 
-        if (blockquote) {
-            const isEmpty = !block.textContent.trim();
-            if (isEmpty) {
+        // An empty special block (quote line, note, heading) turns back into
+        // a plain paragraph instead of nesting a second empty shell, and an
+        // image/embed-only block must never be dropped by that exit.
+        if ((isNote || isHeading || blockquote) && this.commands.isBlockEmpty(block)) {
+            if (blockquote && block !== blockquote) {
+                // Leave the quote: the paragraph continues the document after
+                // it, and the quote itself goes once its last line is gone.
                 const p = document.createElement('p');
                 p.innerHTML = '<br>';
                 blockquote.parentNode.insertBefore(p, blockquote.nextSibling);
-                block.parentNode.removeChild(block);
-                if (!blockquote.textContent.trim() && !blockquote.children.length) {
-                    blockquote.parentNode.removeChild(blockquote);
-                }
+                block.remove();
+                if (this.commands.isBlockEmpty(blockquote)) blockquote.remove();
                 const newRange = document.createRange();
                 newRange.setStart(p, 0);
-                newRange.collapse(true);
-                this.selection.setRange(newRange);
-                this.emitChange();
-                return;
-            }
-
-            const newP = document.createElement('p');
-            const { startContainer, startOffset } = range;
-
-            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
-                const text = startContainer.textContent;
-                const before = text.slice(0, startOffset);
-                const after = text.slice(startOffset);
-                startContainer.textContent = before;
-                if (after) newP.textContent = after;
-            }
-
-            if (!newP.textContent) newP.innerHTML = '<br>';
-
-            block.parentNode.insertBefore(newP, block.nextSibling);
-
-            const newRange = document.createRange();
-            const targetNode = newP.firstChild || newP;
-            newRange.setStart(targetNode, 0);
-            newRange.collapse(true);
-            this.selection.setRange(newRange);
-
-            this.emitChange();
-            return;
-        }
-
-        if (isNote) {
-            const isEmpty = !block.textContent.trim();
-            if (isEmpty) {
-                const p = document.createElement('p');
-                p.innerHTML = '<br>';
-                block.parentNode.insertBefore(p, block.nextSibling);
-                block.parentNode.removeChild(block);
-                const newRange = document.createRange();
-                newRange.setStart(p, 0);
-                newRange.collapse(true);
-                this.selection.setRange(newRange);
-                this.emitChange();
-                return;
-            }
-
-            const newP = document.createElement('p');
-            const { startContainer, startOffset } = range;
-
-            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
-                const text = startContainer.textContent;
-                const before = text.slice(0, startOffset);
-                const after = text.slice(startOffset);
-                startContainer.textContent = before;
-                if (after) newP.textContent = after;
-            }
-
-            if (!newP.textContent) newP.innerHTML = '<br>';
-
-            block.parentNode.insertBefore(newP, block.nextSibling);
-
-            const newRange = document.createRange();
-            const targetNode = newP.firstChild || newP;
-            newRange.setStart(targetNode, 0);
-            newRange.collapse(true);
-            this.selection.setRange(newRange);
-
-            this.emitChange();
-            return;
-        }
-
-        const codeEl = (() => {
-            let node = range.startContainer;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            return node instanceof HTMLElement ? node.closest('code') : null;
-        })();
-
-        if (codeEl) {
-            const { startContainer, startOffset } = range;
-
-            if (startContainer.nodeType === Node.TEXT_NODE && block.contains(startContainer)) {
-                const text = startContainer.textContent;
-                const before = text.slice(0, startOffset);
-                const after = text.slice(startOffset);
-                startContainer.textContent = before;
-
-                const newP = document.createElement('p');
-                if (after) {
-                    newP.textContent = after;
-                } else {
-                    newP.innerHTML = '<br>';
-                }
-
-                block.parentNode.insertBefore(newP, block.nextSibling);
-
-                if (!codeEl.textContent.trim()) {
-                    const parent = codeEl.parentNode;
-                    const textNode = document.createTextNode('');
-                    parent.replaceChild(textNode, codeEl);
-                }
-
-                const newRange = document.createRange();
-                const targetNode = newP.firstChild || newP;
-                newRange.setStart(targetNode, 0);
                 newRange.collapse(true);
                 this.selection.setRange(newRange);
             } else {
-                const newP = document.createElement('p');
-                newP.innerHTML = '<br>';
-                block.parentNode.insertBefore(newP, block.nextSibling);
-                const newRange = document.createRange();
-                newRange.setStart(newP, 0);
-                newRange.collapse(true);
-                this.selection.setRange(newRange);
+                this.replaceBlockWithParagraph(block);
             }
-
             this.emitChange();
+            return;
         }
+
+        this.splitBlockAtCaret(block, range);
+        this.emitChange();
     }
 
     /**
-     * Backspace at the start of an empty list item removes the item (and
-     * collapses an emptied list into a paragraph). Non-empty items are left
-     * to the browser's own merging behaviour.
+     * Whether the caret sits in an inline <code> run (as opposed to a
+     * <pre> block, which handleEnter treats on its own).
+     * @param {Range} range
+     * @returns {boolean}
+     */
+    isInlineCodeCaret(range) {
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        if (!(node instanceof HTMLElement)) return false;
+        return !!node.closest('code') && !node.closest('pre');
+    }
+
+    /**
+     * Whether a collapsed caret sits before any content of the block,
+     * measured in the root's text stream (so element-container carets such
+     * as (block, 0) compare correctly against text-node carets).
+     * @param {HTMLElement} block
+     * @param {Range} range
+     * @returns {boolean}
+     */
+    isCaretAtBlockStart(block, range) {
+        if (!range.collapsed) return false;
+        const caret = this.selection.offsetOf(range.startContainer, range.startOffset);
+        return caret === this.selection.offsetOf(block, 0);
+    }
+
+    /**
+     * Splits the block at the caret: everything from the caret to the end of
+     * the block moves into a new <p> right after it, so no content after the
+     * caret is ever left behind (the previous per-text-node split only moved
+     * the caret's own text node and scrambled the order whenever the block
+     * held several inline nodes, e.g. `ab<strong>cd</strong>ef` became
+     * `ab c…ef` + `d`). Inline formatting survives the move; an inline
+     * <code> run the caret sits in is unwrapped in the moved tail so typing
+     * continues as normal text. A caret at the very start of the block
+     * (outside code) opens an empty paragraph above instead, so the content
+     * keeps its own block type — matching the browser's Enter semantics.
+     * @param {HTMLElement} block the block (or blockquote) holding the caret
+     * @param {Range} range the selection range at the caret
+     */
+    splitBlockAtCaret(block, range) {
+        const inCode = this.isInlineCodeCaret(range);
+
+        if (!inCode && this.isCaretAtBlockStart(block, range)) {
+            const empty = document.createElement('p');
+            empty.innerHTML = '<br>';
+            block.parentNode.insertBefore(empty, block);
+            return;
+        }
+
+        const tailRange = document.createRange();
+        tailRange.selectNodeContents(block);
+        tailRange.setStart(range.startContainer, range.startOffset);
+        const fragment = tailRange.extractContents();
+
+        // Exit inline code: the moved tail must not stay inside <code>.
+        if (inCode) {
+            [...fragment.querySelectorAll('code')].forEach((codeEl) => {
+                const parent = codeEl.parentNode;
+                if (!parent) return;
+                while (codeEl.firstChild) parent.insertBefore(codeEl.firstChild, codeEl);
+                parent.removeChild(codeEl);
+            });
+        }
+
+        // extractContents() yields an empty *text node* for a caret at the
+        // end of the block — truthy but invisible. Appending it produced a
+        // dead <p></p> (no <br>, zero height, no place for the caret), so
+        // content is judged by what renders, not by childNodes.length.
+        const hasContent = fragment.textContent.trim() !== ''
+            || !!fragment.querySelector('br, img, input, iframe, table, figure, video, audio, hr');
+        const newBlock = document.createElement('p');
+        if (hasContent) newBlock.appendChild(fragment);
+        else newBlock.innerHTML = '<br>';
+
+        this.pruneEmptyInline(block);
+        if (!block.firstChild) block.innerHTML = '<br>';
+
+        // A blockquote acting as its own block keeps the tail inside the quote.
+        if (block.tagName === 'BLOCKQUOTE') block.appendChild(newBlock);
+        else block.parentNode.insertBefore(newBlock, block.nextSibling);
+
+        const newRange = document.createRange();
+        newRange.setStart(newBlock, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Replaces a block with a plain empty paragraph and puts the caret there.
+     * @param {HTMLElement} block
+     */
+    replaceBlockWithParagraph(block) {
+        const p = document.createElement('p');
+        p.innerHTML = '<br>';
+        block.parentNode.insertBefore(p, block.nextSibling);
+        block.remove();
+        const newRange = document.createRange();
+        newRange.setStart(p, 0);
+        newRange.collapse(true);
+        this.selection.setRange(newRange);
+    }
+
+    /**
+     * Drops inline wrappers a split may have left empty, so the serialized
+     * markup stays clean (`<p><code></code>tail</p>` → `<p>tail</p>`).
+     * Whitespace-only and media-carrying wrappers are kept: they render.
+     * @param {HTMLElement} block
+     */
+    pruneEmptyInline(block) {
+        const inline = block.querySelectorAll('code, strong, em, b, i, u, s, strike, sub, sup, mark, span');
+        [...inline].forEach((el) => {
+            if (el.textContent !== '') return;
+            if (el.querySelector('br, img, input, iframe, table, figure, video, audio, ul, ol, a')) return;
+            if (el.hasAttribute('id') || el.hasAttribute('name')) return;
+            el.remove();
+        });
+    }
+
+    /**
+     * Backspace/Delete at the start (or end) of an empty list item removes
+     * the item in the direction the key implies (and collapses an emptied
+     * list into a paragraph). Non-empty items are left to the browser's own
+     * merging behaviour.
      * @param {KeyboardEvent} event
      */
     handleBackspace(event) {
-        if (event.key !== 'Backspace' || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
         if (this.destroyed || !this.root.contains(document.activeElement)) return;
 
         const range = this.selection.getRange();
@@ -518,7 +550,31 @@ export default class Editor {
 
         event.preventDefault();
         this.history.push();
-        this.commands.removeListItem(li);
+        this.commands.removeListItem(li, event.key === 'Delete' ? 'forward' : 'backward');
+        this.emitChange();
+    }
+
+    /**
+     * Checklist checkboxes are not live form controls inside a
+     * contenteditable: a click does not toggle them, so the `checked`
+     * attribute is flipped by hand and recorded as a change (undoable like
+     * any other edit).
+     * @param {MouseEvent} event
+     */
+    handleClick(event) {
+        if (this.destroyed) return;
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const checkbox = target.closest('input[type="checkbox"]');
+        if (!checkbox || !this.root.contains(checkbox)) return;
+
+        // Keep the attribute (not just the property) in sync so the state
+        // survives serialization; preventDefault stops any native toggling
+        // that would desync it again.
+        event.preventDefault();
+        this.history.push();
+        if (checkbox.hasAttribute('checked')) checkbox.removeAttribute('checked');
+        else checkbox.setAttribute('checked', '');
         this.emitChange();
     }
 
@@ -547,10 +603,15 @@ export default class Editor {
         this.selection.setRange(newRange);
     }
 
+    /** Removes the drag-drop insertion indicator, if it is showing. */
+    removeDropIndicator() {
+        const indicator = this.wrapper?.querySelector('.ife-drop-cursor');
+        if (indicator) indicator.remove();
+    }
+
     handleDragOver() {
         if (this.destroyed) return;
-        const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
-        if (!dropIndicator) {
+        if (!this.wrapper.querySelector('.ife-drop-cursor')) {
             const indicator = document.createElement('div');
             indicator.className = 'ife-drop-cursor';
             this.wrapper.appendChild(indicator);
@@ -561,8 +622,16 @@ export default class Editor {
     handleDragLeave(event) {
         if (this.destroyed) return;
         if (event.relatedTarget && this.wrapper.contains(event.relatedTarget)) return;
-        const dropIndicator = this.wrapper.querySelector('.ife-drop-cursor');
-        if (dropIndicator) dropIndicator.remove();
+        this.removeDropIndicator();
+    }
+
+    /** @param {DragEvent} event */
+    handleDrop(event) {
+        // The indicator is normally removed by dragleave, but a drop cancels
+        // the drag sequence first — without this it stayed visible forever.
+        this.removeDropIndicator();
+        if (this.destroyed) return;
+        this.events.emit('drop', event);
     }
 
     setupAutosave() {
@@ -676,6 +745,8 @@ export default class Editor {
         document.removeEventListener('keydown', this.handleTab);
         document.removeEventListener('keydown', this.handleEnter);
         document.removeEventListener('keydown', this.handleBackspace);
+        this.root.removeEventListener('click', this.handleClick);
+        this.root.removeEventListener('drop', this.handleDrop);
         this.root.removeEventListener('dragover', this.handleDragOver);
         this.root.removeEventListener('dragleave', this.handleDragLeave);
         this.history.destroy();

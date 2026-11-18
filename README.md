@@ -75,6 +75,10 @@ directly from `vendor/wysiwyg/laravel-editor/resources` in your bundler):
 php artisan vendor:publish --tag=wysiwyg-editor-assets
 ```
 
+Two more tags are available if you want to customise the package locally:
+`--tag=wysiwyg-editor-views` (Blade views into `resources/views/vendor/wysiwyg-editor`)
+and `--tag=wysiwyg-editor-lang` (translations into `lang/vendor/wysiwyg-editor`).
+
 If you want the editor's uploads to be publicly reachable, make sure your
 storage symlink exists:
 
@@ -256,10 +260,30 @@ tables, blockquotes, lists, code, images, note blocks) live in one place:
 
 The editor imports both files; a published post needs only the content file.
 
-Editor page (auto-loaded by `<x-editor>`):
+Editor page (auto-loaded by `<x-editor>`): the component emits one
+stylesheet, a once-guarded deferred module that imports the published
+bundle, and a small initializer per editor — the initializer queues the
+editor while the module is still loading and calls `Editor.init()`
+directly when the module has already loaded (e.g. an editor injected
+after page load):
 ```blade
 <link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
-<script type="module" src="{{ asset('vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js') }}"></script>
+
+<script type="module">
+    import Editor from "{{ asset('vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js') }}";
+    (window.__wysiwygQueue || []).forEach((args) => Editor.init(args[0], args[1]));
+    window.WysiwygEditor = Editor;
+</script>
+
+<script>
+    (function (args) {
+        if (window.WysiwygEditor) {
+            window.WysiwygEditor.init(args[0], args[1]);
+            return;
+        }
+        (window.__wysiwygQueue = window.__wysiwygQueue || []).push(args);
+    })(["#content", { /* merged editor options */ }]);
+</script>
 ```
 
 Published post:
@@ -381,7 +405,7 @@ A minimal Laravel demo app lives in [`/demo`](demo) — see
 ## Testing
 
 ```bash
-composer test          # Pest (PHP) — 13+ tests across Unit & Feature
+composer test          # Pest (PHP) — 30 tests across Unit & Feature
 composer analyse        # PHPStan level 6
 composer format -- --test  # Pint (formatting check)
 

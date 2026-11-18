@@ -10,13 +10,19 @@ export default class Dialog {
      * @param {string} config.bodyHtml
      * @param {string} [config.confirmLabel]
      * @param {string} [config.cancelLabel]
-     * @param {(form: HTMLFormElement) => void} config.onConfirm
+     * @param {(form: HTMLFormElement) => void|false} config.onConfirm return
+     *   `false` to keep the dialog open (e.g. when the submitted input is
+     *   invalid); any other value closes it after the handler runs
      * @param {() => void} [config.onClose]
      */
     constructor(container, { title, bodyHtml, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm, onClose }) {
         this.container = container;
         this.onConfirm = onConfirm;
         this.onClose = onClose;
+        // The dialog starts "closed": the Escape listener is only registered
+        // by open(), so a dialog that is constructed but never shown (or
+        // destroyed before it opens) never leaks a document-level listener.
+        this._closed = true;
 
         this.overlay = document.createElement('div');
         this.overlay.className = 'ife-dialog-overlay';
@@ -54,11 +60,11 @@ export default class Dialog {
         this.form.addEventListener('submit', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.onConfirm(this.form);
+            // A handler that returns `false` signals invalid input and asks
+            // for the dialog to stay open so the user can correct it.
+            if (this.onConfirm(this.form) === false) return;
             this.close();
         });
-
-        document.addEventListener('keydown', this.handleEscape);
     }
 
     handleEscape = (event) => {
@@ -66,6 +72,8 @@ export default class Dialog {
     };
 
     open() {
+        this._closed = false;
+        document.addEventListener('keydown', this.handleEscape);
         this.scrollPos = { x: window.scrollX, y: window.scrollY };
         this.containerScrollTop = this.container.scrollTop;
         document.body.style.overflow = 'hidden';
@@ -88,6 +96,10 @@ export default class Dialog {
     }
 
     close() {
+        // Idempotent: destroy()/submit/Escape may race; running the teardown
+        // twice would fire onClose again and clobber document.body styles.
+        if (this._closed) return;
+        this._closed = true;
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
         if (this.scrollPos) {

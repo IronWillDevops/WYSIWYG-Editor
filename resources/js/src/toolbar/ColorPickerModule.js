@@ -329,6 +329,9 @@ export default class ColorPickerModule {
 
     _squareFromPointer(e) {
         const rect = this.square.getBoundingClientRect();
+        // Zero-size rect (jsdom, display:none) would produce NaN coordinates
+        // and an invalid color like "#NaNNaNNaN" — ignore the event instead.
+        if (!rect.width || !rect.height) return;
         const x = clamp((e.clientX - rect.left) / rect.width, 0, 1) * 100;
         const y = clamp((e.clientY - rect.top) / rect.height, 0, 1) * 100;
         this.sat = Math.round(x);
@@ -339,6 +342,7 @@ export default class ColorPickerModule {
 
     _hueFromPointer(e) {
         const rect = this.hueEl.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
         const x = clamp((e.clientX - rect.left) / rect.width, 0, 1);
         this.hue = Math.round(x * 360);
         this.render();
