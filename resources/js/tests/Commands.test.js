@@ -821,6 +821,106 @@ describe('Commands', () => {
             expect(root.querySelectorAll('h2').length).toBe(2);
             expect([...root.querySelectorAll('h2')].map((h) => h.textContent)).toEqual(['one', 'two']);
         });
+
+        describe('after a list, through a toolbar save/restore round-trip', () => {
+            // The toolbar blurs the editor on mousedown (selection.save()) and
+            // the command runs after the selection is restored — the exact
+            // flow in which an element-only caret (an empty line) used to be
+            // restored into the previous block's text.
+            const caretInElement = (el) => {
+                const range = document.createRange();
+                range.setStart(el, 0);
+                range.collapse(true);
+                editor.selection.setRange(range);
+                editor.selection.save();
+                editor.selection.restore();
+            };
+
+            const appendEmptyItem = (list) => {
+                const empty = document.createElement('li');
+                empty.innerHTML = '<br>';
+                list.appendChild(empty);
+                return empty;
+            };
+
+            it('creates a separate heading for an empty line after a bullet list, keeping every item', () => {
+                root.innerHTML = '<ul><li>one</li><li>two</li><li>three</li></ul>';
+                caretInElement(appendEmptyItem(root.querySelector('ul')));
+
+                commands.formatBlock('h1');
+
+                expect(root.innerHTML).toBe('<ul><li>one</li><li>two</li><li>three</li></ul><h1><br></h1>');
+            });
+
+            it('creates a separate heading for an empty line after an ordered list, keeping every item', () => {
+                root.innerHTML = '<ol><li>one</li><li>two</li></ol>';
+                caretInElement(appendEmptyItem(root.querySelector('ol')));
+
+                commands.formatBlock('h3');
+
+                expect(root.innerHTML).toBe('<ol><li>one</li><li>two</li></ol><h3><br></h3>');
+            });
+
+            it('supports every heading level h1-h6 after a list without duplicating the last item', () => {
+                for (let i = 1; i <= 6; i++) {
+                    root.innerHTML = '<ul><li>one</li><li>two</li><li>three</li></ul>';
+                    caretInElement(appendEmptyItem(root.querySelector('ul')));
+
+                    commands.formatBlock(`h${i}`);
+
+                    expect(root.innerHTML).toBe(`<ul><li>one</li><li>two</li><li>three</li></ul><h${i}><br></h${i}>`);
+                    expect(root.textContent).toBe('onetwothree');
+                    expect(root.querySelectorAll('li').length).toBe(3);
+                }
+            });
+
+            it('converts an empty paragraph after a list into a heading', () => {
+                root.innerHTML = '<ul><li>item</li></ul><p><br></p>';
+                caretInElement(root.querySelector('p'));
+
+                commands.formatBlock('h2');
+
+                expect(root.innerHTML).toBe('<ul><li>item</li></ul><h2><br></h2>');
+            });
+
+            it('splits the list around an empty item in the middle when it becomes a heading', () => {
+                root.innerHTML = '<ul><li>one</li><li><br></li><li>two</li></ul>';
+                caretInElement(root.querySelectorAll('li')[1]);
+
+                commands.formatBlock('h6');
+
+                const heading = root.querySelector('h6');
+                expect(heading).not.toBeNull();
+                expect(heading.textContent).toBe('');
+                expect(root.querySelector('ul > h6')).toBeNull();
+                const lists = root.querySelectorAll('ul');
+                expect(lists.length).toBe(2);
+                expect([...lists[0].querySelectorAll('li')].map((li) => li.textContent)).toEqual(['one']);
+                expect([...lists[1].querySelectorAll('li')].map((li) => li.textContent)).toEqual(['two']);
+            });
+
+            it('keeps the last item text in the list, not in the heading', () => {
+                // Regression: the caret restored into the last <li>'s text, so
+                // formatBlock moved "three" into the new heading and dropped
+                // the empty line the user was on.
+                root.innerHTML = '<ul><li>one</li><li>two</li><li>three</li></ul>';
+                caretInElement(appendEmptyItem(root.querySelector('ul')));
+
+                commands.formatBlock('h1');
+
+                expect(root.querySelector('h1').textContent).toBe('');
+                expect([...root.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['one', 'two', 'three']);
+            });
+
+            it('converts an empty line after a paragraph into a heading', () => {
+                root.innerHTML = '<p>para</p><p><br></p>';
+                caretInElement(root.querySelectorAll('p')[1]);
+
+                commands.formatBlock('h1');
+
+                expect(root.innerHTML).toBe('<p>para</p><h1><br></h1>');
+            });
+        });
     });
 
     describe('list editing', () => {

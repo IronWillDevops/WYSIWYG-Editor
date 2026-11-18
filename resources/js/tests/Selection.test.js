@@ -97,6 +97,96 @@ describe('Selection', () => {
         expect(selection.getRange().toString()).toBe('hello');
     });
 
+    it('save and restore keeps a caret in an element-only position at that position', () => {
+        // Regression: an empty <li>/<p> owns no text, so its character offset
+        // collapses onto the end of the preceding content. Restoring by
+        // offsets alone put the caret back into the previous block's text,
+        // and formatBlock then converted that block instead of the empty one.
+        root.innerHTML = '<p>one</p><p><br></p>';
+        const emptyP = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(emptyP, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(emptyP);
+        expect(restored.startOffset).toBe(0);
+    });
+
+    it('save and restore keeps a caret in an empty list item at that item', () => {
+        root.innerHTML = '<ul><li>one</li><li><br></li></ul>';
+        const emptyLi = root.querySelectorAll('li')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(emptyLi, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(emptyLi);
+        expect(restored.startOffset).toBe(0);
+    });
+
+    it('falls back to offsets when the saved point no longer fits its node', () => {
+        // A text node split (the way colouring does) shortens the node, so the
+        // stored offset is past its end: the character offsets win.
+        const textNode = root.querySelector('p').firstChild; // "hello "
+        const nativeRange = document.createRange();
+        nativeRange.setStart(textNode, 5);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        textNode.splitText(3); // node is now "hel", saved point (text, 5) is stale
+
+        selection.restore();
+        const restored = selection.getRange();
+        // Offset 5 in the text stream is two characters into "lo ".
+        expect(restored.startContainer.textContent).toBe('lo ');
+        expect(restored.startOffset).toBe(2);
+    });
+
+    it('falls back to offsets when content before the saved point changed', () => {
+        const p = root.querySelector('p');
+        const textNode = p.firstChild; // "hello "
+        const nativeRange = document.createRange();
+        nativeRange.setStart(textNode, 5);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        // Same node, but four characters now precede it: the stored point no
+        // longer sits where the saved character offset says it did.
+        p.insertBefore(document.createTextNode('abc '), textNode);
+
+        selection.restore();
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(textNode);
+        expect(restored.startOffset).toBe(1);
+    });
+
+    it('restoreSavedOffsets keeps an element-only caret in place', () => {
+        root.innerHTML = '<p>one</p><p><br></p>';
+        const emptyP = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(emptyP, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restoreSavedOffsets();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(emptyP);
+        expect(restored.startOffset).toBe(0);
+    });
+
     it('collapseToEnd moves caret to end of root', () => {
         const nativeRange = document.createRange();
         nativeRange.setStart(root.firstChild, 0);
