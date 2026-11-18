@@ -21,7 +21,7 @@ export default class NoteModule {
             </label>
             <label class="ife-field">
                 <span>Text</span>
-                <textarea name="text" rows="3">${this.editor.selection.getText()}</textarea>
+                <textarea name="text" rows="3" required>${this.escape(this.editor.selection.getText())}</textarea>
             </label>
         `;
 
@@ -31,7 +31,8 @@ export default class NoteModule {
             confirmLabel: 'Insert',
             onConfirm: (form) => {
                 const data = new FormData(form);
-                this.insert(String(data.get('type')), String(data.get('text')));
+                // Keep the dialog open when the text is blank (returns false).
+                if (this.insert(String(data.get('type')), String(data.get('text'))) === false) return false;
             },
         });
 
@@ -40,6 +41,10 @@ export default class NoteModule {
     }
 
     insert(type, text) {
+        // Nothing to insert — bail out before pushing a history entry so an
+        // empty note (and a junk undo step) is never created.
+        if (!String(text ?? '').trim()) return false;
+
         this.editor.history.push();
         this.editor.selection.restore();
 
@@ -48,10 +53,23 @@ export default class NoteModule {
         note.textContent = text;
 
         const range = this.editor.selection.getRange();
-        range?.deleteContents();
-        range?.insertNode(note);
+        if (range) {
+            range.deleteContents();
+            range.insertNode(note);
+        } else {
+            // No selection (empty document): append instead of dropping the note.
+            this.editor.root.appendChild(note);
+        }
 
         this.editor.emitChange();
+        return true;
+    }
+
+    escape(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     destroy() {

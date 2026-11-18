@@ -139,14 +139,81 @@ describe('History', () => {
 
         it('clears any pending debounce timer', () => {
             vi.useFakeTimers();
-            const timerSpy = vi.spyOn(globalThis, 'clearTimeout');
+            // Observe the behaviour (the pending record must never fire
+            // after teardown) instead of spying on the global clearTimeout:
+            // replacing that global between useFakeTimers/useRealTimers
+            // makes sinon's uninstall DELETE it, breaking every later test.
+            const pushSpy = vi.spyOn(history, 'push');
             history.record();
             expect(history.timer).not.toBeNull();
             history.destroy();
-            expect(timerSpy).toHaveBeenCalled();
             vi.runAllTimers();
+            expect(pushSpy).not.toHaveBeenCalled();
             expect(history.undoStack.length).toBe(0);
             vi.useRealTimers();
+        });
+    });
+
+    describe('flushPendingRecord', () => {
+        it('undo settles a pending debounced record before popping', () => {
+            vi.useFakeTimers();
+            state.html = '<p>typed</p>';
+            history.record(); // debounce still pending
+            expect(history.timer).not.toBeNull();
+
+            history.undo();
+
+            // The unflushed state was pushed first, so undo lands on the
+            // previous snapshot instead of being a no-op.
+            expect(state.html).toBe('<p>initial</p>');
+            expect(history.timer).toBeNull();
+            vi.runAllTimers();
+            expect(history.undoStack).toHaveLength(1);
+            vi.useRealTimers();
+        });
+
+        it('flushPendingRecord pushes the pending state and clears the timer', () => {
+            state.html = '<p>typed</p>';
+            history.record();
+
+            history.flushPendingRecord();
+
+            expect(history.timer).toBeNull();
+            expect(history.undoStack.at(-1).html).toBe('<p>typed</p>');
+        });
+
+        it('redo after undoing does not resurrect a state the user typed past', () => {
+            state.html = '<p>v2</p>';
+            history.push();
+            history.undo(); // redo branch: [v2], content back to v1
+            state.html = '<p>v3</p>';
+            history.record(); // new typing still pending
+
+            history.redo();
+
+            // The pending typing is flushed first (and clears the stale redo
+            // branch), so v2 must not clobber what the user just wrote.
+            expect(state.html).toBe('<p>v3</p>');
+            expect(history.canRedo()).toBe(false);
+            expect(history.canUndo()).toBe(true);
+        });
+
+        it('push() after destroy() never resurrects snapshots', () => {
+            history.destroy();
+            state.html = '<p>late</p>';
+
+            expect(() => history.push()).not.toThrow();
+            expect(history.undoStack).toHaveLength(0);
+        });
+
+        it('a record() pending at destroy() does not rebuild the stack', async () => {
+            history.destroy();
+            state.html = '<p>late</p>';
+            history.record();
+
+            await new Promise((resolve) => setTimeout(resolve, 5));
+
+            expect(history.undoStack).toHaveLength(0);
         });
     });
 });

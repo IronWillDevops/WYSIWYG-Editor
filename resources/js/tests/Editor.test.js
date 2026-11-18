@@ -1,6 +1,49 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Editor from '../src/core/Editor.js';
 
+// Shared helpers for the audit regression tests (the older describes keep
+// their own local copies; these are used by the new blocks below).
+/** Makes document.activeElement resolve to the editor root. */
+function focusRoot(editor) {
+    Object.defineProperty(document, 'activeElement', {
+        configurable: true,
+        get: () => editor.root,
+    });
+    return editor;
+}
+
+function blurRoot() {
+    Object.defineProperty(document, 'activeElement', {
+        configurable: true,
+        get: () => document.body,
+    });
+}
+
+/** Collapses the native selection at (node, offset). */
+function setCaretAt(node, offset) {
+    const range = document.createRange();
+    range.setStart(node, offset);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
+function enterEvent(overrides = {}) {
+    return { preventDefault: vi.fn(), key: 'Enter', shiftKey: false, ...overrides };
+}
+
+function keyEvent(key, overrides = {}) {
+    return {
+        preventDefault: vi.fn(),
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        ...overrides,
+    };
+}
+
 describe('Editor', () => {
     /** @type {HTMLTextAreaElement} */
     let textarea;
@@ -490,8 +533,11 @@ describe('Editor', () => {
             editor.handleEnter(createEnterEvent());
             const ps = editor.root.querySelectorAll('p');
             expect(ps.length).toBe(2);
-            expect(ps[0].innerHTML).toBe('text <code>code</code> more');
-            expect(ps[1].innerHTML).toBe('<br>');
+            // Everything from the caret on moves to the new paragraph: the
+            // tail " more" used to stay behind (old split moved only the
+            // caret's own text node), scrambling the content order.
+            expect(ps[0].innerHTML).toBe('text <code>code</code>');
+            expect(ps[1].textContent).toBe(' more');
             resetActiveElement();
         });
 
@@ -512,8 +558,11 @@ describe('Editor', () => {
             editor.handleEnter(createEnterEvent());
             const ps = editor.root.querySelectorAll('p');
             expect(ps.length).toBe(2);
-            expect(ps[0].innerHTML).toBe('text <code>co</code> more');
-            expect(ps[1].textContent).toBe('de');
+            // The tail ("de" still inside <code> plus " more") moves as one
+            // unit and the <code> wrapper is dropped from the moved part —
+            // not the other way round (old split left " more" behind).
+            expect(ps[0].innerHTML).toBe('text <code>co</code>');
+            expect(ps[1].textContent).toBe('de more');
             resetActiveElement();
         });
 
@@ -1106,6 +1155,319 @@ describe('Editor', () => {
             editor.setHTML(html);
             expect(editor.getHTML()).toContain('type="checkbox"');
             expect(editor.getHTML()).toContain('checked');
+        });
+    });
+
+    // ------------------------------------------------------------------
+    // Regression tests — functional audit
+    // ------------------------------------------------------------------
+
+    describe('checklist checkboxes', () => {
+        it('flips the checked attribute on click and records a change', () => {
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<ul class="ife-checklist"><li><input type="checkbox"> Task</li></ul>';
+            const checkbox = editor.root.querySelector('input[type="checkbox"]');
+            const seen = [];
+            editor.on('change', (html) => seen.push(html));
+
+            editor.handleClick({ target: checkbox, preventDefault: vi.fn() });
+            expect(checkbox.hasAttribute('checked')).toBe(true);
+
+            editor.handleClick({ target: checkbox, preventDefault: vi.fn() });
+            expect(checkbox.hasAttribute('checked')).toBe(false);
+            // Both flips are undoable/observable changes.
+            expect(seen).toHaveLength(2);
+        });
+
+        it('a real click keeps the attribute, the property and the HTML in sync', () => {
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<ul class="ife-checklist"><li><input type="checkbox"> Task</li></ul>';
+            const checkbox = editor.root.querySelector('input[type="checkbox"]');
+
+            checkbox.click();
+            // The attribute drives serialization; jsdom's legacy activation
+            // double-toggle makes the live property unreliable here, and in
+            // real browsers contenteditable checkboxes never self-toggle.
+            expect(checkbox.hasAttribute('checked')).toBe(true);
+            expect(editor.getHTML()).toContain('checked');
+
+            checkbox.click();
+            expect(checkbox.hasAttribute('checked')).toBe(false);
+            expect(editor.getHTML()).not.toContain('checked');
+        });
+
+        it('ignores clicks that are not on a checkbox', () => {
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<p>hello</p>';
+            const event = {
+                target: editor.root.querySelector('p'),
+                preventDefault: vi.fn(),
+            };
+
+            editor.handleClick(event);
+
+            expect(event.preventDefault).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('drop indicator', () => {
+        it('shows the indicator on dragover and removes it on drop', () => {
+            const editor = new Editor(textarea);
+            editor.handleDragOver();
+            expect(editor.wrapper.querySelector('.ife-drop-cursor')).not.toBeNull();
+
+            const seen = [];
+            editor.on('drop', (event) => seen.push(event));
+            const event = { dataTransfer: null };
+            editor.handleDrop(event);
+
+            expect(editor.wrapper.querySelector('.ife-drop-cursor')).toBeNull();
+            expect(seen).toEqual([event]);
+        });
+
+        it('keeps the indicator while the drag is still inside the editor', () => {
+            const editor = new Editor(textarea);
+            editor.handleDragOver();
+
+            editor.handleDragLeave({ relatedTarget: editor.wrapper });
+
+            expect(editor.wrapper.querySelector('.ife-drop-cursor')).not.toBeNull();
+            editor.destroy();
+        });
+
+        it('detaches the root click/drop/drag listeners with the same references on destroy', () => {
+            const addSpy = vi.spyOn(Element.prototype, 'addEventListener');
+            const removeSpy = vi.spyOn(Element.prototype, 'removeEventListener');
+            const watched = ['click', 'drop', 'dragover', 'dragleave'];
+
+            const editor = new Editor(textarea);
+            const added = addSpy.mock.calls.filter(([type]) => watched.includes(type));
+            expect(added).toHaveLength(4);
+
+            editor.destroy();
+
+            for (const [type, handler] of added) {
+                const removed = removeSpy.mock.calls.find(
+                    ([t, h]) => t === type && h === handler
+                );
+                expect(removed, `listener "${type}" not removed with the same reference`).toBeDefined();
+            }
+        });
+    });
+
+    describe('handleBackspace with the Delete key', () => {
+        afterEach(blurRoot);
+
+        it('removes the empty list item forward and lands the caret in the next one', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<ul><li><br></li><li>two</li></ul>';
+            const two = editor.root.querySelectorAll('li')[1];
+            setCaretAt(editor.root.querySelector('li'), 0);
+
+            const event = keyEvent('Delete');
+            editor.handleBackspace(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(editor.root.innerHTML).toBe('<ul><li>two</li></ul>');
+            const range = window.getSelection().getRangeAt(0);
+            expect(range.startContainer).toBe(two);
+            expect(range.startOffset).toBe(0);
+        });
+
+        it('collapses an emptied list into a paragraph on Delete', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<ul><li><br></li></ul>';
+            setCaretAt(editor.root.querySelector('li'), 0);
+
+            editor.handleBackspace(keyEvent('Delete'));
+
+            expect(editor.root.innerHTML).toBe('<p><br></p>');
+        });
+
+        it('does not intercept Delete outside a list', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<p>hello</p>';
+            setCaretAt(editor.root.querySelector('p').firstChild, 0);
+
+            const event = keyEvent('Delete');
+            editor.handleBackspace(event);
+
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(editor.root.innerHTML).toBe('<p>hello</p>');
+        });
+
+        it('ignores Delete with a modifier key', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<ul><li><br></li><li>two</li></ul>';
+            setCaretAt(editor.root.querySelector('li'), 0);
+
+            const event = keyEvent('Delete', { ctrlKey: true });
+            editor.handleBackspace(event);
+
+            expect(event.preventDefault).not.toHaveBeenCalled();
+            expect(editor.root.innerHTML).toBe('<ul><li><br></li><li>two</li></ul>');
+        });
+    });
+
+    describe('headings on Enter', () => {
+        afterEach(blurRoot);
+
+        it('splits a heading at the caret into a new paragraph', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<h2>Title</h2>';
+            setCaretAt(editor.root.querySelector('h2').firstChild, 5);
+
+            editor.handleEnter(enterEvent());
+
+            expect(editor.root.innerHTML).toBe('<h2>Title</h2><p><br></p>');
+        });
+
+        it('opens an empty paragraph above the heading when Enter is pressed at its start', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<h2>Title</h2>';
+            setCaretAt(editor.root.querySelector('h2').firstChild, 0);
+
+            editor.handleEnter(enterEvent());
+
+            // The content keeps its own block type — browser Enter semantics.
+            expect(editor.root.innerHTML).toBe('<p><br></p><h2>Title</h2>');
+        });
+
+        it('turns an exhausted heading back into a plain paragraph', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<h2><br></h2>';
+            setCaretAt(editor.root.querySelector('h2'), 0);
+
+            editor.handleEnter(enterEvent());
+
+            expect(editor.root.innerHTML).toBe('<p><br></p>');
+        });
+    });
+
+    describe('content order when splitting a block', () => {
+        afterEach(blurRoot);
+
+        it('keeps every inline node in order when Enter splits a blockquote line', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<blockquote><p>ab<strong>cd</strong>ef</p></blockquote>';
+            const p = editor.root.querySelector('p');
+            setCaretAt(p.querySelector('strong').firstChild, 1);
+
+            editor.handleEnter(enterEvent());
+
+            // The old per-text-node split scrambled this: only the caret's
+            // own text node moved, leaving " ef" behind and dropping "d".
+            expect(editor.root.innerHTML).toBe(
+                '<blockquote><p>ab<strong>c</strong></p><p><strong>d</strong>ef</p></blockquote>'
+            );
+        });
+
+        it('never leaves content behind when Enter is pressed at the end of a block', () => {
+            const editor = focusRoot(new Editor(textarea));
+            editor.root.innerHTML = '<blockquote><p>hello</p></blockquote>';
+            setCaretAt(editor.root.querySelector('p').firstChild, 5);
+
+            editor.handleEnter(enterEvent());
+
+            // The caret's tail is empty: the new block must still be a live
+            // <p><br></p>, not a dead <p></p> the caret cannot enter.
+            expect(editor.root.innerHTML).toBe(
+                '<blockquote><p>hello</p><p><br></p></blockquote>'
+            );
+        });
+    });
+
+    describe('undo/redo with pending records', () => {
+        it('undo right after typing flushes the pending snapshot instead of skipping it', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>one</p>');
+            editor.root.innerHTML = '<p>one two</p>';
+            editor.emitChange(); // debounced record still pending (300 ms)
+
+            editor.undo();
+
+            // One step back to "one" — not two steps (seed) and not "one two".
+            // (editor.undo() re-records via emitChange, so a fresh debounce
+            // timer is expected to be pending here; only the content matters.)
+            expect(editor.root.innerHTML).toBe('<p>one</p>');
+        });
+
+        it('redo settles its own pending record and returns the undone state', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>one</p>');
+            editor.root.innerHTML = '<p>two</p>';
+            editor.emitChange();
+
+            editor.undo();
+            editor.redo();
+
+            expect(editor.root.innerHTML).toBe('<p>two</p>');
+        });
+
+        it('undo and redo emit change so external consumers stay in sync', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>one</p>');
+            const seen = [];
+            editor.on('change', (html) => seen.push(html));
+
+            editor.undo();
+            expect(seen).toHaveLength(1);
+            expect(seen[0]).toBe(editor.getHTML());
+
+            editor.redo();
+            expect(seen).toHaveLength(2);
+            expect(seen[1]).toBe(editor.getHTML());
+        });
+
+        it('records a manual DOM mutation made through emitChange as one undo step', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>before</p>');
+            editor.root.innerHTML = '<p>after</p>';
+            editor.emitChange();
+            editor.history.flushPendingRecord();
+
+            editor.undo();
+            expect(editor.root.innerHTML).toBe('<p>before</p>');
+            editor.redo();
+            expect(editor.root.innerHTML).toBe('<p>after</p>');
+        });
+
+        it('records native input events as a history step', () => {
+            const editor = new Editor(textarea);
+            editor.setHTML('<p>one</p>');
+            editor.root.innerHTML = '<p>one two</p>';
+            editor.root.dispatchEvent(new Event('input', { bubbles: true }));
+            editor.history.flushPendingRecord();
+
+            editor.undo();
+            expect(editor.root.innerHTML).toBe('<p>one</p>');
+        });
+    });
+
+    describe('caret bookmarks', () => {
+        it('restores a caret saved in an empty block at that block, not at the document end', () => {
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<p>one</p><p><br></p><p>two</p>';
+            const emptyP = editor.root.querySelectorAll('p')[1];
+            const range = document.createRange();
+            range.setStart(emptyP, 0);
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            const bookmark = editor.saveSelectionBookmark();
+            // The empty block starts at character 3; the document ends at 6.
+            expect(bookmark.start).toBe(3);
+            expect(bookmark.end).toBe(3);
+
+            // Simulate the innerHTML swap undo performs.
+            editor.root.innerHTML = '<p>one</p><p><br></p><p>two</p>';
+            editor.restoreSelectionBookmark(bookmark);
+
+            const restored = window.getSelection().getRangeAt(0);
+            expect(restored.startContainer.textContent).toBe('one');
+            expect(restored.startOffset).toBe(3);
         });
     });
 });

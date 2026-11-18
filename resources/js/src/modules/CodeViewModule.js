@@ -14,6 +14,10 @@ export default class CodeViewModule {
     }
 
     enterCodeView() {
+        // Re-entry guard: a second call while already in source view would
+        // orphan the previous textarea and push a duplicate history entry.
+        if (this.active) return;
+
         this.editor.history.push();
         this.source = document.createElement('textarea');
         this.source.className = 'ife-source-view';
@@ -53,6 +57,16 @@ export default class CodeViewModule {
     }
 
     destroy() {
-        this.source?.remove();
+        // If destroyed while source view is open: apply the pending edits
+        // (same as exiting) so nothing typed there is lost, and un-hide the
+        // editor root which would otherwise stay display:none forever.
+        if (this.active && this.source) {
+            this.exitCodeView();
+        } else {
+            this.source?.remove();
+            this.source = null;
+        }
+        this.editor.root.style.display = '';
+        this.active = false;
     }
 }

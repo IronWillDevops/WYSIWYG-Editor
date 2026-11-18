@@ -1,4 +1,4 @@
-class s {
+class i {
   constructor(e) {
     this.editor = e, this.active = !1, this.handleChange = this.handleChange.bind(this), document.addEventListener("fullscreenchange", this.handleChange);
   }
@@ -20,13 +20,18 @@ class s {
     this.editor.wrapper.classList.remove("ife-fullscreen"), this.active = !1;
   }
   handleChange() {
-    document.fullscreenElement || (this.editor.wrapper.classList.remove("ife-fullscreen"), this.active = !1);
+    var e;
+    if (!document.fullscreenElement) {
+      this.editor.wrapper.classList.remove("ife-fullscreen");
+      const t = this.active;
+      this.active = !1, t && ((e = this.editor.events) == null || e.emit("fullscreenchange", this.editor));
+    }
   }
   destroy() {
     document.removeEventListener("fullscreenchange", this.handleChange);
   }
 }
 export {
-  s as default
+  i as default
 };
-//# sourceMappingURL=FullscreenModule-CNXzlUim.js.map
+//# sourceMappingURL=FullscreenModule-DUPhB-ri.js.map

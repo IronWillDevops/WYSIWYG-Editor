@@ -6,7 +6,7 @@ class l {
     return this.active ? this.exitCodeView() : this.enterCodeView(), this.active;
   }
   enterCodeView() {
-    this.editor.history.push(), this.source = document.createElement("textarea"), this.source.className = "ife-source-view", this.source.value = this.formatHtml(this.editor.getHTML()), this.source.spellcheck = !1, this.editor.root.insertAdjacentElement("afterend", this.source), this.editor.root.style.display = "none", this.active = !0;
+    this.active || (this.editor.history.push(), this.source = document.createElement("textarea"), this.source.className = "ife-source-view", this.source.value = this.formatHtml(this.editor.getHTML()), this.source.spellcheck = !1, this.editor.root.insertAdjacentElement("afterend", this.source), this.editor.root.style.display = "none", this.active = !0);
   }
   exitCodeView() {
     if (!this.source) return;
@@ -29,10 +29,10 @@ class l {
   }
   destroy() {
     var t;
-    (t = this.source) == null || t.remove();
+    this.active && this.source ? this.exitCodeView() : ((t = this.source) == null || t.remove(), this.source = null), this.editor.root.style.display = "", this.active = !1;
   }
 }
 export {
   l as default
 };
-//# sourceMappingURL=CodeViewModule-Wu0FnDsK.js.map
+//# sourceMappingURL=CodeViewModule-qWNvgyFq.js.map

@@ -287,14 +287,22 @@ export default class Commands {
         // Guard against ranges that live outside the editor root entirely.
         if (!this.root.contains(range.commonAncestorContainer)) return [];
 
-        // A range whose common ancestor is the root itself (e.g. Select All,
-        // or a selection spanning several top-level blocks) has no single
-        // enclosing block, so collect every top-level block the range touches.
+        // A range whose common ancestor is the root itself spans several
+        // top-level blocks (Select All, or a multi-paragraph selection), so
+        // collect the top-level blocks — but only the ones the range actually
+        // touches. Returning every child of the root made a selection over
+        // two paragraphs convert (or list-ify) the whole document.
         if (range.commonAncestorContainer === this.root) {
             const topBlocks = [...this.root.children].filter(
                 (el) => el instanceof HTMLElement && BLOCK_TAGS.has(el.tagName)
             );
-            return topBlocks;
+            return topBlocks.filter((el) => {
+                try {
+                    return range.intersectsNode(el);
+                } catch {
+                    return false;
+                }
+            });
         }
 
         // Nearest block-level ancestor of a node at any depth (the block does
@@ -476,15 +484,28 @@ export default class Commands {
     }
 
     /**
-     * Whether an <li> holds nothing worth keeping: no text and no embedded
-     * content (nested lists, images, checkboxes, ...). Enter and Backspace use
-     * it to decide when the caret should leave the list.
+     * Whether a block-level element holds nothing worth keeping: no text and
+     * no embedded content (lists, images, checkboxes, iframes, ...). Enter
+     * uses it to decide when a special block (heading, blockquote line, note,
+     * pre) should turn back into a plain paragraph instead of nesting a
+     * second empty shell — and it must not treat an image-only paragraph as
+     * empty, or exiting would delete the media along with the block.
+     * @param {HTMLElement} el
+     * @returns {boolean}
+     */
+    isBlockEmpty(el) {
+        if (el.textContent.trim()) return false;
+        return !el.querySelector('ul, ol, img, input, iframe, table, figure, video, audio, hr');
+    }
+
+    /**
+     * Whether an <li> holds nothing worth keeping (see isBlockEmpty).
+     * Enter and Backspace use it to decide when the caret should leave the list.
      * @param {HTMLElement} li
      * @returns {boolean}
      */
     isListItemEmpty(li) {
-        if (li.textContent.trim()) return false;
-        return !li.querySelector('ul, ol, img, input, iframe, table, figure, video, audio');
+        return this.isBlockEmpty(li);
     }
 
     /**
@@ -514,16 +535,23 @@ export default class Commands {
     }
 
     /**
-     * Deletes an empty <li> (Backspace). The caret moves to the end of a
-     * neighbouring item; when the list would be left empty it collapses into
-     * a paragraph so no empty list shell survives.
+     * Deletes an empty <li> (Backspace/Delete). On Backspace the caret moves
+     * to the end of the previous (or next) item; on Delete it moves into the
+     * following (or previous) item, so the caret keeps flowing in the
+     * direction the key implies. When the list would be left empty it
+     * collapses into a paragraph so no empty list shell survives.
      * @param {HTMLElement} li
+     * @param {'backward'|'forward'} [direction] which key removed the item
      */
-    removeListItem(li) {
+    removeListItem(li, direction = 'backward') {
         const list = li.parentElement;
         if (!isListElement(list)) return;
 
-        const neighbour = li.previousElementSibling ?? li.nextElementSibling;
+        const previous = li.previousElementSibling;
+        const next = li.nextElementSibling;
+        const neighbour = direction === 'forward'
+            ? next ?? previous
+            : previous ?? next;
         li.remove();
 
         if (!list.querySelector('li')) {
@@ -534,7 +562,11 @@ export default class Commands {
             return;
         }
 
-        if (neighbour) this.placeCaretAtEnd(neighbour);
+        if (!neighbour) return;
+        // Forward deletion lands at the start of the item that slid onto the
+        // caret; backward deletion lands at the end of the item behind it.
+        if (direction === 'forward' && neighbour === next) this.placeCaretAtStart(neighbour);
+        else this.placeCaretAtEnd(neighbour);
     }
 
     /**
@@ -581,6 +613,14 @@ export default class Commands {
         const newRange = document.createRange();
         newRange.selectNodeContents(el);
         newRange.collapse(false);
+        this.selection.setRange(newRange);
+    }
+
+    /** Places the caret at the start of an element. @param {HTMLElement} el */
+    placeCaretAtStart(el) {
+        const newRange = document.createRange();
+        newRange.setStart(el, 0);
+        newRange.collapse(true);
         this.selection.setRange(newRange);
     }
 
@@ -911,10 +951,13 @@ export default class Commands {
     /** Inserts raw (already sanitized) HTML at the current caret position. */
     insertHTML(html) {
         this.prepare();
-        this.editor.history.push();
 
+        // Resolve the range first: without a caret inside the root there is
+        // nothing to insert into, so no history step may be recorded either.
         const range = this.selection.getRange();
         if (!range) return;
+
+        this.editor.history.push();
 
         range.deleteContents();
         const fragment = range.createContextualFragment(html);

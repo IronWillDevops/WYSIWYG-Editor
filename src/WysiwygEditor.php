@@ -27,15 +27,47 @@ final class WysiwygEditor
     }
 
     /**
-     * Build a JSON-safe options array for the given toolbar preset,
-     * merging package defaults with per-instance overrides.
+     * Build a JSON-safe options array by merging per-instance overrides
+     * onto the package defaults.
      *
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     public function buildOptions(array $overrides = []): array
     {
-        return array_replace_recursive($this->config, $overrides);
+        /** @var array<string, mixed> $options */
+        $options = self::mergeOptions($this->config, $overrides);
+
+        return $options;
+    }
+
+    /**
+     * Recursively merge overrides onto a base options array.
+     *
+     * Sequential lists (toolbar groups, sanitizer whitelists, mime lists, ...)
+     * are replaced as a whole so an override fully supersedes the default
+     * instead of being merged index-by-index, while string-keyed maps are
+     * merged recursively.
+     *
+     * @param  array<array-key, mixed>  $base
+     * @param  array<array-key, mixed>  $overrides
+     * @return array<array-key, mixed>
+     */
+    public static function mergeOptions(array $base, array $overrides): array
+    {
+        foreach ($overrides as $key => $value) {
+            $current = $base[$key] ?? null;
+
+            if (is_array($value) && is_array($current)) {
+                $base[$key] = array_is_list($value) && array_is_list($current)
+                    ? $value
+                    : self::mergeOptions($current, $value);
+            } else {
+                $base[$key] = $value;
+            }
+        }
+
+        return $base;
     }
 
     public function version(): string

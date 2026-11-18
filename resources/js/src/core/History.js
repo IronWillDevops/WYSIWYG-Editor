@@ -44,13 +44,30 @@ export default class History {
         if (this.isRestoring) return;
         const snapshot = this.getContent();
         const last = this.undoStack[this.undoStack.length - 1];
-        if (snapshot === last.html) return;
+        // `last` is absent only after destroy() cleared the stack — never
+        // resurrect snapshots for a torn-down editor.
+        if (!last || snapshot === last.html) return;
 
         this.undoStack.push({ html: snapshot, bookmark: this.saveBookmark() });
         if (this.undoStack.length > this.maxSteps) {
             this.undoStack.shift();
         }
         this.redoStack = [];
+    }
+
+    /**
+     * Settles a debounced record() still waiting on its timer, so the state
+     * the user just produced is on the stack *before* undo/redo inspects it.
+     * Without this, pressing Ctrl+Z within debounceMs of the last keystroke
+     * cancelled the pending snapshot entirely: undo became a no-op (or skipped
+     * the last change), and redo could resurrect a state the user had already
+     * typed past.
+     */
+    flushPendingRecord() {
+        if (!this.timer) return;
+        clearTimeout(this.timer);
+        this.timer = null;
+        this.push();
     }
 
     canUndo() {
@@ -62,7 +79,7 @@ export default class History {
     }
 
     undo() {
-        clearTimeout(this.timer);
+        this.flushPendingRecord();
         if (!this.canUndo()) return;
 
         const current = this.undoStack.pop();
@@ -77,6 +94,7 @@ export default class History {
     }
 
     redo() {
+        this.flushPendingRecord();
         if (!this.canRedo()) return;
 
         const next = this.redoStack.pop();

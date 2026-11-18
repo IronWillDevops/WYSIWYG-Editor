@@ -7,6 +7,7 @@ const VIMEO_RE = /vimeo\.com\/(\d+)/;
 export default class MediaModule {
     constructor(editor) {
         this.editor = editor;
+        this.dialog = null;
     }
 
     openVideo() {
@@ -26,34 +27,50 @@ export default class MediaModule {
         `;
 
         this.editor.selection.save();
-        new Dialog(this.editor.wrapper, {
+        this.dialog = new Dialog(this.editor.wrapper, {
             title: 'Insert video',
             bodyHtml: body,
             confirmLabel: 'Insert',
             onConfirm: (form) => {
                 const data = new FormData(form);
-                this.insertVideo(String(data.get('source')), Number(data.get('width')), Number(data.get('height')));
+                const inserted = this.insertVideo(
+                    String(data.get('source')),
+                    Number(data.get('width')),
+                    Number(data.get('height')),
+                );
+                // Keep the dialog open when there is nothing to insert.
+                if (inserted === false) return false;
+                this.dialog = null;
             },
-        }).open();
+        });
+        this.dialog.open();
     }
 
     insertVideo(source, width, height) {
-        const trimmed = source.trim();
+        const trimmed = String(source ?? '').trim();
+        // Whitespace-only input (required passes a single space) — nothing to embed.
+        if (!trimmed) return false;
+
+        // Non-positive / NaN dimensions from manual input fall back to defaults
+        // instead of rendering width="NaN".
+        const w = Number.isFinite(width) && width > 0 ? width : 640;
+        const h = Number.isFinite(height) && height > 0 ? height : 360;
         let html;
 
-        if (trimmed.startsWith('<iframe')) {
+        if (/^<iframe/i.test(trimmed)) {
             html = trimmed;
         } else if (YOUTUBE_RE.test(trimmed)) {
             const id = trimmed.match(YOUTUBE_RE)[1];
-            html = `<iframe width="${width}" height="${height}" src="https://www.youtube.com/embed/${id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            html = `<iframe width="${w}" height="${h}" src="https://www.youtube.com/embed/${id}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         } else if (VIMEO_RE.test(trimmed)) {
             const id = trimmed.match(VIMEO_RE)[1];
-            html = `<iframe width="${width}" height="${height}" src="https://player.vimeo.com/video/${id}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+            html = `<iframe width="${w}" height="${h}" src="https://player.vimeo.com/video/${id}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
         } else {
-            html = `<video controls width="${width}" height="${height}"><source src="${trimmed}"></video>`;
+            html = `<video controls width="${w}" height="${h}"><source src="${trimmed}"></video>`;
         }
 
         this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(html));
+        return true;
     }
 
     openAudio() {
@@ -65,21 +82,29 @@ export default class MediaModule {
         `;
 
         this.editor.selection.save();
-        new Dialog(this.editor.wrapper, {
+        this.dialog = new Dialog(this.editor.wrapper, {
             title: 'Insert audio',
             bodyHtml: body,
             confirmLabel: 'Insert',
             onConfirm: (form) => {
-                const src = String(new FormData(form).get('source'));
+                const src = String(new FormData(form).get('source') ?? '').trim();
+                if (!src) return false;
                 const html = `<audio controls><source src="${src}"></audio>`;
                 this.editor.commands.insertHTML(this.editor.sanitizer.sanitize(html));
+                this.dialog = null;
             },
-        }).open();
+        });
+        this.dialog.open();
     }
 
     insertHorizontalRule() {
         this.editor.commands.insertHTML('<hr>');
     }
 
-    destroy() {}
+    destroy() {
+        // Close an open dialog so its Escape listener and body scroll lock
+        // don't outlive the module.
+        this.dialog?.close();
+        this.dialog = null;
+    }
 }

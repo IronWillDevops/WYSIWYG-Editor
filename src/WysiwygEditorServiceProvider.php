@@ -42,8 +42,11 @@ final class WysiwygEditorServiceProvider extends ServiceProvider
             __DIR__.'/../resources/views' => resource_path('views/vendor/wysiwyg-editor'),
         ], 'wysiwyg-editor-views');
 
+        // Publish the compiled dist build (not the whole resources/js dev tree
+        // with its node_modules/src) so the URLs used by the Blade component —
+        // vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js — resolve on disk.
         $this->publishes([
-            __DIR__.'/../resources/js' => public_path('vendor/wysiwyg-editor/js'),
+            __DIR__.'/../resources/js/dist' => public_path('vendor/wysiwyg-editor/js'),
             __DIR__.'/../resources/css' => public_path('vendor/wysiwyg-editor/css'),
         ], 'wysiwyg-editor-assets');
 

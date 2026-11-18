@@ -146,6 +146,19 @@ describe('LinkModule', () => {
         expect(anchor.textContent).toBe('custom text');
     });
 
+    it('inserts the link at the end of the root when there is no selection', () => {
+        const module = new LinkModule(editor);
+        window.getSelection()?.removeAllRanges(); // no selection anywhere
+
+        const form = createForm('https://example.com', 'link text');
+        module.apply(form, null);
+
+        const anchor = editor.root.querySelector('a');
+        expect(anchor).not.toBeNull();
+        expect(anchor.textContent).toBe('link text');
+        expect(anchor.getAttribute('href')).toBe('https://example.com');
+    });
+
     describe('open', () => {
         it('creates dialog with link fields', () => {
             const module = new LinkModule(editor);
@@ -263,6 +276,19 @@ describe('LinkModule', () => {
 
             expect(editor.root.querySelector('a')).toBeNull();
             expect(editor.root.textContent).toContain('link text');
+        });
+
+        it('does not throw or push history for a detached anchor', () => {
+            const module = new LinkModule(editor);
+            const pushSpy = vi.spyOn(editor.history, 'push');
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'detached';
+            // Never appended to the document: parentNode is null.
+
+            expect(() => module.remove(anchor)).not.toThrow();
+            expect(pushSpy).not.toHaveBeenCalled();
+            expect(anchor.parentNode).toBeNull();
         });
 
         it('pushes history before removing', () => {

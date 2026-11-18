@@ -185,6 +185,48 @@ describe('ColorPickerModule', () => {
             square.dispatchEvent(ev);
             expect(ev.defaultPrevented).toBe(true);
         });
+
+        it('ignores pointer input when the square has a zero-size rect', () => {
+            module.open();
+            onChange.mockClear();
+            const square = module.picker.querySelector('.ife-color-picker__square');
+            // jsdom / display:none elements report an all-zero rect: dividing
+            // by width/height 0 would produce #NaNNaNNaN.
+            Object.defineProperty(square, 'getBoundingClientRect', {
+                configurable: true,
+                value: () => ({ left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 }),
+            });
+
+            // open() seeds the state from the current color (black with no
+            // selection): the zero-rect guard must leave it untouched.
+            const satBefore = module.sat;
+            const valueBefore = module.value;
+            square.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 }));
+            document.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 0, clientY: 0 }));
+            document.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+
+            expect(onChange).not.toHaveBeenCalled();
+            expect(Number.isNaN(module.sat)).toBe(false);
+            expect(Number.isNaN(module.value)).toBe(false);
+            expect(module.sat).toBe(satBefore);
+            expect(module.value).toBe(valueBefore);
+        });
+
+        it('ignores pointer input when the hue slider has a zero-size rect', () => {
+            module.open();
+            onChange.mockClear();
+            const hue = module.picker.querySelector('.ife-color-picker__hue');
+            Object.defineProperty(hue, 'getBoundingClientRect', {
+                configurable: true,
+                value: () => ({ left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0 }),
+            });
+
+            hue.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 0, clientY: 0 }));
+
+            expect(onChange).not.toHaveBeenCalled();
+            expect(Number.isNaN(module.hue)).toBe(false);
+            expect(module.hue).toBe(0);
+        });
     });
 
     describe('controls', () => {

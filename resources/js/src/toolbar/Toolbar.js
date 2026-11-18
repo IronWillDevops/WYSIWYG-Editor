@@ -38,8 +38,13 @@ export default class Toolbar {
         this.render();
         this.editor.wrapper.insertBefore(this.el, this.editor.root);
 
-        this.editor.on('selectionchange', () => this.syncActiveStates());
-        this.editor.on('focus', () => this.syncActiveStates());
+        // Keep every subscription's unsubscribe so destroy() can detach the
+        // toolbar from the editor's event bus (mocks may return undefined).
+        this._unsubs = [
+            this.editor.on('selectionchange', () => this.syncActiveStates()),
+            this.editor.on('focus', () => this.syncActiveStates()),
+            this.editor.on('fullscreenchange', () => this.syncActiveStates()),
+        ].filter((unsub) => typeof unsub === 'function');
 
         // Live recolouring: while the user picks a color the toolbar remembers it
         // as "pending"; as they then drag a selection handle to expand the
@@ -130,13 +135,21 @@ export default class Toolbar {
         button.addEventListener('mousedown', (event) => event.preventDefault()); // keep editor selection
         button.addEventListener('click', () => {
             this.editor.selection.restore();
+            const resync = () => this.syncActiveStates();
+            let result;
             if (def.type === 'command') {
-                this.editor.commands.exec(def.command);
+                result = this.editor.commands.exec(def.command);
             } else {
-                def.action?.(this.editor, button);
+                result = def.action?.(this.editor, button);
             }
-            if (def.toggle) button.classList.toggle('is-active');
-            this.syncActiveStates();
+            // Toggle state must come from the authoritative source (queryState /
+            // module state), never from a blind class flip: async actions (e.g.
+            // fullscreen) settle later, so re-sync once they resolve too.
+            if (result && typeof result.then === 'function') {
+                result.then(resync, resync);
+            } else {
+                resync();
+            }
         });
 
         this.buttons.set(id, button);
@@ -244,6 +257,16 @@ export default class Toolbar {
             }
         });
 
+        // Module-backed toggles (fullscreen, source code) report their own
+        // state; mirror it instead of guessing from a click.
+        const moduleStateMap = { fullscreen: 'fullscreen', sourceCode: 'codeView' };
+        Object.entries(moduleStateMap).forEach(([id, moduleName]) => {
+            const button = this.buttons.get(id);
+            if (button instanceof HTMLElement) {
+                button.classList.toggle('is-active', this.editor.module?.(moduleName)?.active === true);
+            }
+        });
+
         const block = this.editor.selection.getBlockElement();
         let activeAlign = '';
         if (block) {
@@ -337,6 +360,8 @@ export default class Toolbar {
     }
 
     destroy() {
+        this._unsubs?.forEach((unsub) => unsub?.());
+        this._unsubs = [];
         this.disarmLiveColor();
         this._colorPickers.forEach((picker) => picker.destroy());
         this._colorPickers.clear();

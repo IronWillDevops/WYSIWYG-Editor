@@ -171,4 +171,20 @@ describe('StatusBar', () => {
         statusBar.destroy();
         expect(spy).toHaveBeenCalledWith('input', expect.any(Function));
     });
+
+    it('localizes the made-by label for the active locale', () => {
+        editor = createMockEditor();
+        editor.options.locale = 'ru';
+        const statusBar = new StatusBar(editor);
+        expect(statusBar.right.textContent).toBe('Сделано в ITkha');
+        statusBar.destroy();
+    });
+
+    it('falls back to the English made-by label for unknown locales', () => {
+        editor = createMockEditor();
+        editor.options.locale = 'xx';
+        const statusBar = new StatusBar(editor);
+        expect(statusBar.right.textContent).toBe('Made by ITkha');
+        statusBar.destroy();
+    });
 });

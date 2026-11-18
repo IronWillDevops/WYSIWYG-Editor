@@ -90,6 +90,16 @@ describe('Commands', () => {
         expect(root.innerHTML).toContain('<strong> world</strong>');
     });
 
+    it('insertHTML records no history step when there is no selection inside the editor', () => {
+        window.getSelection()?.removeAllRanges();
+        editor.history.push = vi.fn();
+
+        commands.insertHTML('<strong>nothing</strong>');
+
+        expect(editor.history.push).not.toHaveBeenCalled();
+        expect(root.innerHTML).toBe('<p>hello world</p>');
+    });
+
     it('queryState returns false for unknown command', () => {
         expect(commands.queryState('nonexistent')).toBe(false);
     });
@@ -1077,6 +1087,79 @@ describe('Commands', () => {
             commands.formatBlock('h1');
 
             expect(root.innerHTML).toBe('<ul><li>item</li></ul><h1><br></h1>');
+        });
+    });
+
+    describe('removeListItem direction', () => {
+        it('forward deletion lands at the start of the next item', () => {
+            root.innerHTML = '<ul><li><br></li><li>two</li></ul>';
+            const two = root.querySelectorAll('li')[1];
+
+            commands.removeListItem(root.querySelector('li'), 'forward');
+
+            expect(root.innerHTML).toBe('<ul><li>two</li></ul>');
+            const range = editor.selection.getRange();
+            expect(range.startContainer).toBe(two);
+            expect(range.startOffset).toBe(0);
+        });
+
+        it('backward deletion lands at the end of the previous item', () => {
+            root.innerHTML = '<ul><li>one</li><li><br></li></ul>';
+            const one = root.querySelector('li');
+
+            commands.removeListItem(root.querySelectorAll('li')[1], 'backward');
+
+            expect(root.innerHTML).toBe('<ul><li>one</li></ul>');
+            // placeCaretAtEnd collapses onto the element's end boundary.
+            const range = editor.selection.getRange();
+            expect(range.startContainer).toBe(one);
+            expect(range.startOffset).toBe(1);
+            expect(range.collapsed).toBe(true);
+        });
+    });
+
+    describe('range and emptiness helpers', () => {
+        it('getBlocksInRange returns only the blocks the range touches when the common ancestor is the root', () => {
+            root.innerHTML = '<p>one</p><p>two</p><p>three</p>';
+            const ps = root.querySelectorAll('p');
+            const range = document.createRange();
+            // Spans from the root start into the first paragraph only —
+            // commonAncestorContainer resolves to the root itself, which
+            // used to return every top-level block (converting the whole
+            // document instead of the selection).
+            range.setStart(root, 0);
+            range.setEnd(ps[0].firstChild, 3);
+
+            const blocks = commands.getBlocksInRange(range);
+
+            expect(blocks).toHaveLength(1);
+            expect(blocks[0]).toBe(ps[0]);
+        });
+
+        it('getBlocksInRange still collects every top-level block for a select-all range', () => {
+            root.innerHTML = '<p>one</p><p>two</p>';
+            const range = document.createRange();
+            range.selectNodeContents(root);
+
+            expect(commands.getBlocksInRange(range)).toHaveLength(2);
+        });
+
+        it('isBlockEmpty keeps media-only blocks non-empty', () => {
+            root.innerHTML = '<p><img src="x.png" alt=""></p>';
+            expect(commands.isBlockEmpty(root.querySelector('p'))).toBe(false);
+        });
+
+        it('isBlockEmpty treats an hr as empty so Backspace can delete it', () => {
+            root.innerHTML = '<hr>';
+            expect(commands.isBlockEmpty(root.querySelector('hr'))).toBe(true);
+        });
+
+        it('isBlockEmpty distinguishes a br-only block from one with text', () => {
+            root.innerHTML = '<p><br></p>';
+            expect(commands.isBlockEmpty(root.querySelector('p'))).toBe(true);
+
+            root.innerHTML = '<p>text</p>';
+            expect(commands.isBlockEmpty(root.querySelector('p'))).toBe(false);
         });
     });
 });

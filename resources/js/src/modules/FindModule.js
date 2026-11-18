@@ -32,7 +32,13 @@ export default class FindModule {
             bodyHtml: body,
             confirmLabel: 'Replace all',
             onConfirm: (form) => this.replaceAll(form),
-            onClose: () => this.clearHighlights(),
+            // Clearing the highlights must also give the caret back: opening
+            // the dialog moves focus into it, so without a restore the user
+            // loses their place in the document after closing.
+            onClose: () => {
+                this.clearHighlights();
+                this.editor.selection.restore();
+            },
         });
 
         const findNextBtn = document.createElement('button');
@@ -45,6 +51,7 @@ export default class FindModule {
             this.highlightAll(new FormData(this.dialog.form));
         });
 
+        this.editor.selection.save();
         this.dialog.open();
         this.dialog.form.querySelector('.ife-dialog__footer').prepend(findNextBtn);
     }
@@ -59,11 +66,26 @@ export default class FindModule {
         return new RegExp(pattern, flags);
     }
 
+    /**
+     * buildRegex() rethrows SyntaxError for a malformed user pattern; the
+     * dialog handlers must not let that escape (it would leave the dialog
+     * stuck with an uncaught error and no feedback).
+     * @param {FormData|URLSearchParams} form
+     * @returns {RegExp|null} null when the query is empty or invalid
+     */
+    safeBuildRegex(form) {
+        try {
+            return this.buildRegex(form);
+        } catch {
+            return null;
+        }
+    }
+
     highlightAll(form) {
         this.clearHighlights();
         const query = String(form.get('query') ?? '');
         if (!query) return;
-        const regex = this.buildRegex(form);
+        const regex = this.safeBuildRegex(form);
         if (!regex) return;
 
         const walker = document.createTreeWalker(this.editor.root, NodeFilter.SHOW_TEXT, null);
@@ -83,6 +105,14 @@ export default class FindModule {
             let lastIndex = 0;
             let match = regex.exec(text);
             while (match) {
+                if (match[0].length === 0) {
+                    // Zero-width match (`x*`, `(?=a)`, ...): exec() would
+                    // return it forever at the same index and hang the tab.
+                    // Skip past it — an empty match has nothing to mark.
+                    regex.lastIndex = match.index + 1;
+                    match = regex.exec(text);
+                    continue;
+                }
                 fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
                 const mark = document.createElement('mark');
                 mark.className = 'ife-search-highlight';
@@ -103,10 +133,15 @@ export default class FindModule {
         this.editor.root.normalize();
     }
 
+    /**
+     * @param {FormData|HTMLFormElement} form
+     * @returns {boolean} false when there is nothing to replace (empty or
+     *   invalid query) so the Dialog can stay open for correction
+     */
     replaceAll(form) {
         const data = new FormData(form);
-        const regex = this.buildRegex(data);
-        if (!regex) return;
+        const regex = this.safeBuildRegex(data);
+        if (!regex) return false;
         const replacement = String(data.get('replacement') ?? '');
 
         this.editor.history.push();
@@ -125,6 +160,7 @@ export default class FindModule {
         });
 
         this.editor.emitChange();
+        return true;
     }
 
     destroy() {

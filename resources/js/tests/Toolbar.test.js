@@ -364,4 +364,79 @@ describe('Toolbar', () => {
         expect(editor.commands.exec).toHaveBeenCalledWith('formatBlock', 'h1');
     });
 
+    it('mirrors module state (fullscreen/sourceCode) onto their toggle buttons', () => {
+        editor.module = vi.fn((name) => {
+            if (name === 'fullscreen') return { active: true };
+            if (name === 'codeView') return { active: false };
+            return undefined;
+        });
+        toolbar = new Toolbar(editor);
+        toolbar.syncActiveStates();
+
+        expect(toolbar.buttons.get('fullscreen').classList.contains('is-active')).toBe(true);
+        expect(toolbar.buttons.get('sourceCode').classList.contains('is-active')).toBe(false);
+    });
+
+    it('does not mark module toggles active when their module is missing', () => {
+        editor.module = vi.fn(() => undefined);
+        toolbar = new Toolbar(editor);
+        toolbar.syncActiveStates();
+
+        expect(toolbar.buttons.get('fullscreen').classList.contains('is-active')).toBe(false);
+        expect(toolbar.buttons.get('sourceCode').classList.contains('is-active')).toBe(false);
+    });
+
+    it('re-syncs toggle state after an async action resolves instead of blindly flipping it', async () => {
+        const state = { active: false };
+        editor.module = vi.fn(() => ({
+            get active() {
+                return state.active;
+            },
+            toggle: async () => {
+                state.active = true;
+                return state.active;
+            },
+        }));
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('fullscreen');
+
+        btn.click();
+        // The action's promise has not settled yet: no blind class flip.
+        expect(btn.classList.contains('is-active')).toBe(false);
+
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(btn.classList.contains('is-active')).toBe(true);
+    });
+
+    it('unsubscribes editor event handlers on destroy', () => {
+        const unsubs = [vi.fn(), vi.fn(), vi.fn()];
+        let index = 0;
+        editor.on = vi.fn(() => unsubs[index++]);
+        toolbar = new Toolbar(editor);
+
+        toolbar.destroy();
+
+        expect(editor.on).toHaveBeenCalledTimes(3);
+        unsubs.forEach((unsub) => expect(unsub).toHaveBeenCalledTimes(1));
+        expect(document.body.contains(toolbar.el)).toBe(false);
+        toolbar = null;
+    });
+
+    it('re-syncs and clears the fullscreen toggle on the fullscreenchange event', () => {
+        const handlers = {};
+        editor.on = vi.fn((event, handler) => {
+            handlers[event] = handler;
+            return () => {};
+        });
+        editor.module = vi.fn(() => ({ active: false }));
+        toolbar = new Toolbar(editor);
+        const btn = toolbar.buttons.get('fullscreen');
+        btn.classList.add('is-active');
+
+        handlers.fullscreenchange();
+
+        expect(btn.classList.contains('is-active')).toBe(false);
+    });
+
 });
