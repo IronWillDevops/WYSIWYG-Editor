@@ -18,6 +18,7 @@ vi.mock('../src/utils/Dialog.js', () => ({
 
 import ToolbarConfig from '../src/toolbar/ToolbarConfig.js';
 import Icons from '../src/icons/Icons.js';
+import Selection from '../src/core/Selection.js';
 
 describe('ToolbarConfig', () => {
     it('defines all expected button IDs', () => {
@@ -203,6 +204,61 @@ describe('ToolbarConfig resilience', () => {
 
         expect(insertHTML).toHaveBeenCalledWith('&copy;');
         expect(insertHTML).not.toHaveBeenCalledWith('&amp;copy;');
+    });
+
+    it('blockquote wraps the current line after a toolbar save/restore round-trip', () => {
+        // Toolbar flow: mousedown saves the caret, click restores it before
+        // running the action. The restored caret must stay on the current
+        // line, not slide into the previous one.
+        const root = document.createElement('div');
+        root.contentEditable = 'true';
+        root.innerHTML = '<p>line1</p><p>line2</p>';
+        document.body.appendChild(root);
+        const selection = new Selection(root);
+        const editor = {
+            root,
+            selection,
+            history: { push: vi.fn() },
+            emitChange: vi.fn(),
+        };
+        const p2 = root.querySelectorAll('p')[1];
+        const range = document.createRange();
+        range.setStart(p2.firstChild, 0);
+        range.collapse(true);
+        selection.setRange(range);
+
+        selection.save();
+        selection.restore();
+        ToolbarConfig.blockquote.action(editor);
+
+        expect(root.innerHTML).toBe('<p>line1</p><blockquote><p>line2</p></blockquote>');
+        document.body.removeChild(root);
+    });
+
+    it('blockquote wraps an empty current line, not the previous line', () => {
+        const root = document.createElement('div');
+        root.contentEditable = 'true';
+        root.innerHTML = '<p>line1</p><p><br></p>';
+        document.body.appendChild(root);
+        const selection = new Selection(root);
+        const editor = {
+            root,
+            selection,
+            history: { push: vi.fn() },
+            emitChange: vi.fn(),
+        };
+        const emptyP = root.querySelectorAll('p')[1];
+        const range = document.createRange();
+        range.setStart(emptyP, 0);
+        range.collapse(true);
+        selection.setRange(range);
+
+        selection.save();
+        selection.restore();
+        ToolbarConfig.blockquote.action(editor);
+
+        expect(root.innerHTML).toBe('<p>line1</p><blockquote><p><br></p></blockquote>');
+        document.body.removeChild(root);
     });
 
     it('escapes the list start attribute in the list properties dialog body', () => {
