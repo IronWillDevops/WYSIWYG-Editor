@@ -147,4 +147,79 @@ describe('Dialog', () => {
 
         expect(mousedownEvent.defaultPrevented).toBe(true);
     });
+
+    it('keeps the dialog open when onConfirm returns false', () => {
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<input name="val" value="x">',
+            onConfirm: () => false,
+        });
+        dialog.open();
+
+        const form = document.body.querySelector('form');
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+        expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+        // The user can correct the input and submit again: a valid confirm
+        // after a rejected one must still close the dialog.
+        dialog.onConfirm = () => undefined;
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
+    });
+
+    it('does not register the document Escape listener until opened', () => {
+        const addSpy = vi.spyOn(document, 'addEventListener');
+        try {
+            dialog = new Dialog(container, {
+                title: 'Test',
+                bodyHtml: '<p>body</p>',
+                onConfirm: () => {},
+            });
+
+            const beforeOpen = addSpy.mock.calls.filter(([type]) => type === 'keydown');
+            expect(beforeOpen.length).toBe(0);
+
+            dialog.open();
+            const afterOpen = addSpy.mock.calls.filter(([type]) => type === 'keydown');
+            expect(afterOpen.length).toBe(1);
+        } finally {
+            addSpy.mockRestore();
+        }
+    });
+
+    it('removes the Escape listener on close and stays idempotent', () => {
+        const onClose = vi.fn();
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<p>body</p>',
+            onConfirm: () => {},
+            onClose,
+        });
+        const removeSpy = vi.spyOn(document, 'removeEventListener');
+        dialog.open();
+        dialog.close();
+
+        const removed = removeSpy.mock.calls.filter(([type]) => type === 'keydown');
+        expect(removed.length).toBe(1);
+
+        // A second close (Escape + destroy racing) must not fire onClose again
+        // or re-touch document.body styles.
+        dialog.close();
+        expect(onClose).toHaveBeenCalledTimes(1);
+        removeSpy.mockRestore();
+    });
+
+    it('closing a dialog that was never opened is a no-op', () => {
+        const onClose = vi.fn();
+        dialog = new Dialog(container, {
+            title: 'Test',
+            bodyHtml: '<p>body</p>',
+            onConfirm: () => {},
+            onClose,
+        });
+
+        expect(() => dialog.close()).not.toThrow();
+        expect(onClose).not.toHaveBeenCalled();
+        expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
+    });
 });

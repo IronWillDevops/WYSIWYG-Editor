@@ -60,6 +60,17 @@ describe('ImageModule', () => {
             expect(figures[0].hasAttribute('src')).toBe(false);
         });
 
+        it('appends at the end when there is no selection range', () => {
+            editor.selection.getRange = () => null;
+            const module = new ImageModule(editor);
+
+            module.insert({ src: 'https://example.com/img.jpg', alt: '', caption: '', align: 'center', lazy: false });
+
+            const figure = editor.root.querySelector('figure.ife-image');
+            expect(figure).not.toBeNull();
+            expect(editor.root.contains(figure)).toBe(true);
+        });
+
         it('allows https:// src in insert', () => {
             const module = new ImageModule(editor);
             module.insert({ src: 'https://example.com/img.jpg', alt: '', caption: '', align: 'center', lazy: false });
@@ -128,6 +139,33 @@ describe('ImageModule', () => {
             expect(srcInput.getAttribute('placeholder')).toBe('https://example.com/image.jpg');
         });
 
+        it('keeps the dialog open when submitted with no file and no URL', () => {
+            const module = new ImageModule(editor);
+            module.open();
+
+            const form = document.body.querySelector('form');
+            form.querySelector('input[name="src"]').value = '';
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+            expect(editor.root.querySelector('figure.ife-image')).toBeNull();
+        });
+
+        it('pre-selects None for a figure with ife-image--none', () => {
+            const figure = document.createElement('figure');
+            figure.className = 'ife-image ife-image--none ife-image--selected';
+            const img = document.createElement('img');
+            img.src = 'https://example.com/img.jpg';
+            figure.appendChild(img);
+            editor.root.appendChild(figure);
+
+            const module = new ImageModule(editor);
+            module.open();
+
+            const alignSelect = document.body.querySelector('select[name="align"]');
+            expect(alignSelect.value).toBe('none');
+        });
+
         it('pre-fills fields when editing an existing figure', () => {
             const figure = document.createElement('figure');
             figure.className = 'ife-image ife-image--center ife-image--selected';
@@ -173,6 +211,64 @@ describe('ImageModule', () => {
             const module = new ImageModule(editor);
             module.open();
             expect(saveSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('resize handles', () => {
+        it('uses custom tags that the sanitizer strips from saved HTML', () => {
+            const module = new ImageModule(editor);
+            const img = document.createElement('img');
+            img.src = 'https://example.com/img.jpg';
+            editor.root.appendChild(img);
+
+            module.showResizeHandles(img);
+
+            // Handles are present while editing…
+            expect(editor.root.querySelector('ife-image-resize-handles')).not.toBeNull();
+            expect(editor.root.querySelectorAll('ife-image-resize-handle').length).toBe(4);
+
+            // …but never survive a sanitize() round-trip into saved content.
+            const sanitized = new Sanitizer().sanitize(editor.root.innerHTML);
+            expect(sanitized).not.toContain('ife-image-resize');
+        });
+
+        it('hideResizeHandles removes them again', () => {
+            const module = new ImageModule(editor);
+            const img = document.createElement('img');
+            img.src = 'https://example.com/img.jpg';
+            editor.root.appendChild(img);
+
+            module.showResizeHandles(img);
+            module.hideResizeHandles();
+
+            expect(editor.root.querySelector('ife-image-resize-handles')).toBeNull();
+        });
+    });
+
+    describe('destroy', () => {
+        it('removes the dragover preventDefault listener', () => {
+            const module = new ImageModule(editor);
+
+            const before = new MouseEvent('dragover', { bubbles: true, cancelable: true });
+            editor.root.dispatchEvent(before);
+            expect(before.defaultPrevented).toBe(true);
+
+            module.destroy();
+
+            const after = new MouseEvent('dragover', { bubbles: true, cancelable: true });
+            editor.root.dispatchEvent(after);
+            expect(after.defaultPrevented).toBe(false);
+        });
+
+        it('removes drop/click/dblclick/mousedown listeners', () => {
+            const module = new ImageModule(editor);
+            const removeSpy = vi.spyOn(editor.root, 'removeEventListener');
+            module.destroy();
+            expect(removeSpy).toHaveBeenCalledWith('dragover', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('drop', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('click', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('dblclick', expect.any(Function));
+            expect(removeSpy).toHaveBeenCalledWith('mousedown', expect.any(Function));
         });
     });
 

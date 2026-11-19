@@ -1,4 +1,4 @@
-import { D as s } from "./index-C0XXTwbu.js";
+import { D as s } from "./index-N4YkchP4.js";
 class d {
   constructor(e) {
     this.editor = e, this.handleDblClick = this.handleDblClick.bind(this), e.root.addEventListener("dblclick", this.handleDblClick);
@@ -55,12 +55,13 @@ class d {
     const r = String(n.get("href"));
     if (l.setAttribute("href", this.editor.sanitizer.isSafeUrl(r) ? r : "#"), l.setAttribute("title", String(n.get("title") ?? "")), l.setAttribute("target", n.get("newTab") ? "_blank" : "_self"), t ? l.setAttribute("rel", t) : l.removeAttribute("rel"), this.editor.history.push(), !i) {
       this.editor.selection.restore();
-      const o = this.editor.selection.getRange();
-      o == null || o.deleteContents(), o == null || o.insertNode(l);
+      let o = this.editor.selection.getRange();
+      o || (o = document.createRange(), o.selectNodeContents(this.editor.root), o.collapse(!1)), o.deleteContents(), o.insertNode(l);
     }
     this.editor.emitChange();
   }
   remove(e) {
+    if (!e.parentNode) return;
     this.editor.history.push();
     const i = e.parentNode;
     for (; e.firstChild; ) i.insertBefore(e.firstChild, e);
@@ -77,4 +78,4 @@ class d {
 export {
   d as default
 };
-//# sourceMappingURL=LinkModule-BOv5zI4f.js.map
+//# sourceMappingURL=LinkModule-DMFpAJP7.js.map

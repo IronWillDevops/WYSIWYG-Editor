@@ -103,15 +103,29 @@ export default class LinkModule {
 
         if (!existing) {
             this.editor.selection.restore();
-            const range = this.editor.selection.getRange();
-            range?.deleteContents();
-            range?.insertNode(anchor);
+            let range = this.editor.selection.getRange();
+
+            // No selection available (empty document, no range): fall back to
+            // a collapsed range at the end of the root so the link is still
+            // inserted instead of being silently dropped after history.push().
+            if (!range) {
+                range = document.createRange();
+                range.selectNodeContents(this.editor.root);
+                range.collapse(false);
+            }
+
+            range.deleteContents();
+            range.insertNode(anchor);
         }
 
         this.editor.emitChange();
     }
 
     remove(anchor) {
+        // Anchor already detached from the document (e.g. removed by another
+        // command) — nothing to unwrap, avoid throwing on a null parent.
+        if (!anchor.parentNode) return;
+
         this.editor.history.push();
         const parent = anchor.parentNode;
         while (anchor.firstChild) parent.insertBefore(anchor.firstChild, anchor);

@@ -15,6 +15,20 @@ import Dialog from '../utils/Dialog.js';
  * @property {(editor: import('../core/Editor').default) => void} [action]
  */
 
+/**
+ * Escapes a value for safe interpolation into a double-quoted HTML attribute,
+ * so DOM-sourced strings (e.g. list[start]) can never break out of the markup.
+ * @param {any} value
+ * @returns {string}
+ */
+function escapeAttr(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 /** @type {Record<string, ButtonDef>} */
 const ToolbarConfig = {
     blockFormat: {
@@ -70,22 +84,22 @@ const ToolbarConfig = {
     indent: { icon: Icons.indent, label: 'Increase indent', type: 'command', command: 'indent' },
     outdent: { icon: Icons.outdent, label: 'Decrease indent', type: 'command', command: 'outdent' },
 
-    link: { icon: Icons.link, label: 'Insert/edit link', shortcut: 'Ctrl+K', type: 'action', action: (e) => e.module('link').open() },
+    link: { icon: Icons.link, label: 'Insert/edit link', shortcut: 'Ctrl+K', type: 'action', action: (e) => e.module('link')?.open() },
     unlink: {
         icon: Icons.unlink,
         label: 'Remove link',
         type: 'action',
         action: (e) => {
             const anchor = e.selection.closest('a');
-            if (anchor) e.module('link').remove(anchor);
+            if (anchor) e.module('link')?.remove(anchor);
         },
     },
 
-    image: { icon: Icons.image, label: 'Insert image', type: 'action', action: (e) => e.module('image').open() },
-    video: { icon: Icons.videocam, label: 'Insert video', type: 'action', action: (e) => e.module('media').openVideo() },
-    audio: { icon: Icons.audiotrack, label: 'Insert audio', type: 'action', action: (e) => e.module('media').openAudio() },
-    table: { icon: Icons.table, label: 'Insert table', type: 'action', action: (e) => e.module('table').openInsertDialog() },
-    hr: { icon: Icons.hr, label: 'Horizontal rule', type: 'action', action: (e) => e.module('media').insertHorizontalRule() },
+    image: { icon: Icons.image, label: 'Insert image', type: 'action', action: (e) => e.module('image')?.open() },
+    video: { icon: Icons.videocam, label: 'Insert video', type: 'action', action: (e) => e.module('media')?.openVideo() },
+    audio: { icon: Icons.audiotrack, label: 'Insert audio', type: 'action', action: (e) => e.module('media')?.openAudio() },
+    table: { icon: Icons.table, label: 'Insert table', type: 'action', action: (e) => e.module('table')?.openInsertDialog() },
+    hr: { icon: Icons.hr, label: 'Horizontal rule', type: 'action', action: (e) => e.module('media')?.insertHorizontalRule() },
 
     blockquote: { icon: Icons.blockquote, label: 'Blockquote', type: 'action', action: (e) => {
         const block = e.selection.getBlockElement();
@@ -133,35 +147,37 @@ const ToolbarConfig = {
         }
         e.emitChange();
     } },
-    note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note').open() },
+    note: { icon: Icons.note, label: 'Insert note', type: 'action', action: (e) => e.module('note')?.open() },
 
     emoji: {
         icon: Icons.emoji,
         label: 'Emoji',
         type: 'action',
-        action: (e, btn) => e.module('emoji').open(btn),
+        action: (e, btn) => e.module('emoji')?.open(btn),
     },
     specialChars: {
         icon: Icons.specialChars,
         label: 'Special characters',
         type: 'action',
-        action: (e) => e.commands.insertHTML('&amp;copy;'),
+        // '&amp;copy;' would render the literal text "&copy;" — the entity
+        // itself must reach insertHTML so the © character is inserted.
+        action: (e) => e.commands.insertHTML('&copy;'),
     },
 
-    find: { icon: Icons.find, label: 'Find & Replace', shortcut: 'Ctrl+F', type: 'action', action: (e) => e.module('find').open() },
+    find: { icon: Icons.find, label: 'Find & Replace', shortcut: 'Ctrl+F', type: 'action', action: (e) => e.module('find')?.open() },
     sourceCode: {
         icon: Icons.sourceCode,
         label: 'Source code',
         type: 'action',
         toggle: true,
-        action: (e) => e.module('codeView').toggle(),
+        action: (e) => e.module('codeView')?.toggle(),
     },
     fullscreen: {
         icon: Icons.fullscreen,
         label: 'Fullscreen',
         type: 'action',
         toggle: true,
-        action: (e) => e.module('fullscreen').toggle(),
+        action: (e) => e.module('fullscreen')?.toggle(),
     },
 
     ltr: {
@@ -260,7 +276,7 @@ const ToolbarConfig = {
             const body = `
                 <label class="ife-field">
                     <span>Start number</span>
-                    <input type="number" name="start" min="1" value="${currentStart || '1'}">
+                    <input type="number" name="start" min="1" value="${escapeAttr(currentStart || '1')}">
                 </label>
                 <label class="ife-field">
                     <span>List style type</span>

@@ -1,13 +1,15 @@
-class u {
-  constructor(n) {
-    this.editor = n, this.menu = null, this.handleContextMenu = this.handleContextMenu.bind(this), this.close = this.close.bind(this), n.root.addEventListener("contextmenu", this.handleContextMenu), document.addEventListener("click", this.close), document.addEventListener("keydown", (i) => {
-      i.key === "Escape" && this.close();
-    });
+class h {
+  constructor(o) {
+    this.editor = o, this.menu = null, this.handleContextMenu = this.handleContextMenu.bind(this), this.close = this.close.bind(this), this.handleEscape = this.handleEscape.bind(this), o.root.addEventListener("contextmenu", this.handleContextMenu), document.addEventListener("click", this.close), document.addEventListener("keydown", this.handleEscape);
   }
-  handleContextMenu(n) {
-    n.preventDefault(), this.close();
-    const i = n.target;
-    this.menu = document.createElement("div"), this.menu.className = "ife-context-menu", this.menu.style.left = `${n.clientX}px`, this.menu.style.top = `${n.clientY}px`;
+  /** @param {KeyboardEvent} event */
+  handleEscape(o) {
+    o.key === "Escape" && this.close();
+  }
+  handleContextMenu(o) {
+    o.preventDefault(), this.close();
+    const i = o.target;
+    this.menu = document.createElement("div"), this.menu.className = "ife-context-menu", this.menu.style.left = `${o.clientX}px`, this.menu.style.top = `${o.clientY}px`;
     const t = [], l = i.closest("figure.ife-image img");
     l && (t.push({ label: "Edit image", action: () => {
       var e;
@@ -42,9 +44,11 @@ class u {
       var e;
       return (e = this.editor.module("table")) == null ? void 0 : e.deleteColumn();
     } })), t.push({ type: "separator" }), t.push({ label: "Cut", action: () => document.execCommand("cut") }), t.push({ label: "Copy", action: () => document.execCommand("copy") }), t.push({ label: "Paste", action: () => {
-      var e;
-      return (e = navigator.clipboard) == null ? void 0 : e.readText().then((o) => {
-        this.editor.commands.insertHTML(this.editor.escapeHtml(o));
+      var n;
+      const e = (n = navigator.clipboard) == null ? void 0 : n.readText();
+      e && e.then((s) => {
+        this.editor.commands.insertHTML(this.editor.escapeHtml(s));
+      }, () => {
       });
     } }), t.push({ type: "separator" }), t.push({ label: "Select all", action: () => {
       const e = document.createRange();
@@ -55,20 +59,20 @@ class u {
         s.className = "ife-context-menu__separator", this.menu.appendChild(s);
         return;
       }
-      const o = document.createElement("button");
-      o.type = "button", o.className = "ife-context-menu__item", o.textContent = e.label, o.addEventListener("mousedown", (s) => s.preventDefault()), o.addEventListener("click", () => {
+      const n = document.createElement("button");
+      n.type = "button", n.className = "ife-context-menu__item", n.textContent = e.label, n.addEventListener("mousedown", (s) => s.preventDefault()), n.addEventListener("click", () => {
         this.close(), this.editor.selection.restore(), e.action();
-      }), this.menu.appendChild(o);
+      }), this.menu.appendChild(n);
     }), document.body.appendChild(this.menu), this.editor.selection.save();
   }
   close() {
     this.menu && (this.menu.remove(), this.menu = null);
   }
   destroy() {
-    this.close(), this.editor.root.removeEventListener("contextmenu", this.handleContextMenu), document.removeEventListener("click", this.close);
+    this.close(), this.editor.root.removeEventListener("contextmenu", this.handleContextMenu), document.removeEventListener("click", this.close), document.removeEventListener("keydown", this.handleEscape);
   }
 }
 export {
-  u as default
+  h as default
 };
-//# sourceMappingURL=ContextMenu-BECN7uLZ.js.map
+//# sourceMappingURL=ContextMenu-D9DecnVK.js.map

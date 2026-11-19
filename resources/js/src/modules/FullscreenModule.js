@@ -46,7 +46,10 @@ export default class FullscreenModule {
     handleChange() {
         if (!document.fullscreenElement) {
             this.editor.wrapper.classList.remove('ife-fullscreen');
+            const wasActive = this.active;
             this.active = false;
+            // Leaving fullscreen via Esc/native UI must re-sync toolbar toggles.
+            if (wasActive) this.editor.events?.emit('fullscreenchange', this.editor);
         }
     }
 

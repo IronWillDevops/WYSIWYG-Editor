@@ -75,6 +75,10 @@ directly from `vendor/wysiwyg/laravel-editor/resources` in your bundler):
 php artisan vendor:publish --tag=wysiwyg-editor-assets
 ```
 
+Two more tags are available if you want to customise the package locally:
+`--tag=wysiwyg-editor-views` (Blade views into `resources/views/vendor/wysiwyg-editor`)
+and `--tag=wysiwyg-editor-lang` (translations into `lang/vendor/wysiwyg-editor`).
+
 If you want the editor's uploads to be publicly reachable, make sure your
 storage symlink exists:
 
@@ -240,6 +244,65 @@ it drops into either design system without class collisions. Note/callout
 blocks render as `<div class="note note-info">…</div>`, which maps cleanly
 onto Bootstrap's alert color palette or a Tailwind `@apply` equivalent.
 
+## Rendering published content
+
+Editor-generated HTML is structured so the same content looks identical inside
+the editor and when published. The styles that describe that HTML (headings,
+tables, blockquotes, lists, code, images, note blocks) live in one place:
+
+- [`resources/css/wysiwyg-content.css`](resources/css/wysiwyg-content.css) —
+  the **single source of truth** for content/prose styles. It defines its own
+  `--ife-*` fallbacks and styles every element generically under `.ife-content`.
+- [`resources/css/wysiwyg-editor.css`](resources/css/wysiwyg-editor.css) —
+  editor **UI only** (toolbar, dialogs, emoji picker, contexts menus, resize
+  handles, status bar). It is never required to render a post and contains no
+  content styles, so it cannot leak UI styles onto a normal page.
+
+The editor imports both files; a published post needs only the content file.
+
+Editor page (auto-loaded by `<x-editor>`): the component emits one
+stylesheet, a once-guarded deferred module that imports the published
+bundle, and a small initializer per editor — the initializer queues the
+editor while the module is still loading and calls `Editor.init()`
+directly when the module has already loaded (e.g. an editor injected
+after page load):
+```blade
+<link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-editor.css') }}">
+
+<script type="module">
+    import Editor from "{{ asset('vendor/wysiwyg-editor/js/wysiwyg-editor.esm.js') }}";
+    (window.__wysiwygQueue || []).forEach((args) => Editor.init(args[0], args[1]));
+    window.WysiwygEditor = Editor;
+</script>
+
+<script>
+    (function (args) {
+        if (window.WysiwygEditor) {
+            window.WysiwygEditor.init(args[0], args[1]);
+            return;
+        }
+        (window.__wysiwygQueue = window.__wysiwygQueue || []).push(args);
+    })(["#content", { /* merged editor options */ }]);
+</script>
+```
+
+Published post:
+```blade
+<link rel="stylesheet" href="{{ asset('vendor/wysiwyg-editor/css/wysiwyg-content.css') }}">
+
+<div class="ife-content max-w-none">
+    {!! $post->content?->content !!}
+</div>
+```
+
+The `.ife-content` wrapper is what the content selectors target, so wrap post
+HTML in the same class the editor uses. Because the content CSS ships its own
+variable defaults it works with no JS and no wrapper, and it never conflicts
+with Tailwind `max-w-none` or Preflight resets (`prose` is not required and
+deliberately not injected). To reuse a site theme, set the `--ife-*` custom
+properties on `.ife-content` (or an ancestor) exactly as the editor's
+`.ife-wrapper` does for dark mode.
+
 ## Configuration reference
 
 See [`config/wysiwyg-editor.php`](config/wysiwyg-editor.php) for the full,
@@ -342,7 +405,7 @@ A minimal Laravel demo app lives in [`/demo`](demo) — see
 ## Testing
 
 ```bash
-composer test          # Pest (PHP) — 13+ tests across Unit & Feature
+composer test          # Pest (PHP) — 30 tests across Unit & Feature
 composer analyse        # PHPStan level 6
 composer format -- --test  # Pint (formatting check)
 

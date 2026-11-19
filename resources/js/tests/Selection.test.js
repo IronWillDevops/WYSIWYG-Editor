@@ -55,6 +55,88 @@ describe('Selection', () => {
         expect(restored).not.toBeNull();
     });
 
+    it('restore does not let the live range mutate the saved range', () => {
+        const textNode = root.querySelector('strong').firstChild;
+        const nativeRange = document.createRange();
+        nativeRange.selectNodeContents(textNode);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        // Simulate a command (e.g. execCommand('foreColor')) collapsing the
+        // active selection range. This must NOT corrupt the saved range,
+        // otherwise the next restore() would restore an empty selection.
+        selection.restore();
+        const active = selection.getNativeSelection().getRangeAt(0);
+        active.setStart(active.endContainer, active.endOffset);
+        active.collapse(true);
+
+        expect(selection.savedRange.toString()).toBe('world');
+
+        selection.restore();
+        expect(selection.getRange().toString()).toBe('world');
+    });
+
+    it('save stores offsets that survive DOM mutation re-targeting a live range', () => {
+        // Select the middle of a text node, save, then split that text node the
+        // way colouring does. A live Range is re-targeted/collapsed by the
+        // browser on such a mutation; the offset snapshot must still restore the
+        // same text.
+        const p = root.querySelector('p');
+        const textNode = p.firstChild; // "hello "
+        const nativeRange = document.createRange();
+        nativeRange.setStart(textNode, 0);
+        nativeRange.setEnd(textNode, 5);
+        selection.setRange(nativeRange);
+        selection.save();
+
+        // Mutate the DOM: split the boundary text node (like applyColor does).
+        textNode.splitText(3);
+        expect(selection.getSavedOffsets()).toEqual([0, 5]);
+
+        selection.restore();
+        expect(selection.getRange().toString()).toBe('hello');
+    });
+
+    it('save/restore keeps a block-edge caret in its own block', () => {
+        // The caret at the start of line 2's text and the caret at the end of
+        // line 1's text share one character offset; restoring by offsets alone
+        // moved the caret into the previous block, so actions reading the
+        // current line (e.g. blockquote) wrapped the previous line's data.
+        root.innerHTML = '<p>line1</p><p>line2</p>';
+        const p2 = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(p2.firstChild, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(p2.firstChild);
+        expect(restored.startOffset).toBe(0);
+        expect(selection.getBlockElement()).toBe(p2);
+    });
+
+    it('save/restore keeps an element-only caret in its empty block', () => {
+        // An empty line owns no text, so its offset collapses onto the end of
+        // whatever precedes it; the raw boundary point must win over offsets.
+        root.innerHTML = '<p>line1</p><p><br></p>';
+        const emptyP = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(emptyP, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(emptyP);
+        expect(restored.startOffset).toBe(0);
+        expect(selection.getBlockElement()).toBe(emptyP);
+    });
+
     it('collapseToEnd moves caret to end of root', () => {
         const nativeRange = document.createRange();
         nativeRange.setStart(root.firstChild, 0);

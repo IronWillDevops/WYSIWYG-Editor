@@ -1,5 +1,6 @@
 import ToolbarConfig from './ToolbarConfig.js';
 import Localization from '../i18n/Localization.js';
+import ColorPickerModule from './ColorPickerModule.js';
 
 const DEFAULT_LAYOUT = [
     ['undo', 'redo'],
@@ -27,6 +28,7 @@ export default class Toolbar {
         this.editor = editor;
         this.layout = layout ?? DEFAULT_LAYOUT;
         this.buttons = new Map();
+        this._colorPickers = new Map();
 
         this.el = document.createElement('div');
         this.el.className = 'ife-toolbar';
@@ -36,8 +38,58 @@ export default class Toolbar {
         this.render();
         this.editor.wrapper.insertBefore(this.el, this.editor.root);
 
-        this.editor.on('selectionchange', () => this.syncActiveStates());
-        this.editor.on('focus', () => this.syncActiveStates());
+        // Keep every subscription's unsubscribe so destroy() can detach the
+        // toolbar from the editor's event bus (mocks may return undefined).
+        this._unsubs = [
+            this.editor.on('selectionchange', () => this.syncActiveStates()),
+            this.editor.on('focus', () => this.syncActiveStates()),
+            this.editor.on('fullscreenchange', () => this.syncActiveStates()),
+        ].filter((unsub) => typeof unsub === 'function');
+
+        // Live recolouring: while the user picks a color the toolbar remembers it
+        // as "pending"; as they then drag a selection handle to expand the
+        // selection, every selectionchange re-applies that color to the growing
+        // text (idempotently, without collapsing the live selection) so the new
+        // portion is tinted as it is selected.
+        this._liveColor = null;
+        this._liveTimer = null;
+        this._liveIdleTimer = null;
+        this._liveLastSelection = '';
+        this._handleLiveSelection = () => {
+            if (!this._liveColor) return;
+            const sel = this.editor.selection.getNativeSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+            const range = sel.getRangeAt(0);
+            if (!this.editor.root.contains(range.commonAncestorContainer)) return;
+            const text = sel.toString();
+            if (!text.trim()) return;
+            if (text !== this._liveLastSelection) {
+                clearTimeout(this._liveTimer);
+                this._liveTimer = setTimeout(() => {
+                    this._liveLastSelection = text;
+                    const { command, value } = this._liveColor;
+                    // Re-save the grown selection before exec: exec() restores
+                    // the saved selection, so without this it would clobber the
+                    // grown text back to the original pick and never colour it.
+                    this.editor.selection.save();
+                    this.editor.commands.exec(command, value);
+                }, 40);
+            }
+            // Stop live recolouring shortly after the drag settles so a later,
+            // unrelated selection isn't tinted automatically.
+            clearTimeout(this._liveIdleTimer);
+            this._liveIdleTimer = setTimeout(() => this.disarmLiveColor(), 1500);
+        };
+        document.addEventListener('selectionchange', this._handleLiveSelection);
+        document.addEventListener('mouseup', this._handleLiveSelection);
+
+        // Capture the selection at the toolbar level (capture phase, before any
+        // child control's default behavior) so that interacting with native
+        // controls that steal focus — the block-format <select>, color inputs,
+        // etc. — never loses the user's text selection before the command runs.
+        this.el.addEventListener('mousedown', () => {
+            this.editor.selection.save();
+        }, true);
     }
 
     render() {
@@ -83,13 +135,21 @@ export default class Toolbar {
         button.addEventListener('mousedown', (event) => event.preventDefault()); // keep editor selection
         button.addEventListener('click', () => {
             this.editor.selection.restore();
+            const resync = () => this.syncActiveStates();
+            let result;
             if (def.type === 'command') {
-                this.editor.commands.exec(def.command);
+                result = this.editor.commands.exec(def.command);
             } else {
-                def.action?.(this.editor, button);
+                result = def.action?.(this.editor, button);
             }
-            if (def.toggle) button.classList.toggle('is-active');
-            this.syncActiveStates();
+            // Toggle state must come from the authoritative source (queryState /
+            // module state), never from a blind class flip: async actions (e.g.
+            // fullscreen) settle later, so re-sync once they resolve too.
+            if (result && typeof result.then === 'function') {
+                result.then(resync, resync);
+            } else {
+                resync();
+            }
         });
 
         this.buttons.set(id, button);
@@ -115,8 +175,14 @@ export default class Toolbar {
             this.editor.selection.save();
         });
         select.addEventListener('change', () => {
+            // Capture the user's chosen value *before* restore(). Restoring the
+            // text selection fires a selectionchange that re-runs
+            // syncActiveStates(), which rewrites this select to the current
+            // block tag. Reading select.value after restore() would therefore
+            // apply the stale block tag instead of the format the user picked.
+            const value = select.value;
             this.editor.selection.restore();
-            def.onChange(this.editor, select.value);
+            def.onChange(this.editor, value);
             this.syncActiveStates();
         });
 
@@ -127,22 +193,48 @@ export default class Toolbar {
     buildColorPicker(id, def) {
         const locale = this.editor.options.locale ?? 'en';
         const label = Localization.t(locale, id) !== id ? Localization.t(locale, id) : def.label;
-        const wrapper = document.createElement('label');
-        wrapper.className = 'ife-toolbar__color';
-        wrapper.title = label;
-        wrapper.innerHTML = def.icon;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ife-toolbar__btn ife-toolbar__color';
+        button.dataset.command = id;
+        button.title = label;
+        button.setAttribute('aria-label', label);
+        button.setAttribute('aria-haspopup', 'dialog');
+        button.innerHTML = def.icon;
 
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.setAttribute('aria-label', label);
-        input.addEventListener('input', () => {
-            this.editor.selection.restore();
-            this.editor.commands.exec(def.command, input.value);
+        const cssProp = def.command === 'backColor' ? 'backgroundColor' : 'color';
+
+        const picker = new ColorPickerModule(this.editor, button, {
+            id,
+            cssProp,
+            label,
+            onChange: (hex) => {
+                // Live recolouring: the in-page picker keeps the editor focused,
+                // so the selection highlight never drops and each hue/saturation
+                // drag, preset click and hex entry recolours the selected text
+                // immediately (same live behaviour as the selection-handle
+                // recolouring below). The colour is applied unconditionally to
+                // preserve a literal preview; clearing is an explicit action.
+                this.editor.selection.restoreSavedOffsets();
+                this.editor.commands.applyColor(cssProp, hex);
+                this.armLiveColor({ command: def.command, value: hex });
+            },
+            onClear: () => {
+                this.editor.selection.restoreSavedOffsets();
+                this.editor.commands.clearColor(cssProp);
+                this.disarmLiveColor();
+            },
+        });
+        this._colorPickers.set(id, picker);
+        button.addEventListener('click', () => {
+            // Capture the selection before the picker opens so colour is applied
+            // back to exactly the text the user selected.
+            this.editor.selection.save();
+            picker.toggle();
         });
 
-        wrapper.appendChild(input);
-        this.buttons.set(id, wrapper);
-        return wrapper;
+        this.buttons.set(id, button);
+        return button;
     }
 
     /** Reflects current formatting state (bold/italic/... active) on toolbar buttons. */
@@ -162,6 +254,16 @@ export default class Toolbar {
             const button = this.buttons.get(id);
             if (button instanceof HTMLElement) {
                 button.classList.toggle('is-active', this.editor.commands.queryState(command));
+            }
+        });
+
+        // Module-backed toggles (fullscreen, source code) report their own
+        // state; mirror it instead of guessing from a click.
+        const moduleStateMap = { fullscreen: 'fullscreen', sourceCode: 'codeView' };
+        Object.entries(moduleStateMap).forEach(([id, moduleName]) => {
+            const button = this.buttons.get(id);
+            if (button instanceof HTMLElement) {
+                button.classList.toggle('is-active', this.editor.module?.(moduleName)?.active === true);
             }
         });
 
@@ -239,7 +341,32 @@ export default class Toolbar {
         }
     }
 
+    /**
+     * Remembers the colour so dragging a selection handle recolours
+     * newly-selected text with it (see the document selectionchange hook).
+     * @param {{command: string, value: string}} live
+     */
+    armLiveColor(live) {
+        this._liveColor = live;
+        this._liveLastSelection = '';
+    }
+
+    /** Stops automatic recolouring on selection changes. */
+    disarmLiveColor() {
+        this._liveColor = null;
+        this._liveLastSelection = '';
+        clearTimeout(this._liveTimer);
+        clearTimeout(this._liveIdleTimer);
+    }
+
     destroy() {
+        this._unsubs?.forEach((unsub) => unsub?.());
+        this._unsubs = [];
+        this.disarmLiveColor();
+        this._colorPickers.forEach((picker) => picker.destroy());
+        this._colorPickers.clear();
+        document.removeEventListener('selectionchange', this._handleLiveSelection);
+        document.removeEventListener('mouseup', this._handleLiveSelection);
         this.el.remove();
     }
 }

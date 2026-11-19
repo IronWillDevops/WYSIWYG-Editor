@@ -8,19 +8,40 @@ import Dialog from '../utils/Dialog.js';
 export default class TableModule {
     constructor(editor) {
         this.editor = editor;
+        this.destroyed = false;
         this.buildContextToolbar();
-        this.editor.root.addEventListener('click', () => this.syncContextToolbar());
-        this.editor.root.addEventListener('keyup', () => this.syncContextToolbar());
-        this.editor.on('selectionchange', () => this.syncContextToolbar());
+
+        // Named handlers so destroy() can actually detach them (anonymous
+        // arrows would leak for the lifetime of the root node).
+        this.handleRootClick = () => this.syncContextToolbar();
+        this.handleRootKeyup = () => this.syncContextToolbar();
+        this.handleRootMousedown = (e) => this.handleColumnResizeStart(e);
+        this.handleSelectionChange = () => this.syncContextToolbar();
+        this.handlePaste = () => this.addColumnResizeHandles();
+        this.handleInit = () => {
+            clearTimeout(this._initTimer);
+            this._initTimer = setTimeout(this.adjustTableHeight, 0);
+        };
+
+        this.editor.root.addEventListener('click', this.handleRootClick);
+        this.editor.root.addEventListener('keyup', this.handleRootKeyup);
+        this._unsubSelectionChange = this.editor.on('selectionchange', this.handleSelectionChange);
 
         this.adjustTableHeight = this.adjustTableHeight.bind(this);
         this.handleColumnResizeStart = this.handleColumnResizeStart.bind(this);
         window.addEventListener('resize', this.adjustTableHeight);
-        this.editor.on('init', () => setTimeout(this.adjustTableHeight, 0));
-        this.editor.on('change', this.adjustTableHeight);
+        this._unsubInit = this.editor.on('init', this.handleInit);
+        this._unsubChange = this.editor.on('change', this.adjustTableHeight);
 
-        this.editor.root.addEventListener('mousedown', (e) => this.handleColumnResizeStart(e));
-        this.editor.on('paste', () => this.addColumnResizeHandles());
+        // The editor emits 'init' synchronously, but this plugin is loaded
+        // asynchronously (dynamic import), so the init subscription above runs
+        // too late to ever constrain the content area on first paint. Bound the
+        // editor to the viewport once now so it doesn't initially grow past the
+        // screen (it keeps being re-applied on resize/content change).
+        this._initTimer = setTimeout(this.adjustTableHeight, 0);
+
+        this.editor.root.addEventListener('mousedown', this.handleRootMousedown);
+        this._unsubPaste = this.editor.on('paste', this.handlePaste);
     }
 
     /**
@@ -156,6 +177,12 @@ export default class TableModule {
     }
 
     insertTable(rows, cols, withHeader) {
+        // Clamp user input: NaN / 0 / negative → 1 row/col, cap at the
+        // dialog's max (50 rows, 20 cols) so extreme values can't hang the
+        // browser building thousands of cells.
+        const rowCount = Number.isFinite(rows) && rows >= 1 ? Math.min(Math.round(rows), 50) : 1;
+        const colCount = Number.isFinite(cols) && cols >= 1 ? Math.min(Math.round(cols), 20) : 1;
+
         this.editor.history.push();
         this.editor.selection.restore();
 
@@ -165,7 +192,7 @@ export default class TableModule {
         if (withHeader) {
             const thead = table.createTHead();
             const headRow = thead.insertRow();
-            for (let c = 0; c < cols; c += 1) {
+            for (let c = 0; c < colCount; c += 1) {
                 const th = document.createElement('th');
                 th.contentEditable = 'true';
                 th.innerHTML = '<br>';
@@ -174,18 +201,25 @@ export default class TableModule {
         }
 
         const tbody = table.createTBody();
-        const bodyRows = withHeader ? rows - 1 : rows;
-        for (let r = 0; r < Math.max(bodyRows, 1); r += 1) {
+        // rows counts the header too: rows=1 + header means header only,
+        // not header + 1 extra body row.
+        const bodyRows = withHeader ? rowCount - 1 : rowCount;
+        for (let r = 0; r < bodyRows; r += 1) {
             const row = tbody.insertRow();
-            for (let c = 0; c < cols; c += 1) {
+            for (let c = 0; c < colCount; c += 1) {
                 const cell = row.insertCell();
                 cell.innerHTML = '<br>';
             }
         }
 
         const range = this.editor.selection.getRange();
-        range?.deleteContents();
-        range?.insertNode(table);
+        if (range) {
+            range.deleteContents();
+            range.insertNode(table);
+        } else {
+            // No selection (empty document): append instead of dropping the table.
+            this.editor.root.appendChild(table);
+        }
 
         this.editor.emitChange();
         this.adjustTableHeight();
@@ -225,14 +259,20 @@ export default class TableModule {
         this.editor.history.push();
         row.remove();
         if (table && table.isConnected) {
-            const targetRow = nextRow || prevRow;
-            if (targetRow) {
-                const firstCell = targetRow.querySelector('td, th');
-                if (firstCell) {
-                    const range = document.createRange();
-                    range.setStart(firstCell, 0);
-                    range.collapse(true);
-                    this.editor.selection.setRange(range);
+            // Last row removed: drop the now-empty <table> instead of leaving
+            // table/tbody/tfoot husk garbage in the document.
+            if (!table.querySelector('td, th')) {
+                table.remove();
+            } else {
+                const targetRow = nextRow || prevRow;
+                if (targetRow) {
+                    const firstCell = targetRow.querySelector('td, th');
+                    if (firstCell) {
+                        const range = document.createRange();
+                        range.setStart(firstCell, 0);
+                        range.collapse(true);
+                        this.editor.selection.setRange(range);
+                    }
                 }
             }
         }
@@ -275,14 +315,20 @@ export default class TableModule {
         this.editor.history.push();
         table.querySelectorAll('tr').forEach((row) => row.children[index]?.remove());
         if (table.isConnected) {
-            const firstRow = table.querySelector('tr');
-            if (firstRow) {
-                const firstCell = firstRow.querySelector('td, th');
-                if (firstCell) {
-                    const range = document.createRange();
-                    range.setStart(firstCell, 0);
-                    range.collapse(true);
-                    this.editor.selection.setRange(range);
+            // Last column removed: drop the now-empty <table> rather than
+            // leaving row husks with zero cells behind.
+            if (!table.querySelector('td, th')) {
+                table.remove();
+            } else {
+                const firstRow = table.querySelector('tr');
+                if (firstRow) {
+                    const firstCell = firstRow.querySelector('td, th');
+                    if (firstCell) {
+                        const range = document.createRange();
+                        range.setStart(firstCell, 0);
+                        range.collapse(true);
+                        this.editor.selection.setRange(range);
+                    }
                 }
             }
         }
@@ -443,7 +489,10 @@ export default class TableModule {
             const firstRow = table.querySelector('tr');
             if (!firstRow) return;
             [...firstRow.children].forEach((cell, index) => {
-                const handle = document.createElement('div');
+                // Custom tag: the sanitizer unwraps unknown elements, so these
+                // transient handles never leak into saved HTML (plain <div>s
+                // would survive as DOM garbage inside the table).
+                const handle = document.createElement('ife-col-resize-handle');
                 handle.className = 'ife-col-resize-handle';
                 handle.dataset.col = index;
                 handle.dataset.startWidth = cell.getBoundingClientRect().width;
@@ -485,6 +534,7 @@ export default class TableModule {
 
     /** Constrains content area and table height to fit within the viewport. */
     adjustTableHeight() {
+        if (this.destroyed) return;
         if (!this.editor.root?.isConnected) return;
 
         const wrapper = this.editor.wrapper;
@@ -547,7 +597,17 @@ export default class TableModule {
     }
 
     destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        clearTimeout(this._initTimer);
         window.removeEventListener('resize', this.adjustTableHeight);
+        this.editor.root.removeEventListener('click', this.handleRootClick);
+        this.editor.root.removeEventListener('keyup', this.handleRootKeyup);
+        this.editor.root.removeEventListener('mousedown', this.handleRootMousedown);
+        this._unsubSelectionChange?.();
+        this._unsubInit?.();
+        this._unsubChange?.();
+        this._unsubPaste?.();
         this.editor.root.style.maxHeight = '';
         this.contextToolbar?.remove();
     }

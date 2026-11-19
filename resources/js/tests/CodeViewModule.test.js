@@ -73,6 +73,35 @@ describe('CodeViewModule', () => {
         expect(editor.wrapper.querySelector('textarea.ife-source-view')).toBeNull();
     });
 
+    it('destroy while in code view restores the hidden editor root', () => {
+        module.toggle();
+        expect(editor.root.style.display).toBe('none');
+        expect(module.active).toBe(true);
+
+        module.destroy();
+
+        expect(editor.root.style.display).toBe('');
+        expect(module.active).toBe(false);
+        expect(editor.wrapper.querySelector('textarea.ife-source-view')).toBeNull();
+    });
+
+    it('enterCodeView while already active does not orphan the first textarea', () => {
+        module.enterCodeView();
+        const first = editor.wrapper.querySelector('textarea.ife-source-view');
+
+        module.enterCodeView();
+
+        const textareas = editor.wrapper.querySelectorAll('textarea.ife-source-view');
+        expect(textareas.length).toBe(1);
+        expect(textareas[0]).toBe(first);
+    });
+
+    it('destroy is safe to call repeatedly', () => {
+        module.toggle();
+        module.destroy();
+        expect(() => module.destroy()).not.toThrow();
+    });
+
     describe('round-trip', () => {
         it('exiting code view sets sanitized HTML and restores WYSIWYG', () => {
             module.toggle();

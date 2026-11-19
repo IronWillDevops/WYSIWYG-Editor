@@ -79,6 +79,25 @@ describe('NoteModule', () => {
         expect(editor.selection.restore).toHaveBeenCalled();
     });
 
+    it('returns false and pushes no history for blank text', () => {
+        expect(module.insert('info', '')).toBe(false);
+        expect(module.insert('info', '   ')).toBe(false);
+        expect(editor.history.push).not.toHaveBeenCalled();
+        expect(editor.emitChange).not.toHaveBeenCalled();
+        expect(editor.root.querySelector('.note')).toBeNull();
+    });
+
+    it('returns true when a note is inserted', () => {
+        expect(module.insert('info', 'text')).toBe(true);
+    });
+
+    it('appends at the end when there is no selection range', () => {
+        editor.selection.getRange = vi.fn(() => null);
+
+        expect(module.insert('info', 'no selection')).toBe(true);
+        expect(editor.root.querySelector('.note')).not.toBeNull();
+    });
+
     it('open saves selection', () => {
         module.open();
         expect(editor.selection.save).toHaveBeenCalled();
@@ -112,6 +131,39 @@ describe('NoteModule', () => {
             form.dispatchEvent(new Event('submit', { cancelable: true }));
 
             expect(insertSpy).toHaveBeenCalledWith('warning', 'test note');
+        });
+
+        it('escapes markup in the prefilled selection text', () => {
+            editor.selection.getText = vi.fn(() => '</textarea><script>alert(1)</script>');
+            module.open();
+
+            const textarea = document.body.querySelector('textarea[name="text"]');
+            // The raw close-tag must not break out of the textarea: the value
+            // round-trips as plain text and no script element is created.
+            expect(textarea.value).toBe('</textarea><script>alert(1)</script>');
+            expect(document.body.querySelector('.ife-dialog__body script')).toBeNull();
+        });
+
+        it('keeps the dialog open when submitted with blank text', () => {
+            module.open();
+
+            const form = document.body.querySelector('form');
+            form.querySelector('textarea[name="text"]').value = '   ';
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).not.toBeNull();
+            expect(editor.root.querySelector('.note')).toBeNull();
+        });
+
+        it('closes the dialog when submitted with real text', () => {
+            module.open();
+
+            const form = document.body.querySelector('form');
+            form.querySelector('textarea[name="text"]').value = 'a note';
+            form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
+            expect(editor.root.querySelector('.note')).not.toBeNull();
         });
     });
 });
