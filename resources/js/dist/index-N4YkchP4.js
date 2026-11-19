@@ -69,7 +69,7 @@ class A {
   /** Save the current range so it can be restored after a toolbar click blurs the editor. */
   save() {
     const e = this.getRange();
-    return e ? (this.savedRange = e.cloneRange(), this.savedStart = this.offsetOf(e.startContainer, e.startOffset), this.savedEnd = this.offsetOf(e.endContainer, e.endOffset)) : (this.savedRange = null, this.savedStart = null, this.savedEnd = null), this.savedRange;
+    return e ? (this.savedRange = e.cloneRange(), this.savedStart = this.offsetOf(e.startContainer, e.startOffset), this.savedEnd = this.offsetOf(e.endContainer, e.endOffset), this.savedStartPoint = { node: e.startContainer, offset: e.startOffset }, this.savedEndPoint = { node: e.endContainer, offset: e.endOffset }) : (this.savedRange = null, this.savedStart = null, this.savedEnd = null, this.savedStartPoint = null, this.savedEndPoint = null), this.savedRange;
   }
   /** @returns {Range|null} a clone of the saved range (or null if none) */
   getSavedRange() {
@@ -80,19 +80,44 @@ class A {
     return this.savedStart !== null && this.savedEnd !== null ? [this.savedStart, this.savedEnd] : null;
   }
   restore() {
-    if (!this.savedRange) return;
-    this.root.focus({ preventScroll: !0 });
-    const e = this.buildRangeFromOffsets();
-    this.setRange(e ?? this.savedRange.cloneRange());
+    this.savedRange && (this.root.focus({ preventScroll: !0 }), this.setRange(
+      this.buildRangeFromPoints() ?? this.buildRangeFromOffsets() ?? this.savedRange.cloneRange()
+    ));
   }
   /**
-   * Restores the saved selection by offsets WITHOUT focusing the editor.
-   * Used by the native colour input: focusing while the colour dialog is open
-   * dismisses it, so this keeps the picker live while colouring updates.
+   * Restores the saved selection by raw boundary points (falling back to
+   * offsets) WITHOUT focusing the editor. Used by the native colour input:
+   * focusing while the colour dialog is open dismisses it, so this keeps
+   * the picker live while colouring updates.
    */
   restoreSavedOffsets() {
-    const e = this.buildRangeFromOffsets();
+    const e = this.buildRangeFromPoints() ?? this.buildRangeFromOffsets();
     e && this.setRange(e);
+  }
+  /**
+   * Rebuilds the saved range from the boundaries captured by save(). They
+   * are stored as node references (not as a live Range), so no DOM mutation
+   * can re-target them; a point is only rejected once it no longer
+   * describes a position inside the editor.
+   * @returns {Range|null} null when a boundary is unusable
+   */
+  buildRangeFromPoints() {
+    const e = this.resolveSavedPoint(this.savedStartPoint, this.savedStart), t = this.resolveSavedPoint(this.savedEndPoint, this.savedEnd);
+    if (!e || !t) return null;
+    const n = document.createRange();
+    return n.setStart(e.node, e.offset), n.setEnd(t.node, t.offset), n;
+  }
+  /**
+   * @param {{node: Node, offset: number}|null} point a boundary saved by save()
+   * @param {number|null} savedOffset the character offset recorded with it
+   * @returns {{node: Node, offset: number}|null} null when the point is stale
+   */
+  resolveSavedPoint(e, t) {
+    if (!e) return null;
+    const { node: n, offset: i } = e;
+    if (!this.root.contains(n)) return null;
+    const o = n.nodeType === Node.TEXT_NODE ? n.length : n.childNodes.length;
+    return i > o || this.offsetOf(n, i) !== t ? null : { node: n, offset: i };
   }
   /** @returns {Range|null} a range for the saved character offsets */
   buildRangeFromOffsets() {
@@ -2697,19 +2722,19 @@ class ne {
   }
 }
 const ie = {
-  link: () => import("./LinkModule-NibI1VAJ.js"),
-  image: () => import("./ImageModule-BBABgJK1.js"),
-  table: () => import("./TableModule-t8IfZkTV.js"),
+  link: () => import("./LinkModule-DMFpAJP7.js"),
+  image: () => import("./ImageModule-6l6Z0Vrs.js"),
+  table: () => import("./TableModule-BD1gL2M2.js"),
   codeView: () => import("./CodeViewModule-qWNvgyFq.js"),
   fullscreen: () => import("./FullscreenModule-DUPhB-ri.js"),
-  find: () => import("./FindModule-DEmLjSKV.js"),
-  note: () => import("./NoteModule-CEFSFv3f.js"),
-  media: () => import("./MediaModule-kllY7JjI.js"),
+  find: () => import("./FindModule-CDYfVE8K.js"),
+  note: () => import("./NoteModule-BuYbReEY.js"),
+  media: () => import("./MediaModule-Dc41aijn.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-C8gIuZIH.js"),
+  statusBar: () => import("./StatusBar-BZhw1mvQ.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-D9DecnVK.js"),
-  templates: () => import("./TemplateModule-CJeg1pLi.js")
+  templates: () => import("./TemplateModule-B8E205_7.js")
 };
 Object.entries(ie).forEach(([r, e]) => {
   M.registerPlugin(r, async (t) => {
@@ -2756,4 +2781,4 @@ export {
   v as L,
   se as W
 };
-//# sourceMappingURL=index-DuOeHlvd.js.map
+//# sourceMappingURL=index-N4YkchP4.js.map

@@ -1,4 +1,4 @@
-import { D as u } from "./index-DuOeHlvd.js";
+import { D as u } from "./index-N4YkchP4.js";
 class v {
   constructor(e) {
     this.editor = e, this.uploadUrl = e.options.uploadUrl, this.handleDrop = this.handleDrop.bind(this), this.handleClick = this.handleClick.bind(this), this.handleDblClick = this.handleDblClick.bind(this), this.handleMouseDown = this.handleMouseDown.bind(this), this.handleResizeStart = this.handleResizeStart.bind(this), this.handleDragOverPrevent = (t) => t.preventDefault(), e.root.addEventListener("dragover", this.handleDragOverPrevent), e.root.addEventListener("drop", this.handleDrop), e.root.addEventListener("click", this.handleClick), e.root.addEventListener("dblclick", this.handleDblClick), e.root.addEventListener("mousedown", this.handleMouseDown);
@@ -194,4 +194,4 @@ class v {
 export {
   v as default
 };
-//# sourceMappingURL=ImageModule-BBABgJK1.js.map
+//# sourceMappingURL=ImageModule-6l6Z0Vrs.js.map

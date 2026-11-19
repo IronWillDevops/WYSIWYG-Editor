@@ -45,10 +45,22 @@ export default class Selection {
             // restore() locate the same text again.
             this.savedStart = this.offsetOf(range.startContainer, range.startOffset);
             this.savedEnd = this.offsetOf(range.endContainer, range.endOffset);
+            // ...and the raw boundary points themselves. A character offset is
+            // ambiguous at block edges: the caret at the start of a line's
+            // text and the caret at the end of the previous line's text share
+            // one offset, and an element-only caret (an empty line) owns no
+            // text at all, so its offset collapses onto the end of whatever
+            // precedes it. Offsets alone therefore restored such a caret into
+            // the previous block, which is how creating a quote from the
+            // current line wrapped the previous line's data instead.
+            this.savedStartPoint = { node: range.startContainer, offset: range.startOffset };
+            this.savedEndPoint = { node: range.endContainer, offset: range.endOffset };
         } else {
             this.savedRange = null;
             this.savedStart = null;
             this.savedEnd = null;
+            this.savedStartPoint = null;
+            this.savedEndPoint = null;
         }
         return this.savedRange;
     }
@@ -68,21 +80,64 @@ export default class Selection {
     restore() {
         if (!this.savedRange) return;
         this.root.focus({preventScroll: true});
-        // Rebuild from offsets first: this is stable across the DOM mutations a
-        // formatting command performs on the boundaries. Fall back to a clone of
-        // the saved range only when offsets are unavailable.
-        const byOffsets = this.buildRangeFromOffsets();
-        this.setRange(byOffsets ?? this.savedRange.cloneRange());
+        // Rebuild from the raw boundary points first: they are the only
+        // representation that still knows about element-only carets and
+        // block-edge positions. Fall back to the character offsets when a
+        // point has gone stale (the reason offsets exist), then to the
+        // cloned range.
+        this.setRange(
+            this.buildRangeFromPoints()
+            ?? this.buildRangeFromOffsets()
+            ?? this.savedRange.cloneRange()
+        );
     }
 
     /**
-     * Restores the saved selection by offsets WITHOUT focusing the editor.
-     * Used by the native colour input: focusing while the colour dialog is open
-     * dismisses it, so this keeps the picker live while colouring updates.
+     * Restores the saved selection by raw boundary points (falling back to
+     * offsets) WITHOUT focusing the editor. Used by the native colour input:
+     * focusing while the colour dialog is open dismisses it, so this keeps
+     * the picker live while colouring updates.
      */
     restoreSavedOffsets() {
-        const byOffsets = this.buildRangeFromOffsets();
-        if (byOffsets) this.setRange(byOffsets);
+        const range = this.buildRangeFromPoints() ?? this.buildRangeFromOffsets();
+        if (range) this.setRange(range);
+    }
+
+    /**
+     * Rebuilds the saved range from the boundaries captured by save(). They
+     * are stored as node references (not as a live Range), so no DOM mutation
+     * can re-target them; a point is only rejected once it no longer
+     * describes a position inside the editor.
+     * @returns {Range|null} null when a boundary is unusable
+     */
+    buildRangeFromPoints() {
+        const start = this.resolveSavedPoint(this.savedStartPoint, this.savedStart);
+        const end = this.resolveSavedPoint(this.savedEndPoint, this.savedEnd);
+        if (!start || !end) return null;
+        const range = document.createRange();
+        range.setStart(start.node, start.offset);
+        range.setEnd(end.node, end.offset);
+        return range;
+    }
+
+    /**
+     * @param {{node: Node, offset: number}|null} point a boundary saved by save()
+     * @param {number|null} savedOffset the character offset recorded with it
+     * @returns {{node: Node, offset: number}|null} null when the point is stale
+     */
+    resolveSavedPoint(point, savedOffset) {
+        if (!point) return null;
+        const { node, offset } = point;
+        if (!this.root.contains(node)) return null;
+        const length = node.nodeType === Node.TEXT_NODE ? node.length : node.childNodes.length;
+        // A text node split (the way colouring does) leaves the stored offset
+        // beyond the shortened node: the character offsets stay authoritative.
+        if (offset > length) return null;
+        // Trust the point only while it still sits where the offsets say it
+        // did; when content before it changed, the offsets describe the
+        // position better than a stale node reference does.
+        if (this.offsetOf(node, offset) !== savedOffset) return null;
+        return { node, offset };
     }
 
     /** @returns {Range|null} a range for the saved character offsets */

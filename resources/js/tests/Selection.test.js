@@ -97,6 +97,46 @@ describe('Selection', () => {
         expect(selection.getRange().toString()).toBe('hello');
     });
 
+    it('save/restore keeps a block-edge caret in its own block', () => {
+        // The caret at the start of line 2's text and the caret at the end of
+        // line 1's text share one character offset; restoring by offsets alone
+        // moved the caret into the previous block, so actions reading the
+        // current line (e.g. blockquote) wrapped the previous line's data.
+        root.innerHTML = '<p>line1</p><p>line2</p>';
+        const p2 = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(p2.firstChild, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(p2.firstChild);
+        expect(restored.startOffset).toBe(0);
+        expect(selection.getBlockElement()).toBe(p2);
+    });
+
+    it('save/restore keeps an element-only caret in its empty block', () => {
+        // An empty line owns no text, so its offset collapses onto the end of
+        // whatever precedes it; the raw boundary point must win over offsets.
+        root.innerHTML = '<p>line1</p><p><br></p>';
+        const emptyP = root.querySelectorAll('p')[1];
+        const nativeRange = document.createRange();
+        nativeRange.setStart(emptyP, 0);
+        nativeRange.collapse(true);
+        selection.setRange(nativeRange);
+
+        selection.save();
+        selection.restore();
+
+        const restored = selection.getRange();
+        expect(restored.startContainer).toBe(emptyP);
+        expect(restored.startOffset).toBe(0);
+        expect(selection.getBlockElement()).toBe(emptyP);
+    });
+
     it('collapseToEnd moves caret to end of root', () => {
         const nativeRange = document.createRange();
         nativeRange.setStart(root.firstChild, 0);

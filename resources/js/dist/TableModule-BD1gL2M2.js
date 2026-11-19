@@ -1,4 +1,4 @@
-import { D as L } from "./index-DuOeHlvd.js";
+import { D as L } from "./index-N4YkchP4.js";
 class M {
   constructor(e) {
     this.editor = e, this.destroyed = !1, this.buildContextToolbar(), this.handleRootClick = () => this.syncContextToolbar(), this.handleRootKeyup = () => this.syncContextToolbar(), this.handleRootMousedown = (t) => this.handleColumnResizeStart(t), this.handleSelectionChange = () => this.syncContextToolbar(), this.handlePaste = () => this.addColumnResizeHandles(), this.handleInit = () => {
@@ -304,4 +304,4 @@ class M {
 export {
   M as default
 };
-//# sourceMappingURL=TableModule-t8IfZkTV.js.map
+//# sourceMappingURL=TableModule-BD1gL2M2.js.map
