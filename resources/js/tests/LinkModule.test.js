@@ -210,6 +210,27 @@ describe('LinkModule', () => {
             expect(removeBtn.textContent).toBe('Remove link');
         });
 
+        it('clicking remove button unwraps the link and closes the dialog', () => {
+            const anchor = document.createElement('a');
+            anchor.href = 'https://example.com';
+            anchor.textContent = 'link';
+            editor.root.appendChild(anchor);
+
+            const range = document.createRange();
+            range.selectNodeContents(anchor);
+            editor.selection.setRange(range);
+
+            const module = new LinkModule(editor);
+            module.open();
+
+            const removeBtn = document.body.querySelector('.ife-btn--danger');
+            removeBtn.click();
+
+            expect(editor.root.querySelector('a')).toBeNull();
+            expect(editor.root.textContent).toContain('link');
+            expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
+        });
+
         it('saves selection before opening', () => {
             const saveSpy = vi.spyOn(editor.selection, 'save');
             const module = new LinkModule(editor);

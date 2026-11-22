@@ -209,6 +209,27 @@ describe('Dialog', () => {
         removeSpy.mockRestore();
     });
 
+    it('restores the scroll position captured at open when closed', () => {
+        const xSpy = vi.spyOn(window, 'scrollX', 'get').mockReturnValue(120);
+        const ySpy = vi.spyOn(window, 'scrollY', 'get').mockReturnValue(340);
+        window.scrollTo.mockClear();
+
+        try {
+            dialog = new Dialog(container, {
+                title: 'Test',
+                bodyHtml: '<p>body</p>',
+                onConfirm: () => {},
+            });
+            dialog.open();
+            dialog.close();
+
+            expect(window.scrollTo).toHaveBeenCalledWith(120, 340);
+        } finally {
+            xSpy.mockRestore();
+            ySpy.mockRestore();
+        }
+    });
+
     it('closing a dialog that was never opened is a no-op', () => {
         const onClose = vi.fn();
         dialog = new Dialog(container, {

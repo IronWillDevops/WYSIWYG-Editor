@@ -270,6 +270,11 @@ describe('TableModule', () => {
 
     describe('DOM mutations', () => {
         function setupEditorWithTable(html) {
+            // A range cloned by selection.save() in a previous test points into
+            // detached DOM: without resetting it here, insertTable's restore()
+            // moves the caret out of the fresh root whenever tests run out of
+            // order and the table is inserted into a detached node.
+            savedRange = null;
             document.body.innerHTML = '';
             wrapper = document.createElement('div');
             wrapper.className = 'ife-wrapper';
@@ -785,6 +790,140 @@ describe('TableModule', () => {
                 module.navigateToCell('prev');
 
                 expect(root.querySelector('td').textContent).toBe('a');
+            });
+
+            it('appends a new row and lands in it when Tab is pressed in the last cell', () => {
+                setupEditorWithTable('<table class="ife-table"><tr><td>a</td><td>b</td></tr></table>');
+                const module = new TableModule(editor);
+                selectCell('table.ife-table', 0, 1);
+
+                module.navigateToCell('next');
+
+                const rows = root.querySelectorAll('tr');
+                expect(rows.length).toBe(2);
+                expect(rows[1].cells.length).toBe(2);
+                const sel = window.getSelection();
+                const cell = sel.getRangeAt(0).commonAncestorContainer;
+                const td = cell.nodeType === Node.TEXT_NODE ? cell.parentElement : cell;
+                expect(td.closest('td').textContent).toBe('');
+            });
+        });
+
+        describe('openInsertDialog', () => {
+            function collapseCaretIntoRoot() {
+                const range = document.createRange();
+                range.selectNodeContents(root);
+                range.collapse(true);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+
+            it('renders the rows, columns and header fields', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+
+                module.openInsertDialog();
+
+                const overlay = document.body.querySelector('.ife-dialog-overlay');
+                expect(overlay).not.toBeNull();
+                expect(overlay.querySelector('input[name="rows"]')).not.toBeNull();
+                expect(overlay.querySelector('input[name="cols"]')).not.toBeNull();
+                expect(overlay.querySelector('input[name="header"]')).not.toBeNull();
+            });
+
+            it('saves the selection before showing so the table lands at the caret', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+
+                module.openInsertDialog();
+
+                expect(editor.selection.save).toHaveBeenCalled();
+            });
+
+            it('confirming the dialog inserts a table with the chosen dimensions', () => {
+                setupEditorWithTable('<p>hello</p>');
+                const module = new TableModule(editor);
+                collapseCaretIntoRoot();
+
+                module.openInsertDialog();
+                const form = document.body.querySelector('form');
+                form.querySelector('input[name="rows"]').value = '2';
+                form.querySelector('input[name="cols"]').value = '4';
+                form.querySelector('input[name="header"]').checked = false;
+                form.dispatchEvent(new Event('submit', { cancelable: true }));
+
+                expect(document.body.querySelector('.ife-dialog-overlay')).toBeNull();
+                const table = root.querySelector('table.ife-table');
+                expect(table).not.toBeNull();
+                expect(table.querySelector('thead')).toBeNull();
+                expect(table.querySelectorAll('tr').length).toBe(2);
+                expect(table.querySelectorAll('tr')[0].cells.length).toBe(4);
+                expect(editor.emitChange).toHaveBeenCalled();
+            });
+        });
+
+        describe('column resizing', () => {
+            it('resizes the column cells while dragging and commits on mouseup', () => {
+                setupEditorWithTable('<table class="ife-table"><tr><td>a</td><td>b</td></tr></table>');
+                const module = new TableModule(editor);
+                module.addColumnResizeHandles();
+                const handle = root.querySelector('.ife-col-resize-handle');
+                // jsdom has no layout: seed the width the drag math starts from.
+                handle.dataset.startWidth = '100';
+
+                const mousedown = new MouseEvent('mousedown', {
+                    bubbles: true, cancelable: true, clientX: 100,
+                });
+                handle.dispatchEvent(mousedown);
+                expect(mousedown.defaultPrevented).toBe(true);
+
+                document.dispatchEvent(new MouseEvent('mousemove', { clientX: 150 }));
+                const firstCell = root.querySelector('td');
+                expect(firstCell.style.width).toBe('150px');
+
+                document.dispatchEvent(new MouseEvent('mouseup', {}));
+                expect(editor.emitChange).toHaveBeenCalled();
+
+                // The drag listeners are detached on mouseup: later moves must
+                // not keep mutating the table.
+                document.dispatchEvent(new MouseEvent('mousemove', { clientX: 300 }));
+                expect(firstCell.style.width).toBe('150px');
+            });
+
+            it('ignores mousedown on anything but a resize handle', () => {
+                setupEditorWithTable('<table class="ife-table"><tr><td>a</td></tr></table>');
+                const module = new TableModule(editor);
+
+                const mousedown = new MouseEvent('mousedown', {
+                    bubbles: true, cancelable: true, clientX: 100,
+                });
+                root.querySelector('td').dispatchEvent(mousedown);
+
+                expect(mousedown.defaultPrevented).toBe(false);
+                document.dispatchEvent(new MouseEvent('mousemove', { clientX: 150 }));
+                expect(root.querySelector('td').style.width).toBe('');
+            });
+        });
+
+        describe('syncContextToolbar', () => {
+            it('shows the toolbar for a caret inside a table and hides it outside', () => {
+                setupEditorWithTable('<p>hello</p><table class="ife-table"><tr><td>cell</td></tr></table>');
+                const module = new TableModule(editor);
+                selectCell('table.ife-table', 0, 0);
+
+                module.syncContextToolbar();
+
+                expect(module.contextToolbar.isConnected).toBe(true);
+                expect(wrapper.contains(module.contextToolbar)).toBe(true);
+                expect(module.contextToolbar.style.display).toBe('flex');
+                expect(editor.events.emit).toHaveBeenCalledWith('table:context', true);
+
+                window.getSelection().removeAllRanges();
+                module.syncContextToolbar();
+
+                expect(module.contextToolbar.style.display).toBe('none');
+                expect(editor.events.emit).toHaveBeenCalledWith('table:context', false);
             });
         });
     });

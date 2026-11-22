@@ -206,6 +206,13 @@ describe('Sanitizer', () => {
             const result = sanitizer.sanitize('<div style="color: expression(alert(1))">x</div>');
             expect(result).not.toContain('expression');
         });
+
+        it('rejects malformed URLs instead of throwing', () => {
+            // `new URL()` throws for these — isSafeUrl must return false.
+            expect(sanitizer.isSafeUrl('http://')).toBe(false);
+            expect(sanitizer.isSafeUrl('https://')).toBe(false);
+            expect(sanitizer.sanitize('<a href="http://">click</a>')).not.toContain('href');
+        });
     });
 
     describe('theme-neutral color normalization', () => {

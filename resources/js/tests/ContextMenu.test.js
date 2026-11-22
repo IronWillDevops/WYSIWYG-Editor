@@ -64,6 +64,20 @@ describe('ContextMenu', () => {
         expect(labels).toContain('Remove image');
     });
 
+    it('clicking Remove image deletes the figure and emits a change', () => {
+        editor.root.innerHTML = '<figure class="ife-image"><img src="https://example.com/a.jpg" alt=""></figure>';
+        const img = editor.root.querySelector('img');
+        const el = openAt(img);
+
+        const remove = [...el.querySelectorAll('.ife-context-menu__item')].find((b) => b.textContent === 'Remove image');
+        remove.click();
+
+        expect(editor.root.querySelector('figure')).toBeNull();
+        expect(editor.history.push).toHaveBeenCalled();
+        expect(editor.emitChange).toHaveBeenCalled();
+        expect(document.body.querySelector('.ife-context-menu')).toBeNull();
+    });
+
     it('shows link actions when right-clicking an anchor', () => {
         editor.root.innerHTML = '<p><a href="https://example.com">link</a></p>';
         const anchor = editor.root.querySelector('a');

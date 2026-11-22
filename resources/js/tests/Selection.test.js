@@ -249,6 +249,26 @@ describe('Selection', () => {
         expect(wrapper.textContent).toBe('world');
     });
 
+    it('wrap falls back to extract+insert when the range spans elements', () => {
+        // surroundContents() throws for partially selected nodes, so wrap()
+        // must split the selection out and re-insert it inside the wrapper.
+        const textNodes = [...root.querySelectorAll('strong')];
+        const start = root.querySelector('p').firstChild; // "hello "
+        const end = textNodes[0].firstChild; // "world"
+        const nativeRange = document.createRange();
+        nativeRange.setStart(start, 3); // "hel|lo world"
+        nativeRange.setEnd(end, 2); // "wo|rld"
+        selection.setRange(nativeRange);
+
+        const wrapper = selection.wrap('u');
+
+        expect(wrapper.tagName).toBe('U');
+        expect(root.textContent).toBe('hello world'); // nothing lost
+        expect(wrapper.querySelector('strong')).not.toBeNull();
+        expect(wrapper.textContent).toBe('lo wo');
+        expect(root.contains(wrapper)).toBe(true);
+    });
+
     it('getText returns selected text', () => {
         const textNode = root.querySelector('strong').firstChild;
         const nativeRange = document.createRange();

@@ -1235,6 +1235,16 @@ describe('Editor', () => {
             editor.destroy();
         });
 
+        it('removes the indicator when the drag leaves the editor entirely', () => {
+            const editor = new Editor(textarea);
+            editor.handleDragOver();
+
+            editor.handleDragLeave({ relatedTarget: document.body });
+
+            expect(editor.wrapper.querySelector('.ife-drop-cursor')).toBeNull();
+            editor.destroy();
+        });
+
         it('detaches the root click/drop/drag listeners with the same references on destroy', () => {
             const addSpy = vi.spyOn(Element.prototype, 'addEventListener');
             const removeSpy = vi.spyOn(Element.prototype, 'removeEventListener');
@@ -1468,6 +1478,199 @@ describe('Editor', () => {
             const restored = window.getSelection().getRangeAt(0);
             expect(restored.startContainer.textContent).toBe('one');
             expect(restored.startOffset).toBe(3);
+        });
+    });
+
+    describe('content surface events', () => {
+        it('syncs the textarea and emits blur when the surface loses focus', () => {
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<p>typed text</p>';
+            const seen = [];
+            editor.on('blur', (instance) => seen.push(instance));
+
+            editor.root.dispatchEvent(new Event('blur'));
+
+            expect(textarea.value).toBe(editor.getHTML());
+            expect(seen).toEqual([editor]);
+            editor.destroy();
+        });
+
+        it('saves the selection and emits selectionchange on keyup and mouseup', () => {
+            const editor = new Editor(textarea);
+            const saveSpy = vi.spyOn(editor.selection, 'save');
+            const seen = [];
+            editor.on('selectionchange', (instance) => seen.push(instance));
+
+            editor.root.dispatchEvent(new Event('keyup', { bubbles: true }));
+            editor.root.dispatchEvent(new Event('mouseup', { bubbles: true }));
+
+            expect(saveSpy).toHaveBeenCalledTimes(2);
+            expect(seen).toEqual([editor, editor]);
+            editor.destroy();
+        });
+
+        it('syncs the textarea when the surrounding form is submitted', () => {
+            document.body.innerHTML = '<form><textarea></textarea></form>';
+            textarea = document.querySelector('textarea');
+            const editor = new Editor(textarea);
+            editor.root.innerHTML = '<p>draft</p>';
+
+            document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true }));
+
+            expect(textarea.value).toBe(editor.getHTML());
+            editor.destroy();
+        });
+    });
+
+    describe('handleTableTab', () => {
+        afterEach(blurRoot);
+
+        it('routes Tab and Shift+Tab in a table to the table module navigation', () => {
+            const editor = focusRoot(new Editor(textarea));
+            const navigateToCell = vi.fn();
+            editor.plugins.set('table', { getCurrentTable: () => ({}), navigateToCell });
+
+            const forward = keyEvent('Tab');
+            editor.handleTableTab(forward);
+            const backward = keyEvent('Tab', { shiftKey: true });
+            editor.handleTableTab(backward);
+
+            expect(forward.preventDefault).toHaveBeenCalled();
+            expect(backward.preventDefault).toHaveBeenCalled();
+            expect(navigateToCell.mock.calls).toEqual([['next'], ['prev']]);
+            editor.destroy();
+        });
+
+        it('leaves the key alone unless a table owns the caret', () => {
+            const editor = focusRoot(new Editor(textarea));
+
+            // Not a Tab key at all.
+            const enter = keyEvent('Enter');
+            editor.handleTableTab(enter);
+            expect(enter.preventDefault).not.toHaveBeenCalled();
+
+            // Tab with no table module loaded.
+            const bare = keyEvent('Tab');
+            editor.handleTableTab(bare);
+            expect(bare.preventDefault).not.toHaveBeenCalled();
+
+            // Tab while the caret sits outside any table.
+            const navigateToCell = vi.fn();
+            editor.plugins.set('table', { getCurrentTable: () => null, navigateToCell });
+            const outside = keyEvent('Tab');
+            editor.handleTableTab(outside);
+            expect(outside.preventDefault).not.toHaveBeenCalled();
+            expect(navigateToCell).not.toHaveBeenCalled();
+            editor.destroy();
+        });
+    });
+
+    describe('autosave', () => {
+        const storageKey = 'wysiwyg-editor-autosave-test';
+
+        afterEach(() => {
+            window.localStorage.removeItem(storageKey);
+            vi.useRealTimers();
+        });
+
+        it('writes the current content to storage on every interval tick', () => {
+            vi.useFakeTimers();
+            const editor = new Editor(textarea, {
+                autosave: { enabled: true, interval_ms: 1000, storage_key: storageKey },
+            });
+            editor.root.innerHTML = '<p>draft one</p>';
+
+            vi.advanceTimersByTime(1000);
+            expect(window.localStorage.getItem(storageKey)).toBe(editor.getHTML());
+
+            editor.root.innerHTML = '<p>draft two</p>';
+            vi.advanceTimersByTime(1000);
+            expect(window.localStorage.getItem(storageKey)).toBe('<p>draft two</p>');
+
+            editor.destroy();
+        });
+
+        it('clear() removes the saved draft along with resetting the content', () => {
+            const editor = new Editor(textarea, {
+                autosave: { enabled: true, interval_ms: 1000, storage_key: storageKey },
+            });
+            window.localStorage.setItem(storageKey, '<p>draft</p>');
+
+            editor.clear();
+
+            expect(editor.getHTML()).toBe('<div><br></div>');
+            expect(window.localStorage.getItem(storageKey)).toBeNull();
+            editor.destroy();
+        });
+
+        it('autosave tick is a no-op when storage throws (private mode/quota)', () => {
+            vi.useFakeTimers();
+            const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+                throw new Error('QuotaExceededError');
+            });
+            try {
+                const editor = new Editor(textarea, {
+                    autosave: { enabled: true, interval_ms: 1000, storage_key: storageKey },
+                });
+                editor.root.innerHTML = '<p>draft</p>';
+
+                expect(() => vi.advanceTimersByTime(1000)).not.toThrow();
+                editor.destroy();
+            } finally {
+                setItemSpy.mockRestore();
+            }
+        });
+
+        it('clear() skips draft removal when storage throws', () => {
+            const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+                throw new Error('SecurityError');
+            });
+            try {
+                const editor = new Editor(textarea, {
+                    autosave: { enabled: true, interval_ms: 1000, storage_key: storageKey },
+                });
+
+                expect(() => editor.clear()).not.toThrow();
+                expect(editor.getHTML()).toBe('<div><br></div>');
+                editor.destroy();
+            } finally {
+                removeItemSpy.mockRestore();
+            }
+        });
+    });
+
+    describe('public API', () => {
+        it('insertHTML sanitizes the payload before inserting it', () => {
+            const editor = new Editor(textarea);
+            const insertSpy = vi.spyOn(editor.commands, 'insertHTML');
+
+            editor.insertHTML('<p>ok</p><script>alert(1)</script>');
+
+            expect(insertSpy).toHaveBeenCalledWith('<p>ok</p>');
+            editor.destroy();
+        });
+
+        it('applies an explicit theme to the wrapper', () => {
+            const editor = new Editor(textarea, { theme: 'dark' });
+
+            expect(editor.wrapper.dataset.theme).toBe('dark');
+            expect(editor.wrapper.dataset.resolvedTheme).toBe('dark');
+            editor.destroy();
+        });
+
+        it('round-trips a large document without dropping content', () => {
+            const editor = new Editor(textarea);
+            const html = Array.from(
+                { length: 1000 },
+                (_, index) => `<p>Paragraph ${index}</p>`
+            ).join('');
+
+            editor.setHTML(html);
+
+            expect(editor.root.querySelectorAll('p')).toHaveLength(1000);
+            expect(editor.getHTML()).toBe(html);
+            expect(editor.getText()).toContain('Paragraph 999');
+            editor.destroy();
         });
     });
 });

@@ -82,6 +82,33 @@ describe('FullscreenModule', () => {
         expect(editor.events.emit).not.toHaveBeenCalled();
     });
 
+    it('enter swallows a rejected requestFullscreen and stays inactive', async () => {
+        // Cross-origin iframes and permission denials reject the promise —
+        // the editor must not enter a half-active state.
+        editor.wrapper.requestFullscreen = vi.fn(() => Promise.reject(new Error('denied')));
+
+        await expect(module.enter()).resolves.toBeUndefined();
+
+        expect(module.active).toBe(false);
+        expect(editor.wrapper.classList.contains('ife-fullscreen')).toBe(false);
+    });
+
+    it('exit still deactivates when exitFullscreen rejects', async () => {
+        editor.wrapper.classList.add('ife-fullscreen');
+        module.active = true;
+        Object.defineProperty(document, 'fullscreenElement', { value: document.body, configurable: true, writable: true });
+        const exitSpy = vi.fn(() => Promise.reject(new Error('not allowed')));
+        document.exitFullscreen = exitSpy;
+
+        await expect(module.exit()).resolves.toBeUndefined();
+
+        expect(exitSpy).toHaveBeenCalled();
+        expect(module.active).toBe(false);
+        expect(editor.wrapper.classList.contains('ife-fullscreen')).toBe(false);
+        delete document.exitFullscreen;
+        Object.defineProperty(document, 'fullscreenElement', { value: null, configurable: true, writable: true });
+    });
+
     it('destroy removes fullscreenchange listener', () => {
         const spy = vi.spyOn(document, 'removeEventListener');
         module.destroy();

@@ -226,3 +226,139 @@ describe('ToolbarConfig resilience', () => {
         expect(bodyHtml).toContain('value="&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"');
     });
 });
+
+describe('ToolbarConfig block formatting', () => {
+    /** Editor double whose current block is re-read from the DOM on every call. */
+    function createBlockEditor(html, blockSelector = 'p') {
+        const root = document.createElement('div');
+        root.innerHTML = html;
+        return {
+            root,
+            selection: { getBlockElement: () => root.querySelector(blockSelector) },
+            history: { push: vi.fn() },
+            emitChange: vi.fn(),
+        };
+    }
+
+    it('blockquote wraps the current paragraph and unwraps back to the original markup', () => {
+        const editor = createBlockEditor('<p>quoted</p>');
+
+        ToolbarConfig.blockquote.action(editor);
+        expect(editor.root.innerHTML).toBe('<blockquote><p>quoted</p></blockquote>');
+
+        // Toggling off must restore the original markup instead of producing
+        // invalid <p><p>…</p></p> nesting.
+        ToolbarConfig.blockquote.action(editor);
+        expect(editor.root.innerHTML).toBe('<p>quoted</p>');
+        expect(editor.history.push).toHaveBeenCalledTimes(2);
+        expect(editor.emitChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('blockquote unwraps an inline-only quote into a paragraph', () => {
+        const editor = createBlockEditor('<blockquote>plain quote</blockquote>', 'blockquote');
+
+        ToolbarConfig.blockquote.action(editor);
+
+        expect(editor.root.innerHTML).toBe('<p>plain quote</p>');
+    });
+
+    it('blockquote does nothing when there is no block under the caret', () => {
+        const editor = createBlockEditor('<p>text</p>');
+        editor.selection.getBlockElement = () => null;
+
+        ToolbarConfig.blockquote.action(editor);
+
+        expect(editor.root.innerHTML).toBe('<p>text</p>');
+        expect(editor.history.push).not.toHaveBeenCalled();
+        expect(editor.emitChange).not.toHaveBeenCalled();
+    });
+
+    it('code block wraps the current paragraph and unwraps it back', () => {
+        const editor = createBlockEditor('<p>const x = 1;</p>');
+
+        ToolbarConfig.codeBlock.action(editor);
+        expect(editor.root.innerHTML).toBe('<pre>const x = 1;</pre>');
+
+        editor.selection.getBlockElement = () => editor.root.querySelector('pre');
+        ToolbarConfig.codeBlock.action(editor);
+        expect(editor.root.innerHTML).toBe('<p>const x = 1;</p>');
+        expect(editor.emitChange).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('ToolbarConfig insertion actions', () => {
+    it('date and time insert locale-formatted stamps', () => {
+        const insertHTML = vi.fn();
+        const editor = { commands: { insertHTML }, options: { locale: 'en-US' } };
+
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-01-15T14:30:00'));
+        try {
+            ToolbarConfig.date.action(editor);
+            ToolbarConfig.time.action(editor);
+        } finally {
+            vi.useRealTimers();
+        }
+
+        expect(insertHTML.mock.calls).toEqual([
+            ['January 15, 2026'],
+            ['02:30 PM'],
+        ]);
+    });
+
+    it('markdown toggle enters source mode and round-trips back to rendered html', () => {
+        const root = document.createElement('div');
+        const markdown = {
+            export: vi.fn(() => '# Title'),
+            import: vi.fn(),
+            htmlToMarkdown: vi.fn(() => '# Title'),
+            markdownToHtml: vi.fn(() => '<h1>Title</h1>'),
+        };
+        const editor = {
+            root,
+            module: (name) => (name === 'markdown' ? markdown : undefined),
+            getHTML: vi.fn(() => '<h1>Title</h1>'),
+            setHTML: vi.fn(),
+        };
+
+        ToolbarConfig.markdown.action(editor);
+        expect(root.dataset.markdownMode).toBe('true');
+        expect(markdown.import).toHaveBeenCalledWith('# Title');
+        expect(editor._mdSource).toBe('# Title');
+
+        ToolbarConfig.markdown.action(editor);
+        expect(root.dataset.markdownMode).toBe('false');
+        expect(markdown.htmlToMarkdown).toHaveBeenCalledWith('<h1>Title</h1>');
+        expect(editor.setHTML).toHaveBeenCalledWith('<h1>Title</h1>');
+    });
+
+    it('list properties dialog applies and clears start and type on confirm', () => {
+        const list = document.createElement('ol');
+        list.setAttribute('start', '3');
+        const li = document.createElement('li');
+        list.appendChild(li);
+        const editor = {
+            wrapper: document.createElement('div'),
+            selection: { closest: () => li, save: vi.fn() },
+            history: { push: vi.fn() },
+            emitChange: vi.fn(),
+        };
+        capturedDialogs.length = 0;
+
+        ToolbarConfig.listProps.action(editor);
+        const { onConfirm } = capturedDialogs[capturedDialogs.length - 1];
+
+        const form = document.createElement('form');
+        form.innerHTML = '<input name="start" value="7"><input name="type" value="decimal">';
+        onConfirm(form);
+        expect(list.getAttribute('start')).toBe('7');
+        expect(list.style.listStyleType).toBe('decimal');
+
+        form.innerHTML = '<input name="start" value=""><input name="type" value="">';
+        onConfirm(form);
+        expect(list.hasAttribute('start')).toBe(false);
+        expect(list.style.listStyleType).toBe('');
+        expect(editor.history.push).toHaveBeenCalledTimes(2);
+        expect(editor.emitChange).toHaveBeenCalledTimes(2);
+    });
+});

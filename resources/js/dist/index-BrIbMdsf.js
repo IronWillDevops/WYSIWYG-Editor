@@ -1934,9 +1934,16 @@ const G = {
     if (!e || e === r.root) return;
     if (e.tagName === "BLOCKQUOTE" || e.closest("blockquote")) {
       const n = e.tagName === "BLOCKQUOTE" ? e : e.closest("blockquote");
-      r.history.push();
-      const i = document.createElement("p");
-      i.innerHTML = n.innerHTML, n.replaceWith(i);
+      if (r.history.push(), [...n.childNodes].some(
+        (o) => o.nodeType === Node.ELEMENT_NODE && o.matches("p, h1, h2, h3, h4, h5, h6, div, ul, ol, pre, table, blockquote")
+      )) {
+        const o = document.createDocumentFragment();
+        for (; n.firstChild; ) o.appendChild(n.firstChild);
+        n.replaceWith(o);
+      } else {
+        const o = document.createElement("p");
+        o.innerHTML = n.innerHTML, n.replaceWith(o);
+      }
     } else {
       r.history.push();
       const n = document.createElement("blockquote");
@@ -2722,19 +2729,19 @@ class ne {
   }
 }
 const ie = {
-  link: () => import("./LinkModule-CfX5rTnE.js"),
-  image: () => import("./ImageModule-S44E-NDR.js"),
-  table: () => import("./TableModule-CA9zlyPf.js"),
+  link: () => import("./LinkModule-BU9AD6GZ.js"),
+  image: () => import("./ImageModule-a2w0-upc.js"),
+  table: () => import("./TableModule-CPZeYQnw.js"),
   codeView: () => import("./CodeViewModule-qWNvgyFq.js"),
   fullscreen: () => import("./FullscreenModule-DUPhB-ri.js"),
-  find: () => import("./FindModule-aWeQUnq3.js"),
-  note: () => import("./NoteModule-Chjmj_uS.js"),
-  media: () => import("./MediaModule-CI6Jpzbx.js"),
+  find: () => import("./FindModule-C-ZNWuYS.js"),
+  note: () => import("./NoteModule-oYXqYf4L.js"),
+  media: () => import("./MediaModule-C5t3T-tG.js"),
   markdown: () => import("./MarkdownModule-DDfsA3Gh.js"),
-  statusBar: () => import("./StatusBar-Dx1-rZVv.js"),
+  statusBar: () => import("./StatusBar-CdD8XP7p.js"),
   emoji: () => import("./EmojiModule-BZoYsWjN.js"),
   contextMenu: () => import("./ContextMenu-D9DecnVK.js"),
-  templates: () => import("./TemplateModule-BY-hjfiw.js")
+  templates: () => import("./TemplateModule-Cw7COaXz.js")
 };
 Object.entries(ie).forEach(([r, e]) => {
   M.registerPlugin(r, async (t) => {
@@ -2781,4 +2788,4 @@ export {
   v as L,
   se as W
 };
-//# sourceMappingURL=index-WraihT7V.js.map
+//# sourceMappingURL=index-BrIbMdsf.js.map

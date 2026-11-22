@@ -107,12 +107,25 @@ const ToolbarConfig = {
 
         const insideBq = block.tagName === 'BLOCKQUOTE' || block.closest('blockquote');
         if (insideBq) {
-            // Unwrap: replace the outer blockquote with a plain <p>
+            // Unwrap: lift the quote's children out exactly as they are.
+            // Re-wrapping them in a fresh <p> produced invalid <p><p>…</p></p>
+            // nesting whenever the quote held block content — which is what
+            // the wrap branch above always creates.
             const bq = block.tagName === 'BLOCKQUOTE' ? block : block.closest('blockquote');
             e.history.push();
-            const p = document.createElement('p');
-            p.innerHTML = bq.innerHTML;
-            bq.replaceWith(p);
+            const holdsBlocks = [...bq.childNodes].some(
+                (node) => node.nodeType === Node.ELEMENT_NODE
+                    && node.matches('p, h1, h2, h3, h4, h5, h6, div, ul, ol, pre, table, blockquote')
+            );
+            if (holdsBlocks) {
+                const fragment = document.createDocumentFragment();
+                while (bq.firstChild) fragment.appendChild(bq.firstChild);
+                bq.replaceWith(fragment);
+            } else {
+                const p = document.createElement('p');
+                p.innerHTML = bq.innerHTML;
+                bq.replaceWith(p);
+            }
         } else {
             // Wrap: keep the block wrapper so Enter stays inside the blockquote
             e.history.push();

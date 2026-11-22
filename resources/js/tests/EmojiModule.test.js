@@ -27,6 +27,10 @@ describe('EmojiModule', () => {
 
     afterEach(() => {
         module.destroy();
+        // Restores window.innerWidth mocked by the positioning edge cases:
+        // a leaked value of 500 re-clamps the picker in other tests and makes
+        // their assertions depend on test order.
+        vi.restoreAllMocks();
         document.body.innerHTML = '';
     });
 
@@ -156,7 +160,7 @@ describe('EmojiModule', () => {
         });
 
         it('positions left when trigger is near right edge of viewport', () => {
-            Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
+            vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(500);
 
             const btn = document.createElement('button');
             btn.className = 'ife-toolbar__btn';
